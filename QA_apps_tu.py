@@ -1103,12 +1103,9 @@ def load_file(_f, **flags):
         raw = QaF.decrypt(_f, _owr=False)  # Custom python module qa_fileIOHandler
         jsr_debug(f"Read RAW data from {_f} using qa_fileIOHandler.decrypt()")
 
-    except QaF.CRError:
+    except Exception:
         raw = open(_f, 'rb').read()
         jsr_debug(f"Read RAW data from {_f} using open(_f, 'rb').read()")
-
-    except Exception as e:
-        error_handler(_e=traceback.format_exc(), _ecode=e.__class__.__name__, _exit=True)
 
     else:
         jsr_debug(f"Successfully read data from file {_f}")

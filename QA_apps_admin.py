@@ -28,18 +28,58 @@ self_icon = QAInfo.icons_ico.get('admt')
 
 
 class Error(threading.Thread):
-    def __init__(self): pass
+    def __init__(self):
+        self.thread = threading.Thread
+        self.thread.__init__(self)
+        
+        self.start()
 
+    def __del__(self):
+        self.thread.join(self, 0)
 
 class JSON(threading.Thread):
-    def __init__(self): pass
+    def __init__(self):
+        self.thread = threading.Thread
+        self.thread.__init__(self)
+        
+        self.start()
+        
+    def __del__(self):
+        self.thread.join(self, 0)
 
 
 class UI(threading.Thread):
-    def __init__(self): pass
+    def __init__(self):
+        self.thread = threading.Thread
+        self.thread.__init__(self)
+        
+        # UI Vars
+        
+        self.root = tk.Tk() # Main frame
+        
+        # Screen 1
+        self.title = tk.Label(self.root)
+        self.subtitle = tk.Label(self.root)
+        self.information = tk.Label(self.root)
+        
+        # Global
+        self.help_button = tk.Button(self.root)
+        
+        # Last things        
+        self.start() # Start the thread
+        
+        self.root.mainloop() # Final thing; initiate the UI mainloop
 
+    def run(self):
+        pass
+    
+    def update_ui(self):
+        self.root.iconbitmap(self_icon)
+    
+    def __del__(self):
+        self.thread.join(self, 0)
 
-class IO:
+class IO: # Object Oriented like FileIOHandler
     def __init__(self, fn: str, **kwargs):
         self.filename = fn
         self.object = QAFileIO.create_fileIO_object(self.filename)
