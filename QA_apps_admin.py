@@ -54,16 +54,40 @@ class UI(threading.Thread):
         self.thread.__init__(self)
         
         # UI Vars
-        
+        # Global
         self.root = tk.Tk() # Main frame
         
-        # Screen 1
-        self.title = tk.Label(self.root)
-        self.subtitle = tk.Label(self.root)
-        self.information = tk.Label(self.root)
+        # Screens
+        self.runScreen = tk.Frame(self.root)
+        self.configurationScreen = tk.Frame(self.root)
+        self.scoresScreen = tk.Frame(self.root)
+        self.IOScreen = tk.Frame(self.root)
         
+        # Screen 1 (Config)
+        self.config_mainContainer = tk.LabelFrame(self.configurationScreen)
+        
+        self.config_allowCustomConfig_container = tk.LabelFrame(self.config_mainContainer)
+        
+        self.config_qs_pa_container = tk.LabelFrame(self.config_mainContainer)
+        self.config_qs_divF_container = tk.LabelFrame(self.config_qs_pa_container)
+        
+        self.config_deduc_ed_container = tk.LabelFrame(self.config_mainContainer)
+        self.config_deduc_points_container = tk.LabelFrame(self.config_deduc_ed_container)
+                
         # Global
-        self.help_button = tk.Button(self.root)
+        self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
+        self.SCORES_SCREEN = "<<%%QAS_QAAT_SCREEN-02%Scores02>>"
+        self.IO_SCREEN = "<<%%QAS_QAAT_SCREEN-03%IO03>>"
+        self.RUN_SCREEN = "<<%%QAS_QAAT_SCREEN-04%Run04>>"
+        
+        self.screenName_mapper = {
+            self.CONFIG_SCREEN: "Configuration",
+            self.SCORES_SCREEN: "Scores",
+            self.IO_SCREEN: "IO",
+            self.RUN_SCREEN: "Run App"
+        }
+        
+        self.scName: str = self.CONFIG_SCREEN # Sets the first screen
         
         # Last things        
         self.start() # Start the thread
@@ -71,7 +95,11 @@ class UI(threading.Thread):
         self.root.mainloop() # Final thing; initiate the UI mainloop
 
     def run(self):
-        pass
+        self.root.title(f"Quizzing Application Administrator Tools - {self.screenName_mapper.get(self.scName)}")
+        self.root.protocol("WM_DELETE_WINDOW", application_exit)
+        
+        # last thing
+        self.update_ui()
     
     def update_ui(self):
         self.root.iconbitmap(self_icon)
@@ -127,6 +155,9 @@ class IO: # Object Oriented like FileIOHandler
 
 # Functions
 # Low level
+
+def application_exit(code: str = "0") -> None:
+    sys.exit(code)
 
 def editKWARGS(Object: object, **kwargs):
     Object.kwargs = kwargs
@@ -200,15 +231,4 @@ def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=Fals
     return out
 
 
-a = IO('testfile.txt')
-
-editKWARGS(a, encoding='utf-32', encrypt=True)
-
-a.clear()
-# a.saveData(f"Hello World!")
-a.saveData(f"Hello, World! (1)", append=True)
-a.saveData(f"Hello, World! (2)", append=True)
-a.saveData(f"Hello, World! (3)", append=True, append_sep=' ')
-
-print(f'1234 --- {a.rawLoad()}')
-print(f'1234 --- {a.autoLoad()}')
+UI()
