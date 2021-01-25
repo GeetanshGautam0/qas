@@ -204,8 +204,12 @@ class UI(threading.Thread):
 
     def tab_changed(self, envent):
         # Framing (oof)
-        curr_name = self.screen_parent.index(self.screen_parent.select()) # Capture frame
+        curr_name = self.getFrameName() # Capture frame
         print(curr_name)
+        
+    def getFrameName(self):
+        self.scName = self.sc_index_mapping[self.screen_parent.index(self.screen_parent.select())]
+        return self.scName
     
     def update_ui(self, *args): # *args so that the event handler does not raise an error due to excessive arguments        
         # Root
@@ -237,6 +241,17 @@ class UI(threading.Thread):
         
         # Accent FG
         for i in self.update_accent_fg: i.config(fg=self.theme['ac'])
+        
+        # Screen specific
+        self.getFrameName() # Set the screen name
+        
+        if self.scName == self.CONFIG_SCREEN: pass
+            
+        elif self.scName == self.IO_SCREEN: pass
+            
+        elif self.scName == self.RUN_SCREEN: pass
+            
+        elif self.scName == self.SCORES_SCREEN: pass
         
     def __del__(self):
         self.thread.join(self, 0)
