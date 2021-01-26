@@ -69,17 +69,13 @@ class UI(threading.Thread):
         # Screen 1 (Config)
         self.config_mainContainer = tk.LabelFrame(self.configurationScreen)
 
-        self.config_allowCustomConfig_container = tk.LabelFrame(
-            self.config_mainContainer)
+        self.config_allowCustomConfig_container = tk.LabelFrame(self.config_mainContainer)
 
         self.config_qs_pa_container = tk.LabelFrame(self.config_mainContainer)
-        self.config_qs_divF_container = tk.LabelFrame(
-            self.config_qs_pa_container)
+        self.config_qs_divF_container = tk.LabelFrame(self.config_qs_pa_container)
 
-        self.config_deduc_ed_container = tk.LabelFrame(
-            self.config_mainContainer)
-        self.config_deduc_points_container = tk.LabelFrame(
-            self.config_deduc_ed_container)
+        self.config_deduc_ed_container = tk.LabelFrame(self.config_mainContainer)
+        self.config_deduc_points_container = tk.LabelFrame(self.config_deduc_ed_container)
 
         # Global
         self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
@@ -162,7 +158,12 @@ class UI(threading.Thread):
             self.screen_parent.add(ref, text=txt) # Keeps the order
         
         # Frames
-        # All done already
+        self.update_bg.extend([
+            self.configurationScreen,
+            self.IOScreen,
+            self.runScreen,
+            self.scoresScreen
+        ])
         
         # Elements
         self.update_lbl.extend([
@@ -174,13 +175,6 @@ class UI(threading.Thread):
             self.config_deduc_points_container
         ])
         
-        self.update_bg.extend([
-            self.configurationScreen,
-            self.IOScreen,
-            self.runScreen,
-            self.scoresScreen
-        ])
-        
         self.update_accent_fg.extend([
             self.config_mainContainer,
             self.config_allowCustomConfig_container,
@@ -189,9 +183,6 @@ class UI(threading.Thread):
             self.config_deduc_ed_container,
             self.config_deduc_points_container
         ])
-        
-        self.config_mainContainer.pack(fill=tk.BOTH, expand=True, padx=self.padX, pady=self.padY)
-        self.config_mainContainer.config(text="Edit Configuration", font=self.theme.get('lblFrame_font'))
         
         # Event binding
         self.configurationScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
@@ -245,14 +236,100 @@ class UI(threading.Thread):
         # Screen specific
         self.getFrameName() # Set the screen name
         
-        if self.scName == self.CONFIG_SCREEN: pass
+        if self.scName == self.CONFIG_SCREEN: self.setup_config_screen()
             
-        elif self.scName == self.IO_SCREEN: pass
+        elif self.scName == self.IO_SCREEN: self.setup_io_screen()
             
-        elif self.scName == self.RUN_SCREEN: pass
+        elif self.scName == self.RUN_SCREEN: self.setup_run_screen()
             
-        elif self.scName == self.SCORES_SCREEN: pass
+        elif self.scName == self.SCORES_SCREEN: self.setup_scores_screen()
+    
+    def all_screen_widgets(self):
+        _config = self.configurationScreen.winfo_children()
+        _run = self.runScreen.winfo_children()
+        _io = self.IOScreen.winfo_children()
+        _scores = self.scoresScreen.winfo_children()
         
+        for item in _config:
+            if item.winfo_children(): _config.extend(item.winfo_children())
+        
+        for item in _run:
+            if item.winfo_children(): _run.extend(item.winfo_children())
+        
+        for item in _io:
+            if item.winfo_children(): _io.extend(item.winfo_children())
+        
+        for item in _scores:
+            if item.winfo_children(): _scores.extend(item.winfo_children())
+        
+        __all = [*_config, *_run, *_io, *_scores]
+        
+        return (__all, _config, _scores, _io, _run)        
+    
+    def clearUI(self):
+        widgets = self.all_screen_widgets()[0]
+        
+        for i in widgets:
+            try: i.pack_forget()
+            except: continue
+    
+    def setup_config_screen(self):
+        self.clearUI()
+        
+        # The actual setup
+        # Theming has been taken care of already
+        # Simply commit to the structure
+
+        # CONFIGURATION
+        # All containers arranged from top to bottom, with the exception of two that are to be placed inside 
+        
+        # self.config_mainContainer <= Parent Container
+        self.config_mainContainer.pack(fill=tk.BOTH, expand=True, padx=int(self.padX/2), pady=int(self.padY/2))
+        self.config_mainContainer.config(text="Edit Configuration", font=self.theme.get('lblFrame_font'))
+        
+        pady = int(self.padY/4); padx = int(self.padX/2)
+        
+        # self.config_allowCustomConfig_container
+        self.config_allowCustomConfig_container.pack(fill=tk.BOTH, expand=True, padx=padx, pady=(int(self.padY/2), pady))
+        self.config_allowCustomConfig_container.config(text="Custom Cofiguration")
+                
+        # self.config_qs_pa_container
+        #   self.config_qs_divF_container <= Child of config_qs_pa_container
+        self.config_qs_pa_container.pack(fill=tk.BOTH, expand=True, padx=padx, pady=pady)
+        self.config_qs_pa_container.config(text="Questions: Part Or All")
+        
+        self.config_qs_divF_container.pack(fill=tk.BOTH, expand=True, padx=padx, pady=pady, side=tk.RIGHT)
+        self.config_qs_divF_container.config(text="Divisor")
+        
+        # self.config_deduc_ed_container
+        #   self.config_deduc_points_container
+        self.config_deduc_ed_container.pack(fill=tk.BOTH, expand=True, padx=padx, pady=(pady, int(self.padY/2)))
+        self.config_deduc_ed_container.config(text="Deductions")
+        
+        self.config_deduc_points_container.pack(fill=tk.BOTH, expand=True, padx=padx, pady=pady, side=tk.RIGHT)
+        self.config_deduc_points_container.config(text="Deduction Amount")
+        
+    def setup_run_screen(self):
+        self.clearUI()
+        
+        # The actual setup
+        # Theming has been taken care of already
+        # Simply commit to the structure
+    
+    def setup_io_screen(self):
+        self.clearUI()
+        
+        # The actual setup
+        # Theming has been taken care of already
+        # Simply commit to the structure
+    
+    def setup_scores_screen(self):
+        self.clearUI()
+        
+        # The actual setup
+        # Theming has been taken care of already
+        # Simply commit to the structure
+    
     def __del__(self):
         self.thread.join(self, 0)
 
