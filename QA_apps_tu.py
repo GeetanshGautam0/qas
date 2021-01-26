@@ -1220,7 +1220,7 @@ def int_ask(theme: dict, curr: str, ttl: str = "Enter an Integer"):
     TK.protocol("WM_DELETE_WINDOW", TK.destroy)
 
     entry = tk.Entry(root,
-                     justify=tk.CENTER,
+                     justify=tk.LEFT,
                      fg=theme['fg'],
                      bg=theme['bg'],
                      selectforeground=theme['hg'],

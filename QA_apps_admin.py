@@ -77,6 +77,20 @@ class UI(threading.Thread):
         self.config_deduc_ed_container = tk.LabelFrame(self.config_mainContainer)
         self.config_deduc_points_container = tk.LabelFrame(self.config_deduc_ed_container)
 
+        # Screen 1 (Configuration) Elements
+        self.config_acc_enbButton = tk.Button(self.config_allowCustomConfig_container)
+        self.config_acc_dsbButton = tk.Button(self.config_allowCustomConfig_container)
+        
+        self.config_qspa_partButton = tk.Button(self.config_qs_pa_container)
+        self.config_qspa_allButton = tk.Button(self.config_qs_pa_container)
+        self.config_divf_entry = tk.Entry(self.config_qs_divF_container)
+        
+        self.config_qed_enb = tk.Button(self.config_deduc_ed_container)
+        self.config_qed_dsb = tk.Button(self.config_deduc_ed_container)
+        self.config_qed_amnt_entry = tk.Entry(self.config_deduc_points_container)
+        
+        self.save_configuration_button = tk.Button(self.config_mainContainer)
+        
         # Global
         self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
         self.SCORES_SCREEN = "<<%%QAS_QAAT_SCREEN-02%Scores02>>"
@@ -137,6 +151,7 @@ class UI(threading.Thread):
         self.update_bg: list = []
         self.update_fonts: dict = {} # Put in font tuples (Font Face, Font size)
         self.update_accent_fg: list = []
+        self.update_entries: list = []
         
         # Last things
         self.start()  # Start the thread
@@ -166,14 +181,47 @@ class UI(threading.Thread):
         ])
         
         # Elements
-        self.update_lbl.extend([
-            self.config_mainContainer,
+        def addFontInst(inst: object, element: object, font: tuple):
+            inst.update_fonts[element] = font
+        
+        # Configuration
+        CONFBTNs = [
+            self.config_acc_enbButton,
+            self.config_acc_dsbButton,
+            self.config_qspa_partButton,
+            self.config_qspa_allButton,
+            # self.config_divf_entry
+            self.config_qed_enb,
+            self.config_qed_dsb,
+            # self.config_qed_amnt_entry
+            self.save_configuration_button
+        ]; CONFLBLFs = [
             self.config_allowCustomConfig_container,
             self.config_qs_pa_container,
             self.config_qs_divF_container,
             self.config_deduc_ed_container,
             self.config_deduc_points_container
-        ])
+        ]; CONFENTs = [
+            self.config_qed_amnt_entry,
+            self.config_divf_entry
+        ]
+        
+        self.update_btn.extend(CONFBTNs)
+        
+        for i in CONFBTNs:
+            addFontInst(self, i, (self.theme.get('font'), self.theme.get('btn_fsize')))
+        
+        self.update_lbl.extend(CONFLBLFs); self.update_lbl.append(self.config_mainContainer)
+        
+        for i in CONFLBLFs:
+            addFontInst(self, i, (self.theme.get('font'), 10))
+            
+        addFontInst(self, self.config_mainContainer, (self.theme.get('lblFrame_font')))
+        
+        self.update_entries.extend(CONFENTs)
+        
+        for i in CONFENTs:
+            addFontInst(self, i, self.theme.get('fsize_para'))
         
         self.update_accent_fg.extend([
             self.config_mainContainer,
@@ -191,7 +239,8 @@ class UI(threading.Thread):
         self.scoresScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         
         # last thing
-        self.update_ui()
+        self.update_ui() # Sets the elements
+        self.update_theme() # Sets the theme
 
     def tab_changed(self, envent):
         # Framing (oof)
@@ -202,7 +251,7 @@ class UI(threading.Thread):
         self.scName = self.sc_index_mapping[self.screen_parent.index(self.screen_parent.select())]
         return self.scName
     
-    def update_ui(self, *args): # *args so that the event handler does not raise an error due to excessive arguments        
+    def update_theme(self, *args):
         # Root
         self.root.config(bg=self.theme.get('bg')) # BG
         self.root.iconbitmap(self_icon) # Icon
@@ -221,7 +270,8 @@ class UI(threading.Thread):
                 bg=self.theme.get('bg'),
                 fg=self.theme.get('fg'),
                 activeforeground=self.theme.get('hg'),
-                activebackground=self.theme.get('ac')
+                activebackground=self.theme.get('ac'),
+                bd=self.theme.get('border')
             )
         
         # Font
@@ -232,7 +282,18 @@ class UI(threading.Thread):
         
         # Accent FG
         for i in self.update_accent_fg: i.config(fg=self.theme['ac'])
+
+        # Entries
+        for i in self.update_entries:
+            i.config(
+                fg=self.theme['fg'],
+                bg=self.theme['bg'],
+                selectforeground=self.theme['hg'],
+                selectbackground=self.theme['ac'],
+                insertbackground=self.theme['ac']
+            )
         
+    def update_ui(self, *args): # *args so that the event handler does not raise an error due to excessive arguments        
         # Screen specific
         self.getFrameName() # Set the screen name
         
@@ -285,7 +346,7 @@ class UI(threading.Thread):
         
         # self.config_mainContainer <= Parent Container
         self.config_mainContainer.pack(fill=tk.BOTH, expand=True, padx=int(self.padX/2), pady=int(self.padY/2))
-        self.config_mainContainer.config(text="Edit Configuration", font=self.theme.get('lblFrame_font'))
+        self.config_mainContainer.config(text="Edit Configuration")
         
         pady = int(self.padY/4); padx = int(self.padX/2)
         
@@ -308,6 +369,108 @@ class UI(threading.Thread):
         
         self.config_deduc_points_container.pack(fill=tk.BOTH, expand=True, padx=padx, pady=pady, side=tk.RIGHT)
         self.config_deduc_points_container.config(text="Deduction Amount")
+        
+        # Button Configuration + Info LBL conf.
+        wl = int(self.ss[0]-self.ss[0]*0.55)
+        
+        # self.config_acc_enbButton = tk.Button(self.config_allowCustomConfig_container)
+        # self.config_acc_dsbButton = tk.Button(self.config_allowCustomConfig_container)        
+        
+        self.config_acc_enbButton.config(text="Enable", command=self.acc_enb)
+        self.config_acc_dsbButton.config(text="Disable", command=self.acc_dsb)
+        
+        config_acc_infoLbl = tk.Label(self.config_allowCustomConfig_container)
+        config_acc_infoLbl.config(
+            text="Allow Custom Quiz Configuration (Info): If set to 'Enable', the quiz taker will be given the option to setup the other quiz configuration themselves; 'Disable' removes the control from them.",
+            justify=tk.CENTER,
+            wraplength=wl
+        )
+        self.update_lbl.append(config_acc_infoLbl)
+        self.update_fonts[config_acc_infoLbl] = (self.theme.get('font'), self.theme.get('fsize_para'))
+        
+        config_acc_infoLbl.pack(fill=tk.X, expand=True, padx=padx,pady=(pady, int(pady/2)), side=tk.TOP)
+        
+        self.config_acc_enbButton.pack(fill=tk.BOTH, expand=True, padx=(padx, int(padx/2)), pady=(int(pady/2), pady), side=tk.LEFT)
+        self.config_acc_dsbButton.pack(fill=tk.BOTH, expand=True, padx=(int(padx/2), padx), pady=(int(pady/2), pady), side=tk.RIGHT)
+        
+        # self.config_qspa_partButton = tk.Button(self.config_qs_pa_container)
+        # self.config_qspa_allButton = tk.Button(self.config_qs_pa_container)
+        # self.config_divf_entry = tk.Entry(self.config_qs_divF_container)
+        
+        self.config_qspa_partButton.config(text="Part", command=self.qspa_part)
+        self.config_qspa_allButton.config(text="All", command=self.qspa_all)
+        
+        config_qspa_infoLbl = tk.Label(self.config_qs_pa_container)
+        config_qspa_infoLbl.config(
+            text="Part or All Questions: If 'Part' is selected, only a certain percent (given by you) of the questions are used to prompt the user; 'All' simply prompts the user wil all the questions.",
+            justify=tk.CENTER,
+            wraplength=int(wl/2)
+        )
+        self.update_lbl.append(config_qspa_infoLbl)
+        self.update_fonts[config_qspa_infoLbl] = (self.theme.get('font'), self.theme.get('fsize_para'))
+        
+        config_qspa_infoLbl.pack(fill=tk.X, expand=True, padx=padx,pady=(pady, int(pady/2)), side=tk.TOP)
+        
+        self.config_qspa_partButton.pack(fill=tk.BOTH, expand=True, padx=(padx, int(padx/2)), pady=(int(pady/2), pady), side=tk.LEFT)
+        self.config_qspa_allButton.pack(fill=tk.BOTH, expand=True, padx=(int(padx/2), padx), pady=(int(pady/2), pady), side=tk.RIGHT)
+        
+        config_qspa_divF_lbl = tk.Label(self.config_qs_divF_container)
+        config_qspa_divF_lbl.config(
+            text="The divisor of questions (See 'Help Me' for info)",
+            wraplength=int(wl/3),
+            justify=tk.CENTER
+        )
+        self.update_lbl.append(config_qspa_divF_lbl)
+        self.update_fonts[config_qspa_divF_lbl] = (self.theme.get('font'), self.theme.get('fsize_para'))
+        
+        config_qspa_divF_lbl.pack(fill=tk.X, expand=True, padx=padx,pady=(pady, int(pady/2)), side=tk.TOP)
+        
+        self.config_divf_entry.config() # TODO: Set the value
+        self.config_divf_entry.pack(fill=tk.BOTH, expand=True, padx=padx,pady=(int(pady/2), pady), side=tk.TOP)
+        
+        # self.config_qed_enb = tk.Button(self.config_deduc_ed_container)
+        # self.config_qed_dsb = tk.Button(self.config_deduc_ed_container)
+        # self.config_qed_amnt_entry = tk.Entry(self.config_deduc_points_container)
+        
+        self.config_qed_enb.config(text="Enable", command=self.qed_enb)
+        self.config_qed_dsb.config(text="Disable", command=self.qed_dsb)
+        
+        config_qed_infoLbl = tk.Label(self.config_deduc_ed_container)
+        config_qed_infoLbl.config(
+            text="Whether to deduct points for getting a questions wrong; 'Enable' to deduct an amount (user provided) of points after an incorrect response, and 'Disable' to not penalize incorrect answers.",
+            wraplength=int(wl/2),
+            justify=tk.CENTER
+        )
+        self.update_lbl.append(config_qed_infoLbl)
+        self.update_fonts[config_qed_infoLbl] = (self.theme.get('font'), self.theme.get('fsize_para'))
+        
+        config_qed_infoLbl.pack(fill=tk.X, expand=True, padx=padx,pady=(pady, int(pady/2)), side=tk.TOP)
+        
+        self.config_qed_enb.pack(fill=tk.BOTH, expand=True, padx=(padx, int(padx/2)), pady=(int(pady/2), pady), side=tk.LEFT)
+        self.config_qed_dsb.pack(fill=tk.BOTH, expand=True, padx=(int(padx/2), padx), pady=(int(pady/2), pady), side=tk.RIGHT)
+        
+        config_qed_sub_infoLbl = tk.Label(self.config_deduc_points_container)
+        config_qed_sub_infoLbl.config(
+            text="The amount of points to deduct (See 'Help Me' for more info)",
+            wraplength=int(wl/3),
+            justify=tk.CENTER
+        )
+        self.update_lbl.append(config_qed_sub_infoLbl)
+        self.update_fonts[config_qed_sub_infoLbl] = (self.theme.get('font'), self.theme.get('fsize_para'))     
+        
+        config_qed_sub_infoLbl.pack(fill=tk.X, expand=True, padx=padx,pady=(pady, int(pady/2)), side=tk.TOP)
+        
+        self.config_qed_amnt_entry.config() # TODO: Set the value
+        self.config_qed_amnt_entry.pack(fill=tk.BOTH, expand=True, padx=padx,pady=(int(pady/2), pady), side=tk.TOP)
+        
+        # Save Button
+                
+        self.save_configuration_button.config(
+            text="Save Configuration",
+            command=self.saveConfiguration
+        )
+        
+        self.save_configuration_button.pack(fill=tk.BOTH, expand=True, padx=padx,pady=pady)
         
     def setup_run_screen(self):
         self.clearUI()
@@ -333,7 +496,30 @@ class UI(threading.Thread):
     def __del__(self):
         self.thread.join(self, 0)
 
-
+    # Button Functions
+    def acc_enb(self):
+        pass
+    
+    def acc_dsb(self):
+        pass
+    
+    def qspa_all(self):
+        pass
+    
+    def qspa_part(self):
+        pass
+    
+    def qed_enb(self):
+        pass
+    
+    def qed_dsb(self):
+        pass
+    
+    def saveConfiguration(self):
+        pass
+    
+    # Logic Functions 
+    
 class IO:  # Object Oriented like FileIOHandler
     def __init__(self, fn: str, **kwargs):
         self.filename = fn
