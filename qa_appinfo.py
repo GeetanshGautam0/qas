@@ -73,6 +73,10 @@ cdfn = 'codes.json'
 codes_keys = {
     'incomplete_install': {
         'FTSRA': 'FTSRA_INCOMPLETE_FILES'
+    },
+    'configuration_file_error' : {
+        'conf_file_missing': 'QAADMT_NO_CONFIG_FILE',
+        'conf_file_corrupted': 'QAADMT_CANNOT_READ_CONFIG'
     }
 }
 

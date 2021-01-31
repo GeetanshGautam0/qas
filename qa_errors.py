@@ -26,3 +26,13 @@ class RestorationFailed(Exception):
     def __str__(self):
         global stem
         return f"{stem} Failed to restore to (automatic) backup after a failed operation; filename = {self.filename}, objectID = {self.id}"
+
+class ConfigurationError(Exception):
+    def __init__(self, info=None):
+        self.info = info
+    
+    def __str__(self):
+        global stem
+        err = f"{stem} An error occured whilst attempting to handle the configuration settings"
+        err += ": {self.info}" if self.info is not None else '.'
+        return err

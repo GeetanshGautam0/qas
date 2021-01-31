@@ -10,13 +10,10 @@ import qa_pdfGen as QAPDFGen
 import qa_win10toast as QAWinToast
 import qa_quizConfig as QAConfig
 import qa_typeConvertor as QATypeConv
+import qa_errors as QAErrors
 
 # Misc. Imports
-import threading
-import sys
-import os
-import shutil
-import traceback
+import threading, sys, os, shutil, traceback, json
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
@@ -24,30 +21,90 @@ from tkinter import messagebox as tkmsb
 # Globals
 QAS_encoding = 'utf-32'
 self_icon = QAInfo.icons_ico.get('admt')
+apptitle = f"Administrator Tools v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
+configruationFilename = '{}\\{}'.format(QAInfo.appdataLoc.strip('\\').strip(), QAInfo.confFilename)
 
 # Classes
 
-
-class Error(threading.Thread):
+class JSON:
     def __init__(self):
-        self.thread = threading.Thread
-        self.thread.__init__(self)
+        self.jsonHandlerInst = QAJSONHandler.QAFlags(); self.jsonHandler = self.jsonHandlerInst
+        
+        self.crashID = self.jsonHandlerInst.ADMTs_crash_id
+        self.timedEventID = self.jsonHandler.ADMTs_timed_crash_id
+        
+        self.unrID = self.jsonHandlerInst.log_unr_id
+        self.funcID = self.jsonHandlerInst.log_function_id
+        self.timeID = self.jsonHandlerInst.log_time_id
+        self.infoID = self.jsonHandlerInst.log_info_id
+        
+        self.noFuncID = self.jsonHandlerInst.no_func_id
+    
+    def logCrash(self, info:str, functionCall=None):
+        id = self.crashID
+        time = f"{QATime.now()}"
 
-        self.start()
+        self.setFlag(
+            filename=QAInfo.global_nv_flags_fn,
+            data_key=id,
+            data_val={
+                self.unrID: True,
+                self.infoID: info,
+                self.timeID: time,
+                self.funcID: functionCall if functionCall is not None else self.noFuncID
+            }
+        )
+    
+    def setFlag(self, filename: str, data_key: str, data_val: any, **kwargs):
+        Flags = {
+        'append': [True, (True, bool)],
+        'reload_nv_flags': [True, (True, bool)]
+        }
 
-    def __del__(self):
-        self.thread.join(self, 0)
+        Flags = flags_handler(Flags, kwargs, __rePlain=True)
 
+        flag_io = QAJSONHandler.QAFlags()
+        key = flag_io.SET
 
-class JSON(threading.Thread):
-    def __init__(self):
-        self.thread = threading.Thread
-        self.thread.__init__(self)
+        flag_io.io(key,
+                filename=filename,
+                data={
+                    data_key: data_val
+                },
+                appendData=Flags['append'],
+                reloadJSON=Flags['reload_nv_flags'])
 
-        self.start()
+        return
+    
+    def getFlag(self, filename: str, data_key: str, **kwargs):
+        Flags = {
+        'return_boolean': [True, (True, bool)],
+        'reload_nv_flags': [True, (True, bool)]
+        }
 
-    def __del__(self):
-        self.thread.join(self, 0)
+        Flags = flags_handler(Flags, kwargs)
+
+        temp: dict = {}
+        for i in Flags: temp[i] = Flags[i][0]
+
+        Flags = temp
+
+        debug(f"Querying for flag {data_key} in file '{filename}'")
+
+        flagsIO = QAJSONHandler.QAFlags()
+        key = flagsIO.GET
+
+        result = flagsIO.io(Key=key,
+                            key=data_key,
+                            filename=filename,
+                            re_bool=Flags['return_boolean'],
+                            reloadJSON=Flags['reload_nv_flags'])
+
+        debug(f"Result of query: '{result}'")
+
+        return result
+    
+    def boot_check(self): pass
 
 
 class UI(threading.Thread):
@@ -56,6 +113,10 @@ class UI(threading.Thread):
         self.thread.__init__(self)
 
         # UI Vars
+        # Configuration (Internal)
+        # Do not use an internal dictionary and attempt to synchronize with the global dict like 1.5x;
+        # Instead, use the button states to simulate the dictionary.
+        
         # Global
         self.root = tk.Tk()  # Main frame
         self.screen_parent = ttk.Notebook(self.root)
@@ -126,15 +187,18 @@ class UI(threading.Thread):
         # Add extra elements
         self.theme['lblFrame_font'] = (self.theme.get('font'), 11)
         
+        self.dsbAll_fg = '#595959'
+        
         # Window sizing
         # Set window transform information
         self.txy = {'x': 0, 'y': 1}  # Coordinate template
         self.ss = (self.root.winfo_screenwidth(), self.root.winfo_screenheight())  # Screen size
-        self.ds = (1000, 900)  # Default size
         self.ds_ratio = (
-            self.ds[0]/1920, # Width
-            self.ds[1]/1080 # Height
+            1000/1920, # Width
+            900/1080 # Height
         )
+        self.ds = (int(self.ds_ratio[0]*self.ss[0]),
+                   int(self.ds_ratio[1]*self.ss[1]))  # Default size
         self.ws = [
             self.ds[self.txy['x']] if self.ds[self.txy['x']] < self.ss[self.txy['x']] else int(self.ss[self.txy['x']]*self.ds_ratio[0]),
             self.ds[self.txy['y']] if self.ds[self.txy['y']] < self.ss[self.txy['y']] else int(self.ss[self.txy['y']]*self.ds_ratio[1])
@@ -161,7 +225,7 @@ class UI(threading.Thread):
     def run(self):
         # Root
         self.root.title(
-            f"Quizzing Application Administrator Tools - {self.sc_name_mapping.get(self.scName)}")
+            f"{apptitle} - {self.sc_name_mapping.get(self.scName)}")
         self.root.protocol("WM_DELETE_WINDOW", application_exit)
         
         # Notebook
@@ -238,10 +302,11 @@ class UI(threading.Thread):
         self.IOScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         self.scoresScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         
-        # last thing
+        # last things
         self.update_ui() # Sets the elements
         self.update_theme() # Sets the theme
-
+        self.setConfigStates() # Set the states
+        
     def tab_changed(self, envent):
         # Framing (oof)
         curr_name = self.getFrameName() # Capture frame
@@ -472,21 +537,21 @@ class UI(threading.Thread):
         
         self.save_configuration_button.pack(fill=tk.BOTH, expand=True, padx=padx,pady=pady)
         
-    def setup_run_screen(self):
+    def setup_run_screen(self): # TODO: Make the screen code
         self.clearUI()
         
         # The actual setup
         # Theming has been taken care of already
         # Simply commit to the structure
     
-    def setup_io_screen(self):
+    def setup_io_screen(self) :# TODO: Make the screen code
         self.clearUI()
         
         # The actual setup
         # Theming has been taken care of already
         # Simply commit to the structure
     
-    def setup_scores_screen(self):
+    def setup_scores_screen(self): # TODO: Make the screen code
         self.clearUI()
         
         # The actual setup
@@ -496,29 +561,279 @@ class UI(threading.Thread):
     def __del__(self):
         self.thread.join(self, 0)
 
-    # Button Functions
+    # Button Functions (Event Handlers)
     def acc_enb(self):
-        pass
-    
+        global configuration_begining
+        
+        # ACC = Allow Custom Configuration; enb = Enable
+        
+        # Step 1: Disable the button and set the color (fg)
+        self.config_acc_enbButton.config(state=tk.DISABLED,
+                                         disabledforeground=self.theme.get('ac')
+        )
+
+        # Step 2: Enable the other button
+        self.config_acc_dsbButton.config(state=tk.NORMAL)
+        
+        # Step 3: Enable all other things
+        self.qspa_enbAll() # All / Part Container + Buttons + Sub-Container + Entry (divF)
+        self.qed_enbAll() # QED and all of it's child objects
+        
+        # Step 4: Write the changes to the dict
+        configuration_begining[
+            QAConfig.keys_quizTaker_customConfig
+        ] = True
+        
+        return
+        
     def acc_dsb(self):
-        pass
+        # ACC = Allow Custom Configuration; dsb = Disable
+        
+        # Step 1: Disable the button and set the color (fg)
+        self.config_acc_dsbButton.config(state=tk.DISABLED,
+                                         disabledforeground=self.theme.get('ac')
+        )
+
+        # Step 2: Enable the other button
+        self.config_acc_enbButton.config(state=tk.NORMAL)
+
+        # Step 3: Disable all other things
+        self.qspa_dsbAll() # All / Part Container + Buttons + Sub-Container + Entry (divF)
+        self.qed_dsbAll() # QED and all of it's child objects
+        
+        # Step 4: Write the changes to the dict
+        configuration_begining[
+            QAConfig.keys_quizTaker_customConfig
+        ] = False
+        
+        return
+    
+    def qspa_divF_dsb(self):
+        self.config_qs_divF_container.config(
+            fg=self.dsbAll_fg,
+            text=self.config_qs_divF_container.cget('text').replace(' (Disabled)', '') + ' (Disabled)'
+        )
+        
+        self.config_divf_entry.config(
+            state=tk.DISABLED,
+            disabledforeground=self.dsbAll_fg,
+            disabledbackground=self.theme.get('bg')
+        )
+    
+    def qspa_divF_enb(self):
+        self.config_qs_divF_container.config(
+            fg=self.theme.get('ac'),
+            text=self.config_qs_divF_container.cget('text').replace(' (Disabled)', '')
+        )
+            
+        self.config_divf_entry.config(state=tk.NORMAL)
+    
+    def qspa_enbAll(self):
+        global configuration_begining
+        conf = configuration_begining
+        
+        if conf.get(QAConfig.keys_questions_partOrAll) == QAConfig.values_qspa_part: self.qspa_part()
+        else: self.qspa_all()
+
+        self.config_qs_pa_container.config(
+            text=self.config_qs_pa_container.cget('text').replace(' (Disabled)', ''),
+            fg=self.theme.get('ac')
+        )
+        
+        self.qspa_divF_enb() # Div F Entry + Container
+        
+    def qspa_dsbAll(self):
+        debug(f"Disabling input for 'QSPA'")
+        
+        global configuration_begining
+        conf = configuration_begining
+        
+        self.config_qs_pa_container.config(
+            text=self.config_qs_pa_container.cget('text').replace(' (Disabled)', '') + ' (Disabled)',
+            fg=self.dsbAll_fg
+        )
+            
+        self.config_qspa_allButton.config(
+            state=tk.DISABLED,
+            disabledforeground=self.dsbAll_fg
+        )
+
+        self.config_qspa_partButton.config(
+            state=tk.DISABLED,
+            disabledforeground=self.dsbAll_fg
+        )
+    
+        self.qspa_divF_dsb() # Div F Entry + Container
     
     def qspa_all(self):
-        pass
-    
+        # QS = Question amount Selection, PA = Part or All
+        
+        # Step 1: Disable the button and set the color (fg)
+        self.config_qspa_allButton.config(
+            state=tk.DISABLED,
+            disabledforeground=self.theme.get('ac')
+        )
+
+        # Step 2: Enable the other button
+        self.config_qspa_partButton.config(
+            state=tk.NORMAL
+        )
+        
+        # Step 4: Write the changes to the dict
+        configuration_begining[
+            QAConfig.keys_questions_partOrAll
+        ] = QAConfig.values_qspa_all
+        
+        return
+        
     def qspa_part(self):
-        pass
+        # QS = Question amount Selection, PA = Part or All
+        
+        # Step 1: Disable the button and set the color (fg)
+        self.config_qspa_partButton.config(
+            state=tk.DISABLED,
+            disabledforeground=self.theme.get('ac')
+        )
+
+        # Step 2: Enable the other button
+        self.config_qspa_allButton.config(
+            state=tk.NORMAL
+        )
+
+        # Step 4: Write the changes to the dict
+        configuration_begining[
+            QAConfig.keys_questions_partOrAll
+        ] = QAConfig.values_qspa_part
+        
+        return
+    
+    def qed_enbAll(self):
+        global configuration_begining
+        conf = configuration_begining
+
+        if conf.get(QAConfig.keys_deductions_mode): self.qed_enb()
+        else: self.qed_dsb()
+        
+        self.config_deduc_ed_container.config(
+            text=self.config_deduc_ed_container.cget('text').replace('(Disabled)').strip(),
+            fg=self.theme.get('ac')
+        )
+        
+    def qed_dsbAll(self):
+        global configuration_begining
+        conf = configuration_begining
+
+        self.config_qed_enb.config(
+            state=tk.DISABLED,
+            disabledforeground=self.dsbAll_fg
+        )
+        
+        self.config_qed_dsb.config(
+            state=tk.DISABLED,
+            disabledforeground=self.dsbAll_fg
+        )
+        
+        self.config_deduc_ed_container.config(
+            text=self.config_deduc_ed_container.cget('text').replace('(Disabled)').strip() + " (Disabled)",
+            fg=self.dsbAll_fg
+        )
+        
+    def qed_entry_dsbAll(self):
+        self.config_deduc_points_container.config(
+            text=self.config_deduc_points_container.cget('text').replace('(Disabled)').strip() + " (Disabled)",
+            fg=self.dsbAll_fg
+        )
+        
+        self.config_qed_amnt_entry.config(
+            state=tk.DISABLED,
+            disabledforeground=self.dsbAll_fg,
+            disabledbackground=self.theme.get('bg')
+        )
+    
+    def qed_entry_enbAll(self):
+        self.config_deduc_points_container.config(
+            text=self.config_deduc_points_container.cget('text').replace('(Disabled)').strip(),
+            fg=self.theme.get('ac')
+        )
+        
+        self.config_qed_amnt_entry.config(
+            state=tk.NORMAL,
+            disabledforeground=self.theme.get('ac')
+        )
     
     def qed_enb(self):
-        pass
+        # Q = Question, ED = Enable Deductions, ENB = Enable
+        
+        # Step 1: Disable the button and set the color (fg)
+        self.config_qed_enb.config(
+            state=tk.DISABLED,
+            disabledforeground=self.theme.get('ac')
+        )
+        
+        # Step 2: Enable the other button
+        self.config_qed_dsb.config(
+            state=tk.NORMAL
+        )
+        
+        # Step 4: Write the changes to the dict
+        configuration_begining[
+            QAConfig.keys_deductions_mode
+        ] = True
+        
+        return
     
     def qed_dsb(self):
-        pass
+        # Q = Question, ED = Enable Deductions, DSB = Disable
+                
+        # Step 1: Disable the button and set the color (fg)
+        self.config_qed_dsb.config(
+            state=tk.DISABLED,
+            disabledforeground=self.theme.get('ac')
+        )
+        
+        # Step 2: Enable the other button
+        self.config_qed_enb.config(
+            state=tk.NORMAL
+        )
+        
+        # Step 4: Write the changes to the dict
+        configuration_begining[
+            QAConfig.keys_deductions_mode
+        ] = False
+        
+        return
     
     def saveConfiguration(self):
         pass
     
     # Logic Functions 
+    
+    def setConfigStates(self):
+        global configuration_begining
+        conf = configuration_begining
+        
+        # QSPA
+        self.qspa_enbAll() # Does the logic check
+        
+        # QED
+        if conf.get(QAConfig.keys_deductions_mode): self.qed_enb()
+        else: self.qed_dsb()
+        
+        # QS Div Factor
+        qsdf = str(conf.get(QAConfig.keys_questions_divistionFactor))
+        self.config_divf_entry.delete(0, tk.END)
+        self.config_divf_entry.insert(0, qsdf)
+        
+        # QED Entry
+        qed_amnt = str(conf.get(QAConfig.keys_deduction_perPoint))
+        self.config_qed_amnt_entry.delete(0, tk.END)
+        self.config_qed_amnt_entry.insert(0, qed_amnt)
+        
+        # ACC (Call at end)
+        if conf.get(QAConfig.keys_quizTaker_customConfig): self.acc_enb()
+        else: self.acc_dsb()
+        
+        return
     
 class IO:  # Object Oriented like FileIOHandler
     def __init__(self, fn: str, **kwargs):
@@ -569,8 +884,44 @@ class IO:  # Object Oriented like FileIOHandler
 # Functions
 # Low level
 
+def __logError(errorCode: str, **kwargs):
+    crash_msg: str  = f"The application has encountered an error; internal diagnostics will be run during the next boot sequence of this application.\n\nDiagnostic Code: {errorCode}"
+        
+    flags = {
+        
+        'logError': [True, (bool, )],
+        
+        'exit': [False, (bool, )],
+        'exitCode': [-1, (str, int)],
+        
+        'showUI': [True, (bool, )],
+        'UI_Message': [crash_msg, (str, )],
+        
+        'runDiagnostics': [False, (bool, )],
+        'diagnosticsInfo': [crash_msg, (str, )],
+        'diagnosticsFunctionName': [QAJSONHandler.QAFlags().no_func_id, (str, )]
+        
+    }; flags = flags_handler(flags, kwargs, __rePlain=True)
+    
+    if flags['logError']:
+        debug(f"The application encountered an error; exit: {flags['exit']}; exitCode: {flags['exitCode']}, runDiagnostics: {flags['runDiagnostics']}, diagnostics_code: {flags['diagnosticsInfo']}, error code: {errorCode}")
 
+    if flags['showUI']:
+        tkmsb.showerror(apptitle, flags['UI_Message'])
+        
+    if flags['runDiagnostics']: # TODO: fix this
+        __inst = JSON()
+        
+        dinfo = ""
+        dfunction = flags['diagnosticsFunctionName']
+        
+        __inst.logCrash(info=dinfo, functionCall=dfunction)
+        
+    if flags['exit']:
+        application_exit(flags['exitCode'])
+    
 def application_exit(code: str = "0") -> None:
+    debug(f"Exiting with code '{code}'")
     sys.exit(code)
 
 
@@ -606,6 +957,52 @@ def debug(debugData: str):
     # Log
     Log.log(data=debugData, from_=scname)
 
+def loadConfiguration() -> dict:
+    global configruationFilename
+    
+    if not os.path.exists(configruationFilename):
+        code = JSON().getFlag('codes.json', QAInfo.codes_keys.get('configuration_file_error').get('conf_file_missing'))
+        
+        codeInfo = JSON().getFlag('codes.json', "info", return_boolean=False)
+        codeInfo = codeInfo[code]
+        
+        __logError(
+            code,
+            runDiagnostics=True,
+            diagnosticsInfo=code,
+            diagnosticsFunctionName=QAJSONHandler.QAFlags().CONF_corruption_fnc,
+            UI_Message=f"An error occured whilst loading the configuration;\n\nError Code: {code}\n\nError Info: {codeInfo}",
+            exit=True,
+            exitCode=f"QAErrors.ConfigurationError"
+        )
+
+        raise QAErrors.ConfigurationError(code)
+    
+    try:
+        __IO = IO(configruationFilename)
+        raw = __IO.autoLoad()
+        _dict = json.loads(raw)
+    
+    except:
+        code_key = QAInfo.codes_keys['configuration_file_error']['conf_file_corrupted']
+        code = JSON().getFlag('codes.json', code_key, return_boolean=False)
+        
+        codeInfo = JSON().getFlag('codes.json', "info", return_boolean=False)
+        codeInfo = codeInfo[code]
+        
+        __logError(
+            code,
+            runDiagnostics=True,
+            diagnosticsInfo=code,
+            diagnosticsFunctionName=QAJSONHandler.QAFlags().CONF_corruption_fnc,
+            UI_Message=f"An error occured whilst loading the configuration;\n\nError Code: {code}\n\nError Info: {codeInfo}",
+            exit=True,
+            exitCode=f"QAErrors.ConfigurationError"
+        )
+        
+        raise QAErrors.ConfigurationError(code)
+    
+    return _dict
 
 def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=False) -> dict:
     debug(f"Refference ::: {reference}")
@@ -647,5 +1044,26 @@ def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=Fals
     debug(f"Returning edited kwargs {out}")
     return out
 
+configuration_begining = loadConfiguration()
+
+if type(configuration_begining) is not dict:
+    debug(f"ADMT.792:: Could not load configuration; invalid type {type(configuration_begining)}")
+    code_key = QAInfo.codes_keys['configuration_file_error']['conf_file_corrupted']
+    code = JSON().getFlag('codes.json', code_key, return_boolean=False)
+    
+    codeInfo = JSON().getFlag('codes.json', "info", return_boolean=False)
+    codeInfo = codeInfo[code]
+    
+    __logError(
+        code,
+        runDiagnostics=True,
+        diagnosticsInfo=code,
+        diagnosticsFunctionName=QAJSONHandler.QAFlags().CONF_corruption_fnc,
+        UI_Message=f"An error occured whilst loading the configuration;\n\nError Code: {code}\n\nError Info: {codeInfo}\n\nRef: QAADMT.792",
+        exit=True,
+        exitCode=f"QAErrors.ConfigurationError"
+    )
+
+debug(f"Configuraion Loaded: {configuration_begining}")
 
 UI()

@@ -150,7 +150,7 @@ class CrashHandler(threading.Thread):
                     })
 
             global cont
-            cont = True
+            cont = True 
 
         except Exception as e:
             self.log_crash(time=qa_time.now(), info=f"{traceback.format_exc()}")

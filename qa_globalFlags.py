@@ -106,6 +106,9 @@ class QAFlags:
 
         self.CONF_corrupted_err = "GLOBAL_CORRUPTED_CONFIGURATION"
         self.CONF_corruption_fnc = "CONFIGURATION_DATA_INTEGRITY_CHECK"
+        
+        self.ADMTs_crash_id = "GLOBAL_ADMIN_TOOLS_ERROR"
+        self.ADMTs_timed_crash_id = "GLOBAL_ADMIN_TOOLS_EVENT_LOG from "
 
         self.FLAGS_FILE: str = self.flags_fn
 

@@ -11,32 +11,38 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/icons/themer_64.png?raw=true">
 </p>
 
-These include a few apps:
-  - Quizzing Application Administrator Tools
-  - Quizzing Application Quizzing Form
+<b><h3>These include a few apps</h3></b>
+<ul>
+  <li>Quizzing Application Administrator Tools</li>
+  <li>Quizzing Application Quizzing Form</li>
+</ul>
+
+<b><h3>Along with a few utilities</h3></b>
+<ul>
+  <li>Quizzing Application FTSRA (First Time Setup and Recovery Agent) Utility</li>
+  <li>Quizzing Application Theming Utility</li>
+</ul>
+
+<b><h3>Updated from version 1.5, this version will contain several imporvements. A few of them include</h3></b>
+<ul>
+  <li>A less buggy quizzing form</li>
+  <li>A keylogger to keep track of all actions committed by the quiz taker</li>
+    <ul><li>Note that this keylogger only runs whilst the quiz taker is actively participating in the quiz.</li></ul>
+  <li>All files will noe be encrypted</li>
+  <li>More options for administrators:</li>
+  <ul>
+    <li>Language Settings (possible, but not confirmed)</li>
+    <li>Allow quiz taker to see there score</li>
+    <li>and more!</li>
+  <li>Exporting scores and other human-readable files in *.pdf</li>
+  <li>Faster algorithms to make your experience smoother</li>
+  <li>More code, more functions, less disk space</li>
+  <li>Better UI</li>
+  <li>All functions of the application are logged, therefore allowing the user to debug and troubleshoot.</li>
+  <li>Errors now display as there own GUI</li>
+  <li>More robust than ever.</li>
   
-Along with a few utilities: 
-  - Quizzing Application FTSRA (First Time Setup and Recovery Agent) Utility
-  - Quizzing Application Theming Utility
-  
-Updated from version 1.5, this version will contain several imporvements. A few of them include:
-  - A less buggy quizzing form
-  - A keylogger to keep track of all actions committed by the quiz taker
-    - Note that this keylogger only runs whilst the quiz taker is actively participating in the quiz.
-  - All files will noe be encrypted
-  - More options for administrators:
-    - Language Settings (possible, but not confirmed)
-    - Allow quiz taker to see there score
-    - and more!
-  - Exporting scores and other human-readable files in *.pdf
-  - Faster algorithms to make your experience smoother
-  - More code, more functions, less disk space
-  - Better UI
-  - All functions of the application are logged, therefore allowing the user to debug and troubleshoot.
-  - Errors now display as there own GUI
-  - More robust than ever.
-  
-  - And MUCH more....
+  <li>And MUCH more....</li>
 
 <b><h1>Changes</h1></b>
 
