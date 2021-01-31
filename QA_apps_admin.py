@@ -56,6 +56,18 @@ class JSON:
             }
         )
     
+    def removeFlag(self, filename: str, data_key: str):
+        flag_io = QAJSONHandler.QAFlags()
+        key = flag_io.REMOVE
+        
+        flag_io.io(
+            key,
+            filename=filename,
+            key=data_key
+        )
+        
+        return
+    
     def setFlag(self, filename: str, data_key: str, data_val: any, **kwargs):
         Flags = {
         'append': [True, (True, bool)],
@@ -105,7 +117,72 @@ class JSON:
 
         return result
     
-    def boot_check(self): pass
+    def log_crash_fix(self, urd: bool, tp: bool, apd: str, apftf: str, crinfo: str, crtime: str, crfunc: str):
+        time = f"{QATime.now()}"
+        id = self.timedEventID.strip() + " " + time
+
+        self.setFlag(
+            filename=QAInfo.global_nv_flags_fn,
+            data_key=id,
+            data_val={
+                "time": time,
+                "crash_detected": {
+                    self.infoID: crinfo,
+                    self.timeID: crtime,
+                    self.funcID: crfunc
+                },
+                "ran_diagnostics": urd,
+                "test_passed": tp,
+                "diagnostics_function": apd,
+                "correction_function": apftf
+            }
+        )    
+    
+    def boot_check(self):
+        # Step 1: Does the key exist?
+        if self.getFlag(QAInfo.global_nv_flags_fn, self.crashID):
+            
+            # Step 2: Is the error un-resolved?
+            check = self.getFlag(QAInfo.global_nv_flags_fn, self.crashID, return_boolean=False)
+            
+            if check.get(self.unrID): # Un-reolved
+                
+                # Step 1: Vars
+                _dData = QADiagnostics.Data()
+                _test = _dData.diagnostics_function_mapping.get(
+                    check.get(self.funcID)
+                )
+                _corr = _dData.correction_function_mapping.get(
+                        check.get(self.funcID)
+                )
+                
+                # Run the test
+                _result = _test()
+                
+                if not _result:
+                    # Run the diagnostics
+                    _corr()
+
+                # log_crash_fix(self, urd: bool, tp: bool, apd: str, apftf: str, crinfo: str, crtime: str, crfunc: str):
+                self.log_crash_fix(
+                    True,
+                    _result,
+                    f"{_test}",
+                    f"{_corr}",
+                    check.get(self.infoID),
+                    check.get(self.timeID),
+                    check.get(self.funcID)
+                )
+                
+                self.removeFlag(
+                    QAInfo.global_nv_flags_fn,
+                    self.crashID
+                )
+                
+                tkmsb.showinfo(apptitle, f"The application had detected a boot-error flag and thus ran the appropriate diagnostics.")
+            
+        # True = Test passed
+        return True
 
 
 class UI(threading.Thread):
@@ -249,7 +326,7 @@ class UI(threading.Thread):
         def addFontInst(inst: object, element: object, font: tuple):
             inst.update_fonts[element] = font
         
-        # Configuration
+        # Configuration Screen
         CONFBTNs = [
             self.config_acc_enbButton,
             self.config_acc_dsbButton,
@@ -298,10 +375,12 @@ class UI(threading.Thread):
         ])
         
         # Event binding
-        self.configurationScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
-        self.runScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
-        self.IOScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
-        self.scoresScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
+        # self.configurationScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
+        # self.runScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
+        # self.IOScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
+        # self.scoresScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
+        
+        self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         
         # last things
         self.update_ui() # Sets the elements
@@ -558,6 +637,8 @@ class UI(threading.Thread):
     
     def setup_io_screen(self) :# TODO: Make the screen code
         self.clearUI()
+        
+        tk.Label(self.IOScreen, text="Hello!").pack(fill=tk.BOTH, expand=True)
         
         # The actual setup
         # Theming has been taken care of already
@@ -1132,5 +1213,7 @@ configuration_saved = configuration_begining
 if not configuration_begining.get(QAConfig.keys_inDist):
     apptitle += " (Experimental Version)"
     tkmsb.showwarning(apptitle, f"Warning: The following application has been marked as 'Experimental' and thus may act in an unstable manner.\n\nApplication By: Geetansh Gautam, Coding Made Fun")
+
+JSON().boot_check() # Boot checks (global_nv_flags_fn file flags run these checks...)
 
 UI()
