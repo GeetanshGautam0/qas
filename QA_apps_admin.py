@@ -23,6 +23,7 @@ QAS_encoding = 'utf-32'
 self_icon = QAInfo.icons_ico.get('admt')
 apptitle = f"Administrator Tools v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
 configruationFilename = '{}\\{}'.format(QAInfo.appdataLoc.strip('\\').strip(), QAInfo.confFilename)
+configuration_saved: dict = {}
 
 # Classes
 
@@ -226,7 +227,7 @@ class UI(threading.Thread):
         # Root
         self.root.title(
             f"{apptitle} - {self.sc_name_mapping.get(self.scName)}")
-        self.root.protocol("WM_DELETE_WINDOW", application_exit)
+        self.root.protocol("WM_DELETE_WINDOW", self.safe_close)
         
         # Notebook
         self.screen_parent.pack(fill=tk.BOTH, expand=True)
@@ -306,7 +307,18 @@ class UI(threading.Thread):
         self.update_ui() # Sets the elements
         self.update_theme() # Sets the theme
         self.setConfigStates() # Set the states
+    
+    def safe_close(self):
+        global apptitle
         
+        debug(f"\nB: {configuration_begining}\nComparing /\\ to \\/\nS: {configuration_saved}")
+        
+        if not conf_saved():
+            __conf = tkmsb.askyesno(apptitle, 'Would you like to save changes to the configuration?')
+            if __conf: self.saveConfiguration()
+            
+        application_exit(0)
+    
     def tab_changed(self, envent):
         # Framing (oof)
         curr_name = self.getFrameName() # Capture frame
@@ -715,9 +727,11 @@ class UI(threading.Thread):
         else: self.qed_dsb()
         
         self.config_deduc_ed_container.config(
-            text=self.config_deduc_ed_container.cget('text').replace('(Disabled)').strip(),
+            text=self.config_deduc_ed_container.cget('text').replace('(Disabled)', '').strip(),
             fg=self.theme.get('ac')
         )
+        
+        self.qed_entry_enbAll()
         
     def qed_dsbAll(self):
         global configuration_begining
@@ -734,13 +748,15 @@ class UI(threading.Thread):
         )
         
         self.config_deduc_ed_container.config(
-            text=self.config_deduc_ed_container.cget('text').replace('(Disabled)').strip() + " (Disabled)",
+            text=self.config_deduc_ed_container.cget('text').replace('(Disabled)', '').strip() + " (Disabled)",
             fg=self.dsbAll_fg
         )
         
+        self.qed_entry_dsbAll()
+        
     def qed_entry_dsbAll(self):
         self.config_deduc_points_container.config(
-            text=self.config_deduc_points_container.cget('text').replace('(Disabled)').strip() + " (Disabled)",
+            text=self.config_deduc_points_container.cget('text').replace('(Disabled)', '').strip() + " (Disabled)",
             fg=self.dsbAll_fg
         )
         
@@ -752,7 +768,7 @@ class UI(threading.Thread):
     
     def qed_entry_enbAll(self):
         self.config_deduc_points_container.config(
-            text=self.config_deduc_points_container.cget('text').replace('(Disabled)').strip(),
+            text=self.config_deduc_points_container.cget('text').replace('(Disabled)', '').strip(),
             fg=self.theme.get('ac')
         )
         
@@ -804,7 +820,47 @@ class UI(threading.Thread):
         return
     
     def saveConfiguration(self):
-        pass
+        # All information except the two entries has been stored already;
+        # load the information from the two entries and save to dict
+        # Then OWR the file with the new data
+        
+        global configuration_begining; global configruationFilename; global apptitle; global configuration_saved
+        # Do not load configuration_begining to secondary variable or data won't be saved to the main dict
+        
+        # QSPA - DivF
+        __df = self.config_divf_entry.get()
+        
+        # QED - Deducs
+        __deducs = self.config_qed_amnt_entry.get()
+        
+        print(__df)
+        print(__deducs)
+        
+        configuration_begining[
+            QAConfig.keys_questions_divistionFactor
+        ] = __df
+        
+        configuration_begining[
+            QAConfig.keys_deduction_perPoint
+        ] = __deducs
+        
+        # Convert dict to JSON
+        __save = json.dumps(configuration_begining, indent=4)
+        
+        # Save the data
+        __IOInst = IO(configruationFilename, append=False)
+        __IOInst.saveData(
+            __save
+        )
+        
+        configuration_saved = configuration_begining
+        
+        tkmsb.showinfo(
+            apptitle,
+            'Saved Configuration Information Successfully'
+        )
+        
+        return
     
     # Logic Functions 
     
@@ -1004,6 +1060,12 @@ def loadConfiguration() -> dict:
     
     return _dict
 
+def conf_saved() -> bool:
+    global configuration_begining
+    global configuration_saved
+    
+    return configuration_saved == configuration_begining
+
 def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=False) -> dict:
     debug(f"Refference ::: {reference}")
 
@@ -1065,5 +1127,10 @@ if type(configuration_begining) is not dict:
     )
 
 debug(f"Configuraion Loaded: {configuration_begining}")
+configuration_saved = configuration_begining
+
+if not configuration_begining.get(QAConfig.keys_inDist):
+    apptitle += " (Experimental Version)"
+    tkmsb.showwarning(apptitle, f"Warning: The following application has been marked as 'Experimental' and thus may act in an unstable manner.\n\nApplication By: Geetansh Gautam, Coding Made Fun")
 
 UI()
