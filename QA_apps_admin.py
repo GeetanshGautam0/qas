@@ -17,6 +17,7 @@ import threading, sys, os, shutil, traceback, json
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
+from tkinter import filedialog as tkfldl
 
 # Globals
 QAS_encoding = 'utf-32'
@@ -207,28 +208,49 @@ class UI(threading.Thread):
 
         # Screen 1 (Config)
         self.config_mainContainer = tk.LabelFrame(self.configurationScreen)
-
         self.config_allowCustomConfig_container = tk.LabelFrame(self.config_mainContainer)
-
         self.config_qs_pa_container = tk.LabelFrame(self.config_mainContainer)
         self.config_qs_divF_container = tk.LabelFrame(self.config_qs_pa_container)
-
         self.config_deduc_ed_container = tk.LabelFrame(self.config_mainContainer)
         self.config_deduc_points_container = tk.LabelFrame(self.config_deduc_ed_container)
 
         # Screen 1 (Configuration) Elements
         self.config_acc_enbButton = tk.Button(self.config_allowCustomConfig_container)
         self.config_acc_dsbButton = tk.Button(self.config_allowCustomConfig_container)
-        
         self.config_qspa_partButton = tk.Button(self.config_qs_pa_container)
         self.config_qspa_allButton = tk.Button(self.config_qs_pa_container)
         self.config_divf_entry = tk.Entry(self.config_qs_divF_container)
-        
         self.config_qed_enb = tk.Button(self.config_deduc_ed_container)
         self.config_qed_dsb = tk.Button(self.config_deduc_ed_container)
         self.config_qed_amnt_entry = tk.Entry(self.config_deduc_points_container)
-        
         self.save_configuration_button = tk.Button(self.config_mainContainer)
+        
+        # Screen 2 (IO) Elements
+        self.io_ie_frame = tk.LabelFrame(self.IOScreen)
+        self.io_ie_importButton = tk.Button(self.io_ie_frame)
+        self.io_ie_exportButton = tk.Button(self.io_ie_frame)
+        self.io_ie_exportScoresButton = tk.Button(self.io_ie_frame)
+        
+        self.io_ie_checkContainer = tk.LabelFrame(self.IOScreen)
+        self.io_ie_cc_invisCont_left = tk.LabelFrame(self.io_ie_checkContainer)
+        self.io_ie_cc_invisCont_right = tk.LabelFrame(self.io_ie_checkContainer)
+        
+        self.io_ie_ICToggle = tk.Button(self.io_ie_cc_invisCont_left)
+        self.io_ie_IQToggle = tk.Button(self.io_ie_cc_invisCont_left)
+        self.io_ie_ISToggle = tk.Button(self.io_ie_cc_invisCont_left)
+        
+        self.io_ie_import_selectedFileLbl = tk.Label(self.io_ie_cc_invisCont_right)
+        self.io_ie_importCommitButton = tk.Button(self.io_ie_cc_invisCont_right)
+        
+        self.io_imConf = False
+        self.io_imQs = False
+        self.io_imSks = False
+        
+        self.io_valFile_c = False
+        self.io_valFile_s = False
+        self.io_valFile_q = False
+        
+        self.io_import_fn = None
         
         # Global
         self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
@@ -252,13 +274,19 @@ class UI(threading.Thread):
 
         self.sc_index_mapping: dict = {
             0: self.CONFIG_SCREEN,
-            1: self.SCORES_SCREEN,
-            2: self.IO_SCREEN,
-            3: self.RUN_SCREEN
+            1: self.IO_SCREEN,
+            2: self.RUN_SCREEN,
+            3: self.SCORES_SCREEN
         }
         
         self.scName: str = self.CONFIG_SCREEN  # Sets the first screen
-        
+
+        self.IO_QSIMPORT_KEY = "<%%QAS--QUESTIONS--IMPORT--%%>"
+        self.IO_CONFIMPORT_KEY = "<%%QAS-CONFIGURATION--IMPORT--%%>"
+        self.IO_SCIMPORT_KEY = "<%%QAS-SCORES--IMPORT--%%>"
+
+        self.IO_DIVEND_KEY = "<%%QAS-IMPORT-END_DIV%%>"
+
         # Theme
         self.theme = QATheme.Get().get('theme')
         
@@ -374,18 +402,47 @@ class UI(threading.Thread):
             self.config_deduc_points_container
         ])
         
-        # Event binding
-        # self.configurationScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
-        # self.runScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
-        # self.IOScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
-        # self.scoresScreen.bind(f"<<NotebookTabChanged>>", self.tab_changed)
+        # IO Screen
         
-        self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
+        IOBTNs = [
+            self.io_ie_importButton,
+            self.io_ie_exportButton,
+            self.io_ie_ICToggle,
+            self.io_ie_IQToggle,
+            self.io_ie_ISToggle,
+            self.io_ie_importCommitButton,
+            self.io_ie_exportScoresButton
+        ]; IOLBLFs = [
+            self.io_ie_frame,
+            self.io_ie_checkContainer,
+            self.io_ie_import_selectedFileLbl
+        ]
+        
+        self.update_btn.extend(IOBTNs)
+        
+        for i in IOBTNs:
+            addFontInst(self, i, (self.theme.get('font'), self.theme.get('btn_fsize')))     
+        
+        self.update_lbl.extend(IOLBLFs)
+        
+        for i in IOLBLFs:
+            addFontInst(self, i, (self.theme.get('font'), 10))
+        
+        self.update_accent_fg.extend([
+            self.io_ie_frame,
+            self.io_ie_checkContainer
+        ])
+
+        addFontInst(self, self.io_ie_import_selectedFileLbl, (self.theme.get('font'), self.theme.get('fsize_para')))
+
+        # Event binding
+        # self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         
         # last things
         self.update_ui() # Sets the elements
         self.update_theme() # Sets the theme
-        self.setConfigStates() # Set the states
+        self.setConfigStates() # Set the states (Conf)
+        self.conf_io_btns() # Set the states (IO)
     
     def safe_close(self):
         global apptitle
@@ -398,7 +455,7 @@ class UI(threading.Thread):
             
         application_exit(0)
     
-    def tab_changed(self, envent):
+    def tab_changed(self, event):
         # Framing (oof)
         curr_name = self.getFrameName() # Capture frame
         print(curr_name)
@@ -453,14 +510,19 @@ class UI(threading.Thread):
         # Screen specific
         self.getFrameName() # Set the screen name
         
-        if self.scName == self.CONFIG_SCREEN: self.setup_config_screen()
+        # if self.scName == self.CONFIG_SCREEN: self.setup_config_screen()
             
-        elif self.scName == self.IO_SCREEN: self.setup_io_screen()
+        # elif self.scName == self.IO_SCREEN: self.setup_io_screen()
             
-        elif self.scName == self.RUN_SCREEN: self.setup_run_screen()
+        # elif self.scName == self.RUN_SCREEN: self.setup_run_screen()
             
-        elif self.scName == self.SCORES_SCREEN: self.setup_scores_screen()
-    
+        # elif self.scName == self.SCORES_SCREEN: self.setup_scores_screen()
+
+        self.setup_config_screen()
+        self.setup_io_screen()
+        self.setup_run_screen()
+        self.setup_scores_screen()
+        
     def all_screen_widgets(self):
         _config = self.configurationScreen.winfo_children()
         _run = self.runScreen.winfo_children()
@@ -491,7 +553,6 @@ class UI(threading.Thread):
             except: continue
     
     def setup_config_screen(self):
-        self.clearUI()
         
         # The actual setup
         # Theming has been taken care of already
@@ -629,23 +690,99 @@ class UI(threading.Thread):
         self.save_configuration_button.pack(fill=tk.BOTH, expand=True, padx=padx,pady=pady)
         
     def setup_run_screen(self): # TODO: Make the screen code
-        self.clearUI()
+        pass
         
         # The actual setup
         # Theming has been taken care of already
         # Simply commit to the structure
     
-    def setup_io_screen(self) :# TODO: Make the screen code
-        self.clearUI()
-        
-        tk.Label(self.IOScreen, text="Hello!").pack(fill=tk.BOTH, expand=True)
+    def setup_io_screen(self):
+        # sself.clearUI()
         
         # The actual setup
         # Theming has been taken care of already
         # Simply commit to the structure
+        
+        self.io_ie_frame.config(text="Select File")
+        self.io_ie_frame.pack(fill=tk.BOTH, expand=True, padx=int(self.padX/2), pady=(self.padY/2, self.padY/4))
+        
+        self.io_ie_importButton.config(text="Import File", command=self.io_ie_import)
+        self.io_ie_importButton.pack(
+            fill=tk.BOTH, 
+            expand=True, 
+            side=tk.LEFT, 
+            padx=(int(self.padX/2), int(self.padX/4)),
+            pady=int(self.padY/2)
+        )
+        
+        self.io_ie_exportButton.config(text="Export File", command=self.io_ie_export)
+        self.io_ie_exportButton.pack(
+            fill=tk.BOTH, 
+            expand=True, 
+            side=tk.RIGHT, 
+            padx=(int(self.padX/2), int(self.padX/4)),
+            pady=int(self.padY/2),
+        )
+
+        self.io_ie_exportScoresButton.config(text="Export Scores", command=self.io_ie_exportScores)
+        self.io_ie_exportScoresButton.pack(
+            fill=tk.BOTH,
+            expand=True,
+            side=tk.RIGHT,
+            padx=(int(self.padX / 2), int(self.padX / 4)),
+            pady=int(self.padY / 2),
+        )
+        
+        self.io_ie_checkContainer.config(text="Import Options")
+        self.io_ie_checkContainer.pack(fill=tk.BOTH, expand=True, padx=int(self.padX/2), pady=(self.padY/4, self.padY/2))
+        
+        self.io_ie_cc_invisCont_left.config(
+            bg=self.theme.get('bg'),
+            fg=self.theme.get('fg'),
+            bd=0
+        )
+        self.io_ie_cc_invisCont_left.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        
+        self.io_ie_cc_invisCont_right.config(
+            bg=self.theme.get('bg'),
+            fg=self.theme.get('fg'),
+            bd=0
+        )
+        self.io_ie_cc_invisCont_right.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
+        
+        self.io_ie_ICToggle.config(
+            text="Import Configuration",
+            command=self.ioConf
+        )
+        self.io_ie_ICToggle.pack(fill=tk.BOTH, expand=True, padx=(int(self.padX/2), int(self.padX/4)), pady=int(self.padY/2))
+        
+        self.io_ie_IQToggle.config(
+            text="Import Questions",
+            command=self.ioQs
+        )
+        self.io_ie_IQToggle.pack(fill=tk.BOTH, expand=True, padx=(int(self.padX/2), int(self.padX/4)), pady=int(self.padY/2))
+        
+        self.io_ie_ISToggle.config(
+            text="Import Scores",
+            command=self.ioSks
+        )
+        self.io_ie_ISToggle.pack(fill=tk.BOTH, expand=True, padx=(int(self.padX/2), int(self.padX/4)), pady=int(self.padY/2))
+        
+        self.io_ie_import_selectedFileLbl.config(
+            text="No File Selected",
+            wraplength=450
+        )
+        self.update_accent_fg.append(self.io_ie_import_selectedFileLbl)
+        self.io_ie_import_selectedFileLbl.pack(fill=tk.BOTH, expand=True, padx=(int(self.padX/4), int(self.padX/2)), pady=int(self.padY/2))
+        
+        self.io_ie_importCommitButton.config(
+            text="Import Selected Data",
+            command=self.io_commitImport
+        )
+        self.io_ie_importCommitButton.pack(fill=tk.BOTH, expand=True, padx=(int(self.padX/4), int(self.padX/2)), pady=int(self.padY/2))
     
     def setup_scores_screen(self): # TODO: Make the screen code
-        self.clearUI()
+        pass
         
         # The actual setup
         # Theming has been taken care of already
@@ -914,9 +1051,6 @@ class UI(threading.Thread):
         # QED - Deducs
         __deducs = self.config_qed_amnt_entry.get()
         
-        print(__df)
-        print(__deducs)
-        
         configuration_begining[
             QAConfig.keys_questions_divistionFactor
         ] = __df
@@ -942,9 +1076,370 @@ class UI(threading.Thread):
         )
         
         return
+
+    def io_ie_exportScores(self):
+        pass
+
+    def io_ie_import(self):
+        self.conf_io_btns(True)
+        self.io_import_fn = None
+
+        fn = tkfldl.askopenfilename(
+            defaultextension=f".{QAInfo.export_file_extension}",
+            filetypes=((f"QA Export (*.{QAInfo.export_file_extension})", f"*.{QAInfo.export_file_extension}"), )
+        )
+
+        if not type(fn) is str: fn = None
+        elif fn.strip() == '': fn = None
+        elif not len(fn.split('.')) == 2:
+            tkmsb.showerror(apptitle, f"Unable to deduce file extension.")
+            fn = None
+        elif not fn.split('.')[-1] == QAInfo.export_file_extension:
+            tkmsb.showerror(apptitle, f"Invalid File type '.{fn.split('.')[-1]}'")
+            fn = None
+        elif not os.path.exists(fn):
+            tkmsb.showerror(apptitle, f"(Unusual) Error - Import::IO::1k91:: File Not Found")
+            fn = None
+
+        debug(f"IO::1070 >> Import filename = {fn}")
+
+        if fn is None:
+            self.io_ie_import_selectedFileLbl.config(text="No File Selected")
+            return
+
+        self.io_ie_import_selectedFileLbl.config(text=f"Selected File: {fn}")
+
+        __ioInst = IO(fn)
+        raw = __ioInst.autoLoad()
+        debug(f"Raw import: {raw}")
+
+        vers = QAInfo.fileIO_version_info_header in raw; versionfound = "<No Version Data>"
+
+        if vers:
+            for i in raw.split('\n'):
+                if QAInfo.fileIO_version_info_header in i:
+                    versData = i.replace(QAInfo.fileIO_version_info_header, '').strip().lower()
+
+                    if len(versData) <= 0:
+                        vers = False
+                        break
+
+                    versData = QATypeConv.convert(
+                        str(
+                            QATypeConv.convert(versData, float, returnDataOnly=True)
+                        ).split('.')[0].strip().lower(),
+                        int,
+                        returnDataOnly=True
+                    )
+
+                    debug(f"IO_IMPORT::1127 - Version Data = {versData}")
+
+                    valV = QATypeConv.convert(
+                        str(QAInfo.versionData[QAInfo.VFKeys['v']]).split('.')[0].strip().lower(),
+                        int,
+                        returnDataOnly=True
+                    )
+
+                    versionfound = f'{versData}.x'
+
+                    if versData == valV: vers = True
+                    else: vers = False
+
+                    break
+
+        if not vers:
+            debug(f"Invalid version; raising error")
+            self.io_ie_import_selectedFileLbl.config(text=f"Selected File: {fn} (Invalid Version Information)")
+            tkmsb.showerror(apptitle, f"Invalid File Version Information; Cannot Load File (File compatible with version(s) {versionfound})")
+            return
+
+        __num = 0
+        __lst = []
+
+        for i in raw.split('\n'):
+            if i.strip() == self.IO_DIVEND_KEY: __lst.append('div_end')
+            elif i.strip() == self.IO_SCIMPORT_KEY: __lst.append('s')
+            elif i.strip() == self.IO_QSIMPORT_KEY: __lst.append('q')
+            elif i.strip() == self.IO_CONFIMPORT_KEY: __lst.append('c')
+
+        if len(__lst) % 2 == 0:
+            __num = int(len(__lst)/2)
+            debug(f"IO::IMPORT::1138:: Clean Div -- __num = {__num}")
+
+        else: # Bruh
+            debug(f"IO::IMPORT::1141:: Cleaning Loaded Data")
+
+            pops = []
+            for i in __lst:
+                On = False; ind = 0
+
+                if i == 'div_end' and not On:
+                    if not __lst.index(i)-1 in pops: pops.append(__lst.index(i)-1)
+
+                elif i == 's' or i == 'c' or i == 'q':
+                    if not On:
+                        On = True
+                        ind = __lst.index(i)-1
+
+                    else:
+                        if not ind in pops: pops.append(ind)
+                        ind = __lst.index(i)-1
+
+                elif i == 'div_end' and On:
+                    On = False
+
+            pops = pops[::-1]
+
+            debug(f"IO::IMPORT::1163:: Popping Indexes {pops} from list {__lst}")
+            for i in pops: debug(f"To pop: {__lst[i]}")
+            
+            for i in pops:
+                __lst.pop(i)
+
+            debug(f"IO::IMPORT::1168:: Post-pop:: {__lst}")
+
+            __num = int(len(__lst)/2)
+
+        if __num > 0:
+
+            self.conf_io_btns(True)
+
+            if 'c' in __lst:
+                self.io_valFile_c = True
+
+            if 's' in __lst:
+                self.io_valFile_s = True
+
+            if 'q' in __lst:
+                self.io_valFile_q = True
+
+            self.conf_io_btns(False)
+            self.io_import_fn = fn
+
+            tkmsb.showinfo(apptitle, f'Found {__num} valid datasets in the file; the appropriate selectors are now enabled')
+
+        else:
+            code = "(No Data Found)"
+            self.io_ie_import_selectedFileLbl.config(
+                text=self.io_ie_import_selectedFileLbl.cget('text').replace(code, '').strip() + f" {code}"
+            )
+
+            tkmsb.showerror(apptitle, f"File type is valid; but no (un-corrupted) data could be decoded from the file.")
+
+        return
     
+    def io_ie_export(self): # TODO: setup
+        pass
+    
+    def ioConf(self, inv: bool = True):
+        if inv: self.io_imConf = not self.io_imConf
+        self.io_ie_ICToggle.config(
+            state=tk.NORMAL,
+            fg=self.theme.get('hg') if self.io_imConf else self.theme.get('fg'),
+            bg=self.theme.get('ac') if self.io_imConf else self.theme.get('bg'),
+            text=(self.io_ie_ICToggle.cget('text').replace('\u2713', '').strip() + (' \u2713' if self.io_imConf else '')).strip()
+        )
+    
+    def ioQs(self, inv: bool = True):
+        if inv: self.io_imQs = not self.io_imQs
+        self.io_ie_IQToggle.config(
+            state=tk.NORMAL,
+            fg=self.theme.get('hg') if self.io_imQs else self.theme.get('fg'),
+            bg=self.theme.get('ac') if self.io_imQs else self.theme.get('bg'),
+            text=(self.io_ie_IQToggle.cget('text').replace('\u2713', '').strip() + (' \u2713' if self.io_imQs else '')).strip()
+        )
+    
+    def ioSks(self, inv: bool = True):
+        if inv: self.io_imSks = not self.io_imSks
+        self.io_ie_ISToggle.config(
+            state=tk.NORMAL,
+            fg=self.theme.get('hg') if self.io_imSks else self.theme.get('fg'),
+            bg=self.theme.get('ac') if self.io_imSks else self.theme.get('bg'),
+            text=(self.io_ie_ISToggle.cget('text').replace('\u2713', '').strip() + (' \u2713' if self.io_imSks else '')).strip()
+        )
+    
+    def io_commitImport(self):
+        global configuration_begining
+        global configuration_saved
+
+        if self.io_import_fn is None or type(self.io_import_fn) is not str:
+            tkmsb.showerror(apptitle, f"No valid file selected")
+            return
+
+        C = self.io_imConf and self.io_valFile_c and type(self.io_import_fn) is str
+        S = self.io_imSks and self.io_valFile_s and type(self.io_import_fn) is str
+        Q = self.io_imQs and self.io_valFile_q and type(self.io_import_fn) is str
+
+        if not C and not S and not Q:
+            tkmsb.showerror(apptitle, f"No import options selected (or an invalid file was selcted)")
+            return
+
+        __raw = IO(self.io_import_fn).autoLoad().split("\n")
+
+        if C:
+            # Finding the Conf
+            conf_ind = [None, None] # Indexes (start > end)
+            on = False
+            for i in __raw:
+                if self.IO_CONFIMPORT_KEY in i:
+                    on = True
+                    conf_ind[0] = __raw.index(i)
+
+                if on and self.IO_DIVEND_KEY in i:
+                    on = False
+                    conf_ind[1] = __raw.index(i)
+                    break
+
+            __str = __raw[conf_ind[0]:conf_ind[1]]
+
+            # Basic Conf Loading
+            conf_raw = {}
+            for i in __str:
+                if self.IO_CONFIMPORT_KEY not in i and self.IO_DIVEND_KEY not in i:
+                    i = i.strip()
+                    k = i.split(' ')[0].strip(); v = i.replace(k, '').strip()
+
+                    if len(k.strip()) > 0 and len(v.strip()) > 0:
+                        conf_raw[k.strip()] = v.strip()
+
+            # Validating the Conf
+            val = True
+            conf_conv = {}
+
+            for i in QAConfig.default_configuration.keys():
+                if i not in conf_raw:
+                    val = False
+                    break
+
+            if val:
+                pops = []
+
+                for i in conf_raw:
+                    if i not in QAConfig.default_configuration.keys():
+                        pops.append(i) # Remove un necessary information.
+
+                    else:
+                        try:
+                            tmp = QATypeConv.convert(
+                                conf_raw[i].strip(),
+                                type(QAConfig.default_configuration[i]),
+                                returnDataOnly=True
+                            )
+                            debug(f"Converted '{conf_raw[i].strip()}' to '{tmp}' ({type(conf_raw[i])} to {type(QAConfig.default_configuration[i])})")
+                            conf_conv[i] = tmp
+
+                        except Exception as E1:
+                            if type(QAConfig.default_configuration[i]) is bool:
+                                try:
+                                    tmp = conf_raw[i].strip().lower() == '0' or conf_raw[i].strip().lower() == 'true'
+
+                                    debug(
+                                        f"Converted '{conf_raw[i].strip()}' to '{tmp}' ({type(conf_raw[i])} to {type(QAConfig.default_configuration[i])})")
+
+                                    conf_conv[i] = tmp
+
+                                except Exception as E:
+                                    debug(f"Failed to convert entry for '{i}' (error = {E1} (og) {E} (new))")
+
+                                    val = False
+                                    break
+
+                if val:
+                    for i in pops:
+                        conf_raw.pop(i)
+                        conf_conv.pop(i)
+
+            if not val:
+                self.conf_io_btns(True)
+                self.io_ie_import_selectedFileLbl.config(
+                    text=f"{self.io_import_fn} (Import Terminated)"
+                )
+                tkmsb.showerror(apptitle, f"Invalid Configuration Found; for security reasons, the remaining importing process will be terminated.")
+
+                return
+
+            # Set
+            configuration_begining = configuration_saved = conf_conv
+            __save = json.dumps(conf_conv, indent=4)
+
+            # Write
+            __Inst = IO("{}\\{}".format(
+                QAInfo.appdataLoc.strip('\\').strip(),
+                QAInfo.confFilename.strip('\\').strip()
+            ), append=False)
+
+            __Inst.saveData(__save)
+
+        if S:
+            pass
+
+        if Q:
+            append = tkmsb.askyesno(apptitle, f'Do you want to append the new questions?\n\nYes = Append\nNo = Overwrite')
+
+            if append:
+                pass
+
+            else:
+                pass
+
+        tkmsb.showinfo(
+            apptitle,
+            "Successfully inserted requested information."
+        )
+
+        return
+
     # Logic Functions 
-    
+
+    def conf_io_btns(self, reset=False):
+        # Reset
+        if reset:
+            self.io_imSks = False; self.io_imQs = False; self.io_imConf = False
+            self.io_valFile_q = False
+            self.io_valFile_s = False
+            self.io_valFile_c = False
+
+        # Configuration Import Button
+        if self.io_valFile_c:
+            self.ioConf(False)
+        else:
+            self.ioConf(False)
+            self.io_ie_ICToggle.config(
+                state=tk.DISABLED,
+                disabledforeground=self.dsbAll_fg
+            )
+
+        # Questions Import Button
+        if self.io_valFile_q:
+            self.ioQs(False)
+        else:
+            self.ioQs(False)
+            self.io_ie_IQToggle.config(
+                state=tk.DISABLED,
+                disabledforeground=self.dsbAll_fg
+            )
+
+        # Scores Import Button
+        if self.io_valFile_s:
+            self.ioSks(False)
+        else:
+            self.ioSks(False)
+            self.io_ie_ISToggle.config(
+                state=tk.DISABLED,
+                disabledforeground=self.dsbAll_fg
+            )
+
+        # Import Data
+        if not self.io_valFile_s and not self.io_valFile_c and not self.io_valFile_q:
+            self.io_ie_importCommitButton.config(
+                state=tk.DISABLED,
+                disabledforeground=self.dsbAll_fg
+            )
+        else:
+            self.io_ie_importCommitButton.config(
+                state=tk.NORMAL
+            )
+
     def setConfigStates(self):
         global configuration_begining
         conf = configuration_begining

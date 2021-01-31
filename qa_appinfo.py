@@ -124,3 +124,13 @@ theme_presets: dict = {
     'Default': 'TU_DEFAULT.qaFile',
     'High Contrast': 'TU_HIGH_CONTRAST.qaFile'
 }; theme_presets_foldername = 'TU_THEME_PRESETS'
+
+export_file_extension = "qa_export"
+
+fileIO_version_info_header = "<<QA::COMPATABILITY::FILE_VERSION>> :: "
+
+QuestionSeperators = {
+    'N': '<<%%QA::0&000001%%>>', # Newline
+    'S': '<<%%QA::0&000002%%>>', # Space
+    'QA': '<<%%QA::0&000003%%>>' # Question Answer
+}

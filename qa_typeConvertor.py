@@ -1132,7 +1132,6 @@ def org_flags(mapper, categories, kwargs, key, glKey) -> dict:
 
     # Step 3: Find the flags and plain
     for i in app_fs:
-        print(f"\n<<out[{app_fs[i]} = '{kwargs.get(i)[0]}'>>")
         out[app_fs[i]] = kwargs.get(i)[0]
 
     # print(f"out={out}\n\n\n")
