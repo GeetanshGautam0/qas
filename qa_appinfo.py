@@ -130,7 +130,12 @@ export_file_extension = "qa_export"
 fileIO_version_info_header = "<<QA::COMPATABILITY::FILE_VERSION>> :: "
 
 QuestionSeperators = {
-    'N': '<<%%QA::0&000001%%>>', # Newline
+    'N': '<<%%QA::0&000001%%>>', # Newline (In question, questions are seperated by \n)
     'S': '<<%%QA::0&000002%%>>', # Space
     'QA': '<<%%QA::0&000003%%>>' # Question Answer
+}
+
+questions_file_info = {
+    'enc': True,
+    'encoding': 'utf-16'
 }

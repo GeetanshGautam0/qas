@@ -1174,32 +1174,43 @@ class UI(threading.Thread):
         else: # Bruh
             debug(f"IO::IMPORT::1141:: Cleaning Loaded Data")
 
-            pops = []
-            for i in __lst:
-                On = False; ind = 0
+            clean = []
 
-                if i == 'div_end' and not On:
-                    if not __lst.index(i)-1 in pops: pops.append(__lst.index(i)-1)
+            On = False; observing = ''
 
-                elif i == 's' or i == 'c' or i == 'q':
-                    if not On:
-                        On = True
-                        ind = __lst.index(i)-1
+            for i in __lst: # Simplified, smarter
+                if i == 'div_end' and not On: continue
+                elif i == 'c' or i == 'q' or i == 's':
+                    On = True
+                    observing = i
+                elif i == 'div_end' and On: clean.extend([observing, 'div_end'])
 
-                    else:
-                        if not ind in pops: pops.append(ind)
-                        ind = __lst.index(i)-1
+            __lst = clean
 
-                elif i == 'div_end' and On:
-                    On = False
+            #     On = False; ind = 0
+            #
+            #     if i == 'div_end' and not On:
+            #         if not __lst.index(i)-1 in pops: pops.append(__lst.index(i)-1)
+            #
+            #     elif i == 's' or i == 'c' or i == 'q':
+            #         if not On:
+            #             On = True
+            #             ind = __lst.index(i)-1
+            #
+            #         else:
+            #             if not ind in pops: pops.append(ind)
+            #             ind = __lst.index(i)-1
+            #
+            #     elif i == 'div_end' and On:
+            #         On = False
 
-            pops = pops[::-1]
-
-            debug(f"IO::IMPORT::1163:: Popping Indexes {pops} from list {__lst}")
-            for i in pops: debug(f"To pop: {__lst[i]}")
-            
-            for i in pops:
-                __lst.pop(i)
+            # pops = pops[::-1]
+            #
+            # debug(f"IO::IMPORT::1163:: Popping Indexes {pops} from list {__lst}")
+            # for i in pops: debug(f"To pop: {__lst[i]}")
+            #
+            # for i in pops:
+            #     __lst.pop(i)
 
             debug(f"IO::IMPORT::1168:: Post-pop:: {__lst}")
 
@@ -1376,20 +1387,128 @@ class UI(threading.Thread):
             __Inst.saveData(__save)
 
         if S:
-            pass
+            tkmsb.showinfo(apptitle, f"Unsupported feature; please wait until this feature has been addded.")
 
         if Q:
-            append = tkmsb.askyesno(apptitle, f'Do you want to append the new questions?\n\nYes = Append\nNo = Overwrite')
+            # Finding the Questions
+            qs_ind = [None, None]  # Indexes (start > end)
+            on = False
+            for i in __raw:
+                if self.IO_QSIMPORT_KEY in i:
+                    on = True
+                    qs_ind[0] = __raw.index(i)
 
-            if append:
-                pass
+                if on and self.IO_DIVEND_KEY in i:
+                    on = False
+                    qs_ind[1] = __raw.index(i)
+                    break
 
-            else:
-                pass
+            __str = __raw[qs_ind[0]:qs_ind[1]]
+
+            # Basic Conf Loading
+            qs_raw = {}
+            for i in __str:
+                if self.IO_QSIMPORT_KEY not in i and self.IO_DIVEND_KEY not in i:
+                    i = i.strip()
+                    k = i.split(QAInfo.QuestionSeperators['QA'])[0].strip()
+                    v = i.replace(k, '').replace(QAInfo.QuestionSeperators['QA'], '').strip()
+
+                    if len(k.strip()) > 0 and len(v.strip()) > 0:
+                        qs_raw[k.strip()] = v.strip()
+
+            val1 = len(qs_raw) > 0; debug(f"IMPORT::1413 :: Questions read (raw) :: {qs_raw} :: Minimum condition met? {val1}")
+
+            if not val1:
+                tkmsb.showerror(apptitle, f"Unable to read any questions from the file")
+
+            if val1:
+                # Continue the 'Q' routine
+
+                qs_cleaned = qs_raw; pops = []
+                for i in qs_raw:
+                    if len(i.strip()) <= 0: pops.append(i)
+
+                for i in pops: qs_cleaned.pop(i)
+
+                append = tkmsb.askyesno(apptitle, f'Do you want to append the new questions?\n\nYes = Append\nNo = Overwrite')
+
+                if append:
+                    og: list = IO(
+                        "{}\\{}".format(
+                            QAInfo.appdataLoc.strip("\\").strip(),
+                            QAInfo.qasFilename.strip("\\").strip()
+                        ),
+                        encrypt=QAInfo.questions_file_info.get('enc'),
+                        encoding=QAInfo.questions_file_info.get('encoding')
+                    ).autoLoad().split(
+                       "\n"
+                    )
+
+                    # QAInfo.QuestionSeperators.get('N') is for IN question newlines, questions are still separated by \n
+
+                    debug(og)
+
+                    og_dict = {}
+
+                    for i in og:
+                        k = i.split(QAInfo.QuestionSeperators.get('QA'))[0].strip()
+                        v = i.replace(k, '').replace(QAInfo.QuestionSeperators.get('QA'), '').strip()
+
+                        if len(k) > 0 and len(v) > 0:
+                            og_dict[k] = v
+
+                    __save_plain_str = ''
+                    questions = og_dict; questions.update(qs_cleaned)
+
+                    debug(f"Saving the following dictionary (questions): {questions}")
+
+                    _sps = "" # Save - Plain String
+
+                    for i in questions:
+                        q = i.strip()
+                        a = questions[i].strip()
+
+                        _sps += f"{q}{QAInfo.QuestionSeperators.get('QA')}{a}\n" # Template
+
+                    debug(f"Formulated (plain text) questions str: {_sps}")
+
+                    IO(
+                        "{}\\{}".format(
+                            QAInfo.appdataLoc.strip("\\").strip(),
+                            QAInfo.qasFilename.strip("\\").strip()
+                        ),
+                        encrypt=QAInfo.questions_file_info.get('enc'),
+                        encoding=QAInfo.questions_file_info.get('encoding')
+                    ).saveData(_sps)
+
+                else:
+                    __save_plain_str = ''
+                    questions = qs_cleaned
+
+                    debug(f"Saving the following dictionary (questions): {questions}")
+
+                    _sps = ""  # Save - Plain String
+
+                    for i in questions:
+                        q = i.strip()
+                        a = questions[i].strip()
+
+                        _sps += f"{q}{QAInfo.QuestionSeperators.get('QA')}{a}\n"  # Template
+
+                    debug(f"Formulated (plain text) questions str: {_sps}")
+
+                    IO(
+                        "{}\\{}".format(
+                            QAInfo.appdataLoc.strip("\\").strip(),
+                            QAInfo.qasFilename.strip("\\").strip()
+                        ),
+                        encrypt=QAInfo.questions_file_info.get('enc'),
+                        encoding=QAInfo.questions_file_info.get('encoding')
+                    ).saveData(_sps)
 
         tkmsb.showinfo(
             apptitle,
-            "Successfully inserted requested information."
+            "Successfully inserted (valid) requested information."
         )
 
         return
@@ -1493,7 +1612,6 @@ class IO:  # Object Oriented like FileIOHandler
     def saveData(self, Data, **kwargs):  # Secure Save
         self.flags = flags_handler(self.flags, kwargs)  # Same flags
         flags = dc_lst(self.flags, 0)
-        debug(f"1")
         QAFileIO.save(
             self.object,
             Data,
@@ -1707,6 +1825,8 @@ if type(configuration_begining) is not dict:
         exitCode=f"QAErrors.ConfigurationError"
     )
 
+# Pre-boot logic
+
 debug(f"Configuraion Loaded: {configuration_begining}")
 configuration_saved = configuration_begining
 
@@ -1715,5 +1835,7 @@ if not configuration_begining.get(QAConfig.keys_inDist):
     tkmsb.showwarning(apptitle, f"Warning: The following application has been marked as 'Experimental' and thus may act in an unstable manner.\n\nApplication By: Geetansh Gautam, Coding Made Fun")
 
 JSON().boot_check() # Boot checks (global_nv_flags_fn file flags run these checks...)
+
+# Run Boot Command (UI)
 
 UI()

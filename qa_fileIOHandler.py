@@ -160,9 +160,18 @@ class ENC:
         # Step 5: Convert to the right encoding and owr file with __final
         __save = ''.encode(self.encoding)
         for i in __final:
-            __save += "\n".encode(self.encoding) if len(__final) > 1 else ''.encode(self.encoding)+ \
-                      BYTES_OPS().reencode(i, self.encoding)
+            # __save += "\n".encode(self.encoding) if len(__final) > 1 else ''.encode(self.encoding)+ \
+            #           BYTES_OPS().reencode(i, self.encoding)
+
+            sep = "\n".encode(self.encoding) if len(__final) > 1 else ''.encode(self.encoding)
+            data = BYTES_OPS().reencode(i, self.encoding)
+
+            __save += sep
+            __save += data
+
             __save = __save.strip()
+
+            print(f"4.4.2 :: {sep} {data} {__save}")
 
         debug(f"ENC.__preEnc <<5.1>> for ID <<{self.object.id}>> - Created to save data <<{__save}>>")
 
@@ -287,7 +296,7 @@ class FILEIO:
 
         return _raw
 
-    def read_file(self):
+    def read_file(self) -> str:
         try:
             _raw = ENC(self.object).decrypt()
         except:
@@ -490,7 +499,6 @@ def decrypt(Object: object, **kwargs) -> bytes:
     return _res
 
 def save(Object: object, data: any, **kwargs):
-    debug(f"2")
     debug(f"Saving data (see end) to file (Obj ID = {Object.id}); Data = {data}")
     
     flags = {
@@ -499,8 +507,7 @@ def save(Object: object, data: any, **kwargs):
         'appendSeperator': ['\n', (str, bytes)],
         'encoding': ['utf-8', (str, )]
     }; flags = flags_handler(flags, kwargs)
-    
-    debug(f"3")
+
     # Save
     __FIOinst = FILEIO(Object)
     _as = QATypeConv.convert(flags['appendSeperator'][0], str, returnDataOnly=True)
@@ -637,9 +644,11 @@ def test_timing(path, data: str = "Hello, World!", enco = None, tms = None):
     plt.show()
 
 # path = 'testfile.txt'
-
+#
 # test_timing(path, 'Hello, World!', 'utf-32', 500)
-
+#
 # obj = create_fileIO_object(path)
-
+#
+# save(obj, "Hello, World!", encryptData=True, encoding='utf-16')
+#
 # print(read(obj))
