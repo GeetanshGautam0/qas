@@ -330,8 +330,8 @@ class UI(threading.Thread):
 
     def run(self):
         # Root
-        self.root.title(
-            f"{apptitle} - {self.sc_name_mapping.get(self.scName)}")
+        # self.root.title(
+        #     f"{apptitle} - {self.sc_name_mapping.get(self.scName)}")
         self.root.protocol("WM_DELETE_WINDOW", self.safe_close)
         
         # Notebook
@@ -436,13 +436,14 @@ class UI(threading.Thread):
         addFontInst(self, self.io_ie_import_selectedFileLbl, (self.theme.get('font'), self.theme.get('fsize_para')))
 
         # Event binding
-        # self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
+        self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         
         # last things
         self.update_ui() # Sets the elements
         self.update_theme() # Sets the theme
         self.setConfigStates() # Set the states (Conf)
         self.conf_io_btns() # Set the states (IO)
+        self.update_frame_title()
     
     def safe_close(self):
         global apptitle
@@ -458,8 +459,12 @@ class UI(threading.Thread):
     def tab_changed(self, event):
         # Framing (oof)
         curr_name = self.getFrameName() # Capture frame
-        print(curr_name)
-        
+        self.update_frame_title()
+    
+    def update_frame_title(self):
+        self.root.title(
+            f"{apptitle} - {self.sc_name_mapping.get(self.scName)}")
+    
     def getFrameName(self):
         self.scName = self.sc_index_mapping[self.screen_parent.index(self.screen_parent.select())]
         return self.scName
