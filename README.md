@@ -1,8 +1,3 @@
-<h2>Github Specific Notes</h2>
-<ul>
-  <li>The Developmental Branch and the Main Branch are VERY different. Developmental consists of all things in development; this code is the latest. Master is the branch to seek when looking for stable builds of the code.</li>
-</ul>
-
 # Quizzing Application 2.00.0x
 
 <!-- <img align="center" src="https://cdn.pixabay.com/photo/2014/05/21/19/16/the-question-mark-350170_960_720.png"> --!>
