@@ -31,9 +31,9 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <li>All files will noe be encrypted</li>
   <li>More options for administrators:</li>
   <ul>
-    <li>Language Settings (possible, but not confirmed)</li>
     <li>Allow quiz taker to see there score</li>
     <li>and more!</li>
+  </ul>
   <li>Exporting scores and other human-readable files in *.pdf</li>
   <li>Faster algorithms to make your experience smoother</li>
   <li>More code, more functions, less disk space</li>
