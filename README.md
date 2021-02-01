@@ -5,10 +5,10 @@
 The Quizzing Application Suite is a collection of python modules that come together to make a fairly powerful Quizzing Application.
 
 <p float="center">
-  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas-2.0/main/icons/admin_tools_64.png">
-  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas-2.0/main/icons/ftsra_64.png">
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/icons/quizzing_tool_64.png?raw=true">
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/icons/themer_64.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas/master/icons/admin_tools_64.png">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas/master/icons/ftsra_64.png">
+  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/icons/quizzing_tool_64.png?raw=true">
+  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/icons/themer_64.png?raw=true">
 </p>
 
 <b><h3>These include a few apps</h3></b>
