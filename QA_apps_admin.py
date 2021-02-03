@@ -12,6 +12,8 @@ import qa_quizConfig as QAConfig
 import qa_typeConvertor as QATypeConv
 import qa_errors as QAErrors
 
+import qa_onlineVersCheck as QA_OVC
+
 # Misc. Imports
 import threading, sys, os, shutil, traceback, json
 import tkinter as tk
@@ -1868,6 +1870,9 @@ if not configuration_begining.get(QAConfig.keys_inDist):
     tkmsb.showwarning(apptitle, f"Warning: The following application has been marked as 'Experimental' and thus may act in an unstable manner.\n\nApplication By: Geetansh Gautam, Coding Made Fun")
 
 JSON().boot_check() # Boot checks (global_nv_flags_fn file flags run these checks...)
+
+if not QA_OVC.check():
+    tkmsb.showwarning(apptitle, f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
 
 # Run Boot Command (UI)
 
