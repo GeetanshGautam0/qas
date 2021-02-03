@@ -200,6 +200,8 @@ class UI(threading.Thread):
         
         # Global
         self.root = tk.Tk()  # Main frame
+        self.root.withdraw()
+        
         self.screen_parent = ttk.Notebook(self.root)
         
         # Screens
@@ -335,7 +337,7 @@ class UI(threading.Thread):
         
         # Last things
         self.start()  # Start the thread
-
+        
         self.root.mainloop()  # Final thing; initiate the UI mainloop
 
     def run(self):
@@ -457,6 +459,8 @@ class UI(threading.Thread):
         self.setConfigStates() # Set the states (Conf)
         self.conf_io_btns() # Set the states (IO)
         self.update_frame_title()
+        
+        self.root.deiconify()
     
     def safe_close(self):
         global apptitle
