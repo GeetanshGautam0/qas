@@ -205,6 +205,7 @@ class UI(threading.Thread):
         self.configurationScreen = tk.Frame(self.screen_parent)
         self.scoresScreen = tk.Frame(self.screen_parent)
         self.IOScreen = tk.Frame(self.screen_parent)
+        self.questionsScreen = tk.Frame(self.screen_parent)
 
         # Screen 1 (Config)
         self.config_mainContainer = tk.LabelFrame(self.configurationScreen)
@@ -252,31 +253,38 @@ class UI(threading.Thread):
         
         self.io_import_fn = None
         
+        # Misc. Screen
+        self.misc_runBugReport = tk.Button(self.runScreen)
+        
         # Global
         self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
         self.SCORES_SCREEN = "<<%%QAS_QAAT_SCREEN-02%Scores02>>"
         self.IO_SCREEN = "<<%%QAS_QAAT_SCREEN-03%IO03>>"
         self.RUN_SCREEN = "<<%%QAS_QAAT_SCREEN-04%Run04>>"
+        self.QUESTIONS_SCREEN = "<<%%QAS_QAAT_SCREEN-05%Questions05>>"
 
         self.sc_name_mapping = {
             self.CONFIG_SCREEN: "Configuration",
             self.SCORES_SCREEN: "Scores",
             self.IO_SCREEN: "IO",
-            self.RUN_SCREEN: "Run App"
+            self.RUN_SCREEN: "Miscellaneous",
+            self.QUESTIONS_SCREEN: "Questions"
         }
         
         self.sc_inst_map = {
             self.CONFIG_SCREEN: self.configurationScreen,
             self.IO_SCREEN: self.IOScreen,
             self.RUN_SCREEN: self.runScreen,
-            self.SCORES_SCREEN: self.scoresScreen
+            self.SCORES_SCREEN: self.scoresScreen,
+            self.QUESTIONS_SCREEN: self.questionsScreen
         }
 
         self.sc_index_mapping: dict = {
             0: self.CONFIG_SCREEN,
             1: self.IO_SCREEN,
             2: self.RUN_SCREEN,
-            3: self.SCORES_SCREEN
+            3: self.SCORES_SCREEN,
+            4: self.QUESTIONS_SCREEN
         }
         
         self.scName: str = self.CONFIG_SCREEN  # Sets the first screen
@@ -341,14 +349,7 @@ class UI(threading.Thread):
             ref = self.sc_inst_map[i]
             txt = self.sc_name_mapping[i]
             self.screen_parent.add(ref, text=txt) # Keeps the order
-        
-        # Frames
-        self.update_bg.extend([
-            self.configurationScreen,
-            self.IOScreen,
-            self.runScreen,
-            self.scoresScreen
-        ])
+            self.update_bg.append(self.sc_inst_map[i]) # Frames
         
         # Elements
         def addFontInst(inst: object, element: object, font: tuple):
@@ -433,6 +434,16 @@ class UI(threading.Thread):
             self.io_ie_checkContainer
         ])
 
+        # MISC
+        MISC_BUTTONS = [
+            self.misc_runBugReport            
+        ]
+        
+        self.update_btn.extend(MISC_BUTTONS)
+        
+        for i in MISC_BUTTONS:
+            addFontInst(self, i, (self.theme.get('font'), self.theme.get('btn_fsize')))
+        
         addFontInst(self, self.io_ie_import_selectedFileLbl, (self.theme.get('font'), self.theme.get('fsize_para')))
 
         # Event binding
@@ -527,6 +538,7 @@ class UI(threading.Thread):
         self.setup_io_screen()
         self.setup_run_screen()
         self.setup_scores_screen()
+        self.setup_questions_screen()
         
     def all_screen_widgets(self):
         _config = self.configurationScreen.winfo_children()
@@ -556,6 +568,9 @@ class UI(threading.Thread):
         for i in widgets:
             try: i.pack_forget()
             except: continue
+    
+    def setup_questions_screen(self):
+        pass
     
     def setup_config_screen(self):
         
@@ -695,11 +710,24 @@ class UI(threading.Thread):
         self.save_configuration_button.pack(fill=tk.BOTH, expand=True, padx=padx,pady=pady)
         
     def setup_run_screen(self): # TODO: Make the screen code
-        pass
         
         # The actual setup
         # Theming has been taken care of already
         # Simply commit to the structure
+        
+        self.misc_runBugReport.config(
+            text="Report a Bug",
+            command=self.launch_bug_report            
+        )
+        
+        self.misc_runBugReport.pack(
+            fill=tk.BOTH,
+            expand=True,
+            padx=int(self.padX/2),
+            pady=int(self.padY/2)
+        )
+        
+        return
     
     def setup_io_screen(self):
         # sself.clearUI()
@@ -797,6 +825,11 @@ class UI(threading.Thread):
         self.thread.join(self, 0)
 
     # Button Functions (Event Handlers)
+    def launch_bug_report(self):
+        # os.system(f"{QAInfo.bugReportLink}")
+
+        os.system(f"start \"\" {QAInfo.bugReportLink}")
+        
     def acc_enb(self):
         global configuration_begining
         

@@ -139,3 +139,5 @@ questions_file_info = {
     'enc': True,
     'encoding': 'utf-16'
 }
+
+bugReportLink = "https://codingmadefun.wixsite.com/database/qas-bug-report-form"
