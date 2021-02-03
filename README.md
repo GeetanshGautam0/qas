@@ -143,9 +143,9 @@ The Quizzing Application Suite is a collection of python modules that come toget
   
 </details>
 
-<br><br><br>
-<h1>Resources</h1>
-<a src="https://codingmadefun.wixsite.com/database/qas-bug-report-form">Report a bug!</a>
+<b><h1>Resources</h1></b>
+
+[Report a Bug](https://codingmadefun.wixsite.com/database/qas-bug-report-form)
 
 ```
 URL: https://codingmadefun.wixsite.com/database/qas-bug-report-form
