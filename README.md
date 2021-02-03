@@ -142,3 +142,7 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/L1.png?raw=true">
   
 </details>
+
+<br><br><br>
+<h1>Resources</h1>
+<h3><b><a src="https://codingmadefun.wixsite.com/database/qas-bug-report-form">Report a bug!</a></b></h3>
