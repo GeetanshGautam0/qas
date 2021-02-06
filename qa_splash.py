@@ -2,10 +2,32 @@ import threading, sys, os
 from PIL import Image as PILImage, ImageTk as PILImageTk
 from tkinter import *
 import tkinter.ttk as ttk
-import qa_theme as QATheme
+# import qa_theme as QATheme
 import qa_appinfo as QAInfo
 
-theme = QATheme.Get().get('theme')
+# theme = QATheme.Get().get('theme')
+
+theme = {
+    # Credit
+    'Credit': 'Geetansh Gautam, Coding Made Fun',
+
+    # Font
+    'font': 'Century Gothic', # Font Face
+    'fsize_para': 10, # Paragraph font size
+    'sttl_base_fsize': 18, # Subtitle base font size
+    'btn_fsize': 13, # Button Font Size
+    'min_fsize': 10, # Minimum Font Size
+
+    # Color
+    'bg': '#ffffff', # Background
+    'fg': '#000000', # Main foreground
+    'ac': '#29AFE6', # Accent Color
+    'hg': '#ffffff', # Highlight color (back of fields)
+    'border_color': '#ffffff', # Border color for buttons
+
+    # Misc
+    'border': '0' # Border width
+}
 
 class Splash(Toplevel):
     def __init__(self, master=None):
@@ -26,7 +48,7 @@ class Splash(Toplevel):
         self.root = master
         self.frame = Frame(self.root)
         
-        self.geo = "700x350+{}+{}".format(
+        self.geo = "650x300+{}+{}".format(
             int(self.root.winfo_screenwidth()/2 - 350),
             int(self.root.winfo_screenheight()/2 - 250)
         )
@@ -71,7 +93,7 @@ class Splash(Toplevel):
         
         self.imgLbl.pack(fill=BOTH, expand=True, padx=5, pady=5)
         self.titleLbl.pack(fill=BOTH, expand=True)
-        self.pbar.pack(fill=BOTH, expand=1, padx=5)
+        self.pbar.pack(fill=X, expand=1)
         self.infoLbl.pack(fill=X, expand=True, padx=5)
         
     def setImg(self, img) -> None:

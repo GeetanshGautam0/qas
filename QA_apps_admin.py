@@ -45,10 +45,10 @@ def set_boot_progress(ind):
     splObj.setInfo(boot_steps[ind])
     prev = (ind - 1 ) if ind > 0 else ind
     
-    for i in range(prev*100, ind*100): # Smooth
-        for ii in range(50): pass # <0.01 sec delay for smoothness + speed
+    for i in range(prev*1000, ind*1000): # Smooth
+        for ii in range(20): pass # <0.01 sec delay for smoothness + speed
         
-        I = i/100
+        I = i/1000
         splObj.changePbar((I/boot_steps_amnt)*100)
 
 # Adjust Splash
