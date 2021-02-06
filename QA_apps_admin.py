@@ -11,22 +11,57 @@ import qa_win10toast as QAWinToast
 import qa_quizConfig as QAConfig
 import qa_typeConvertor as QATypeConv
 import qa_errors as QAErrors
+import qa_splash as QASplash
 
 import qa_onlineVersCheck as QA_OVC
 
 # Misc. Imports
-import threading, sys, os, shutil, traceback, json
+import threading, sys, os, shutil, traceback, json, time, random
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
 from tkinter import filedialog as tkfldl
 
+apptitle = f"Administrator Tools v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
+
+boot_steps = {
+    1: 'Loading Variables',
+    2: 'Loading Functions',
+    3: 'Loading Configuration',
+    4: 'Running Boot Checks',
+    5: 'Fetching Version Information'
+}; boot_steps_amnt = len(boot_steps)  
+
+# The splash screen
+
+splRoot = tk.Toplevel()
+splObj = QASplash.Splash(splRoot)
+
+splObj.setImg(QAInfo.icons_png.get('admt'))
+splObj.setTitle("Administrator Tools")
+
+def set_boot_progress(ind):
+    global boot_steps; global boot_steps_amnt; global splObj
+    splObj.setInfo(boot_steps[ind])
+    prev = (ind - 1 ) if ind > 0 else ind
+    
+    for i in range(prev*100, ind*100): # Smooth
+        time.sleep(random.randint(0, 4)/1000)
+        
+        I = i/100
+        splObj.changePbar((I/boot_steps_amnt)*100)
+
+# Adjust Splash
+set_boot_progress(1)
+
 # Globals
 QAS_encoding = 'utf-32'
 self_icon = QAInfo.icons_ico.get('admt')
-apptitle = f"Administrator Tools v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
 configruationFilename = '{}\\{}'.format(QAInfo.appdataLoc.strip('\\').strip(), QAInfo.confFilename)
 configuration_saved: dict = {}
+
+# Adjust Splash
+set_boot_progress(2)
 
 # Classes
 
@@ -186,7 +221,6 @@ class JSON:
             
         # True = Test passed
         return True
-
 
 class UI(threading.Thread):
     def __init__(self):
@@ -1844,6 +1878,9 @@ def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=Fals
     debug(f"Returning edited kwargs {out}")
     return out
 
+# Adjust Splash
+set_boot_progress(3)
+
 configuration_begining = loadConfiguration()
 
 if type(configuration_begining) is not dict:
@@ -1873,11 +1910,19 @@ if not configuration_begining.get(QAConfig.keys_inDist):
     apptitle += " (Experimental Version)"
     tkmsb.showwarning(apptitle, f"Warning: The following application has been marked as 'Experimental' and thus may act in an unstable manner.\n\nApplication By: Geetansh Gautam, Coding Made Fun")
 
+# Adjust Splash
+set_boot_progress(4)
+
 JSON().boot_check() # Boot checks (global_nv_flags_fn file flags run these checks...)
+
+# Adjust Splash
+set_boot_progress(5)
 
 if not QA_OVC.check():
     tkmsb.showwarning(apptitle, f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
 
-# Run Boot Command (UI)
+# Close the splash screen
+QASplash.destroy(splObj)
 
+# Run Boot Command (UI)
 UI()

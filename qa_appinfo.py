@@ -107,10 +107,10 @@ icons_ico = {
     'admt': 'icons\\admin_tools.ico',
     'qt': 'icons\\quizzing_tool.ico'
 }; icons_png  = {
-    'tu': 'icons\\themer_64.png',
-    'ftsra': 'icons\\ftsra_64.png',
-    'admt': 'icons\\admin_tools_64.png',
-    'qt': 'icons\\quizzing_tool_64.png'
+    'tu': 'icons\\themer.png',
+    'ftsra': 'icons\\ftsra.png',
+    'admt': 'icons\\admin_tools.png',
+    'qt': 'icons\\quizzing_tool.png'
 }
 
 help_files = {

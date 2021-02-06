@@ -10,7 +10,7 @@ import qa_logging as llog
 import qa_globalFlags as QaFlags
 import qa_time as qatime
 
-if __name__ == "__main__": sys.exit() # Module should not be ran by itself
+if __name__ == "__main__": sys.exit(f"Cannot run module standalone") # Module should not be ran by itself
 
 global default; global default_comment_header
 
