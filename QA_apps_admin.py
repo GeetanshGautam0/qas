@@ -40,17 +40,39 @@ splObj = QASplash.Splash(splRoot)
 splObj.setImg(QAInfo.icons_png.get('admt'))
 splObj.setTitle("Administrator Tools")
 
-def set_boot_progress(ind):
+def set_boot_progress(ind, resolution=1000):
     global boot_steps; global boot_steps_amnt; global splObj
-    splObj.setInfo(boot_steps[ind])
-    prev = (ind - 1 ) if ind > 0 else ind
     
-    for i in range(prev*1000, ind*1000): # Smooth
-        for ii in range(20): pass # <0.01 sec delay for smoothness + speed
+    splObj.setInfo(boot_steps[ind])
+    
+    ind -= 1 # 0 >> Max
+    Max = boot_steps_amnt-1
+    prev = ind - 1 if ind > 0 else ind
+    
+    for i in range(prev*resolution, ind*resolution):
+        for j in range(20): pass # < 0.01 sec delay
         
-        I = i/1000
-        splObj.changePbar((I/boot_steps_amnt)*100)
+        splObj.changePbar(
+            (i/boot_steps_amnt)/(resolution/100)
+        )
 
+def show_splash_completion(resolution=1000):
+    global boot_steps_amnt; global splObj
+    
+    ind = boot_steps_amnt - 1
+    
+    splObj.completeColor()
+    splObj.setInfo(f"Completed Boot Process")
+    
+    for i in range(ind*resolution, boot_steps_amnt*resolution):
+        for j in range(20): pass # < 0.01 sec delay
+        
+        splObj.changePbar(
+            (i/boot_steps_amnt)/(resolution/100)
+        )
+    
+    time.sleep(0.5)
+    
 # Adjust Splash
 set_boot_progress(1)
 
@@ -1921,6 +1943,8 @@ if not QA_OVC.check():
     tkmsb.showwarning(apptitle, f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
 
 # Close the splash screen
+show_splash_completion()
+
 QASplash.destroy(splObj)
 
 # Run Boot Command (UI)

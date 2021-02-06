@@ -2,7 +2,7 @@ import threading, sys, os
 from PIL import Image as PILImage, ImageTk as PILImageTk
 from tkinter import *
 import tkinter.ttk as ttk
-# import qa_theme as QATheme
+import qa_theme as QATheme
 import qa_appinfo as QAInfo
 
 # theme = QATheme.Get().get('theme')
@@ -96,7 +96,32 @@ class Splash(Toplevel):
         self.titleLbl.pack(fill=BOTH, expand=True)
         self.pbar.pack(fill=X, expand=1)
         self.infoLbl.pack(fill=X, expand=True, padx=5)
+    
+    def completeColor(self) -> None:
+        compTheme = QATheme.Get().get('theme')
         
+        self.pbarStyle.configure(
+            "Horizontal.TProgressbar",
+            foreground=compTheme.get('ac'),
+            background=compTheme.get('ac')
+        )
+        self.titleLbl.config(
+            fg=compTheme.get('ac'),
+            bg=compTheme.get('bg')
+        )
+        self.frame.config(
+            bg=compTheme.get('bg')
+        )
+        self.infoLbl.config(
+            bg=compTheme.get('bg'),
+            fg=compTheme.get('fg')
+        )
+        self.imgLbl.config(
+            bg=compTheme.get('bg')
+        )
+        
+        self.root.update()
+    
     def setImg(self, img) -> None:
         self.img = img
         image = PILImageTk.PhotoImage(PILImage.open(self.img).resize(self.imgSize), master=self.root)
@@ -130,12 +155,3 @@ def Pass(): pass
 def destroy(__inst: object):
     __inst.root.after(0, __inst.root.destroy)
     return
-
-def update(__inst: object):
-    __inst.root.update()
-
-if __name__ == "__main__":
-    s = Splash(Toplevel())
-    
-    for i in range(10000):
-        s.changePbar(i/10)
