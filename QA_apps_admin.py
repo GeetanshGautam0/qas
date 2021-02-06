@@ -46,7 +46,7 @@ def set_boot_progress(ind):
     prev = (ind - 1 ) if ind > 0 else ind
     
     for i in range(prev*100, ind*100): # Smooth
-        time.sleep(random.randint(0, 4)/1000)
+        for ii in range(50): pass # <0.01 sec delay for smoothness + speed
         
         I = i/100
         splObj.changePbar((I/boot_steps_amnt)*100)
@@ -1764,7 +1764,6 @@ def dc_lst(Dict: dict, index) -> dict:
         out[i] = (Dict[i][index])
 
     return out
-
 
 def debug(debugData: str):
     # Script Name

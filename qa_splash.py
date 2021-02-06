@@ -12,6 +12,8 @@ class Splash(Toplevel):
         global theme; self.theme = theme
         
         # UI Vars
+        self.imgSize = (40, 40)
+        
         self.pbarStyle = ttk.Style()
         self.pbarStyle.theme_use('default')
         self.pbarStyle.configure(
@@ -32,7 +34,7 @@ class Splash(Toplevel):
         self.root.geometry(self.geo)
         
         self.titleLbl = Label(self.frame)
-        self.imgLbl = Button(self.frame, anchor=NW)
+        self.imgLbl = Button(self.frame, anchor=NE)
         self.pbar = ttk.Progressbar(self.frame,length=100, mode='determinate', orient=HORIZONTAL)
         self.infoLbl = Label(self.frame)
         
@@ -54,7 +56,7 @@ class Splash(Toplevel):
         self.frame.pack(fill=BOTH, expand=True)
         self.frame.config(bg=self.theme.get('bg'))
         
-        image = PILImageTk.PhotoImage(PILImage.open(self.img).resize((32, 32)), master=self.root)
+        image = PILImageTk.PhotoImage(PILImage.open(self.img).resize(self.imgSize), master=self.root)
         self.imgLbl.configure(
             image=image, 
             bg=self.theme.get('bg'), 
@@ -74,7 +76,7 @@ class Splash(Toplevel):
         
     def setImg(self, img) -> None:
         self.img = img
-        image = PILImageTk.PhotoImage(PILImage.open(self.img).resize((32, 32)), master=self.root)
+        image = PILImageTk.PhotoImage(PILImage.open(self.img).resize(self.imgSize), master=self.root)
         self.imgLbl.configure(
             image=image
         )

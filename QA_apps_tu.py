@@ -997,7 +997,7 @@ def secure_save(_f: str, _d, **flags):
                           customText=f"Failed to restore to auto-gen backup for file {_f}; the file may no longer be accessible by Quizzing Application.\n\nDiagnostic Information: {traceback.format_exc()}")
 
 def bw_hex_choose(hex_code: str) -> str:
-    hex_code = hex_code.replace('#', '').strip()
+    hex_code = hex_code.replace('#', '').strip().lower()
     jsr_debug(f"Querying whether if #000000 should be used or whether if #ffffff be used given #{hex_code}")
 
     Int = 0 # <0 = black; >0 = white
@@ -1025,7 +1025,7 @@ def bw_hex_choose(hex_code: str) -> str:
 
 def invert_hex(hex_code: str) -> str: # Warning; inefficient method of doing this; couldn't find a better way
     jsr_debug(f"Inverting #{hex_code}")
-    hex_code = hex_code.replace("#", '').strip()
+    hex_code = hex_code.replace("#", '').strip().lower()
     if not len(hex_code) == 6: raise AttributeError(f"Hex code #{hex_code} is invalid; expected 6 character str")
 
     allowed: list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
@@ -1704,7 +1704,7 @@ self.theme_set_canvas_new.width = {self.theme_set_canvas_new.cget('width')}
         new = None
 
         if theme_key in Theme.colorIDs:
-            new = tkcolor.askcolor()[-1]
+            new = tkcolor.askcolor(color=self.theme.get(theme_key))[-1]
             jsr_debug(f"New color for id {theme_key}: {new}")
 
         elif theme_key == 'font':
