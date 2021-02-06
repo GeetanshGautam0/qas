@@ -42,13 +42,14 @@ class Splash(Toplevel):
             "Horizontal.TProgressbar",
             foreground=self.theme.get('ac'),
             background=self.theme.get('ac'),
-            borderwidth=0
+            borderwidth=0,
+            thickness=2
         )
         
         self.root = master
         self.frame = Frame(self.root)
         
-        self.geo = "650x300+{}+{}".format(
+        self.geo = "600x250+{}+{}".format(
             int(self.root.winfo_screenwidth()/2 - 350),
             int(self.root.winfo_screenheight()/2 - 250)
         )

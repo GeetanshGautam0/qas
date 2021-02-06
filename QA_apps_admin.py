@@ -29,7 +29,7 @@ boot_steps = {
     2: 'Loading Functions',
     3: 'Loading Configuration',
     4: 'Running Boot Checks',
-    5: 'Fetching Version Information'
+    5: 'Fetching Version Information Online'
 }; boot_steps_amnt = len(boot_steps)  
 
 # The splash screen
