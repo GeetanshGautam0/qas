@@ -12,11 +12,10 @@ import qa_quizConfig as QAConfig
 import qa_typeConvertor as QATypeConv
 import qa_errors as QAErrors
 import qa_splash as QASplash
-
 import qa_onlineVersCheck as QA_OVC
 
 # Misc. Imports
-import threading, sys, os, shutil, traceback, json, time, random
+import threading, sys, os, shutil, traceback, json, time, random, subprocess
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
@@ -401,6 +400,8 @@ class UI(threading.Thread):
         self.root.mainloop()  # Final thing; initiate the UI mainloop
 
     def run(self):
+        global splObj
+        
         # Root
         # self.root.title(
         #     f"{apptitle} - {self.sc_name_mapping.get(self.scName)}")
@@ -1343,9 +1344,77 @@ class UI(threading.Thread):
 
         return
     
-    def io_ie_export(self): # TODO: setup
-        pass
-    
+    def io_ie_export(self):
+        global apptitle
+        
+        file_dir = tkfldl.askdirectory()
+        while True:
+            file_name = f"QAExport {random.randint(1000000, 9999999)}"
+            concat = file_dir + "\\" + str(file_name) + "." + QAInfo.export_file_extension
+            if not os.path.exists(concat):
+                filename = concat
+                break
+        
+        open(filename, 'w').close() # Create the file
+
+        # Export conf, questions
+        conf__raw = IO(f"{QAInfo.appdataLoc}\\{QAInfo.confFilename}").autoLoad()
+        
+        debug(f"IO_IE_EXPORT::Raw Configuration: conf__raw")
+        
+        conf = conf__raw.lstrip("{").rstrip("}").split('\n'); temp = ""
+        v_strips = [':', ",", "\\", "\"", "\'"]
+        
+        for i in conf:
+            k = i.split(':')[0]; v = i.replace(k, '', 1).replace(':', '', 1)
+            k = k.strip(); v = v.strip()
+            
+            k = k.strip("\"").strip("\'");
+            
+            ind = 0
+            be = v
+            
+            while True:
+                for ii in v_strips:
+                    v = v.strip(ii)    
+
+                    try:
+                        t = True
+                        for iii in v_strips:
+                            debug(f"1382:: v_strips:: {v} :: {iii} :: v[0:1] = {v[0:1]}, v[-2:-1] = {v[-2:-1]} :: valid = {iii not in v[0:1] and iii not in v[-2:-1]}")
+                            if iii in v[0:1] and ii in v[-2:-1]: t = False
+                        
+                        ind += int(t) # True = 1; False = 0               
+                    
+                    except:
+                        debug(f"1385: v_strip :: {v} :: {ii} :: invalid index; stepping ind")
+                        ind += 1 # Invalid
+                    
+
+                if ind >= len(v_strips): break
+                    
+            debug(f"v_strips[{ii}]:: before = {be}, after = {v}")
+            
+            temp += f"{k} {v}\n"
+            
+        conf = temp
+        
+        __toSave = QAInfo.fileIO_version_info_header.strip() + f" {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))}"
+        
+        conf__toSave = "\n{}\n{}\n{}\n".format(
+            self.IO_CONFIMPORT_KEY,
+            conf,
+            self.IO_DIVEND_KEY
+        )
+        
+        __toSave = __toSave + conf__toSave
+        
+        debug(f"Exporting file with data (see end); fn = {filename}, data = {__toSave}")
+        
+        IO(filename, encrypt=True).saveData(__toSave)
+        
+        tkmsb.showinfo(apptitle, f"Created '{filename}'")
+        
     def ioConf(self, inv: bool = True):
         if inv: self.io_imConf = not self.io_imConf
         self.io_ie_ICToggle.config(
@@ -1421,9 +1490,12 @@ class UI(threading.Thread):
             val = True
             conf_conv = {}
 
+            debug(f"conf_raw = {conf_raw}")
+            
             for i in QAConfig.default_configuration.keys():
                 if i not in conf_raw:
                     val = False
+                    debug(f"1459:: Failed to find key '{i}' in import file; setting val to False")
                     break
 
             if val:
@@ -1455,7 +1527,7 @@ class UI(threading.Thread):
 
                                 except Exception as E:
                                     debug(f"Failed to convert entry for '{i}' (error = {E1} (og) {E} (new))")
-
+                                    debug(f"1493:: Failed to convert '{i}'; setting val to False")
                                     val = False
                                     break
 
@@ -1932,9 +2004,13 @@ debug(f"Configuraion Loaded: {configuration_begining}")
 configuration_saved = configuration_begining
 
 if not configuration_begining.get(QAConfig.keys_inDist):
+    QASplash.hide(splObj)
+    
     apptitle += " (Experimental Version)"
     tkmsb.showwarning(apptitle, f"Warning: The following application has been marked as 'Experimental' and thus may act in an unstable manner.\n\nApplication By: Geetansh Gautam, Coding Made Fun")
 
+    QASplash.show(splObj)
+    
 # Adjust Splash
 set_boot_progress(4)
 
@@ -1944,8 +2020,10 @@ JSON().boot_check() # Boot checks (global_nv_flags_fn file flags run these check
 set_boot_progress(5)
 
 if not QA_OVC.check():
+    QASplash.hide(splObj)
     tkmsb.showwarning(apptitle, f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
-
+    QASplash.show(splObj)
+    
 # Final Splash Settings
 if not QAInfo.doNotUseSplash:
     show_splash_completion() # Show completion

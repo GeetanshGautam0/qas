@@ -50,8 +50,8 @@ class Splash(Toplevel):
         self.frame = Frame(self.root)
         
         self.geo = "600x250+{}+{}".format(
-            int(self.root.winfo_screenwidth()/2 - 350),
-            int(self.root.winfo_screenheight()/2 - 250)
+            int(self.root.winfo_screenwidth()/2 - 300),
+            int(self.root.winfo_screenheight()/2 - 125)
         )
         
         self.root.geometry(self.geo)
@@ -62,7 +62,7 @@ class Splash(Toplevel):
         self.infoLbl = Label(self.frame)
         
         self.title = "Quizzing Application"
-        self.information = "Loading..."
+        self.information = "Loading...\n\nCoding Made Fun"
         self.img = os.path.abspath(f"{QAInfo.icons_png['qt']}").replace('/', '\\')
         
         # UI Config
@@ -75,6 +75,9 @@ class Splash(Toplevel):
         self.root.overrideredirect(True)
         self.root.protocol("WM_DELETE_WINDOW", lambda: destroy(self))
         self.root.wm_attributes('-topmost', 1)
+        
+        ico = self.img.replace('.png', '.ico')
+        self.root.iconbitmap(ico)
         
         self.frame.pack(fill=BOTH, expand=True)
         self.frame.config(bg=self.theme.get('bg'))
@@ -140,7 +143,7 @@ class Splash(Toplevel):
         self.root.update()
         
     def setInfo(self, text) -> None:
-        self.information = text
+        self.information = text.strip()
         self.infoLbl.config(text=self.information)
         self.root.update()
     
@@ -154,6 +157,21 @@ class Splash(Toplevel):
         self.root.update()
 
 def Pass(): pass
+
+def hide(__inst: object):
+    __inst.root.overrideredirect(False)
+    __inst.root.wm_attributes("-topmost", 0)
+    __inst.root.iconify()
+    __inst.root.withdraw()
+    __inst.root.update()
+    return
+
+def show(__inst: object):
+    __inst.root.overrideredirect(True)
+    __inst.root.deiconify()
+    __inst.root.wm_attributes("-topmost", 1)
+    __inst.root.update()
+    return
 
 def destroy(__inst: object):
     __inst.root.after(0, __inst.root.destroy)
