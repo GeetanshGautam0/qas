@@ -142,3 +142,9 @@ questions_file_info = {
 
 bugReportLink = "https://codingmadefun.wixsite.com/database/qas-bug-report-form"
 version_check_url = "https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/qas.json"
+
+
+
+
+# ------------------------------ Control Variables ---------------------------
+doNotUseSplash = False # If set to True, the splash screen won't be shown

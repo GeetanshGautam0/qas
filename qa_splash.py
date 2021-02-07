@@ -89,11 +89,11 @@ class Splash(Toplevel):
         )
         self.imgLbl.image = image
         
-        self.titleLbl.config(text=self.title, bg=self.theme.get('bg'), fg=self.theme.get('ac'), font=(self.theme.get('font'), 30), anchor=N)
+        self.titleLbl.config(text=self.title, bg=self.theme.get('bg'), fg=self.theme.get('ac'), font=(self.theme.get('font'), 36), anchor=SW)
         self.infoLbl.config(text=self.information, bg=self.theme.get('bg'), fg=self.theme.get('fg'), font=(self.theme.get('font'), self.theme.get('fsize_para')), anchor=NW)
         
-        self.imgLbl.pack(fill=BOTH, expand=True, padx=5, pady=5)
-        self.titleLbl.pack(fill=BOTH, expand=True)
+        # self.imgLbl.pack(fill=BOTH, expand=True, padx=5, pady=5)
+        self.titleLbl.pack(fill=BOTH, expand=True, padx=5)
         self.pbar.pack(fill=X, expand=1)
         self.infoLbl.pack(fill=X, expand=True, padx=5)
     
@@ -116,9 +116,12 @@ class Splash(Toplevel):
             bg=compTheme.get('bg'),
             fg=compTheme.get('fg')
         )
-        self.imgLbl.config(
-            bg=compTheme.get('bg')
-        )
+        # self.imgLbl.config(
+        #     bg=compTheme.get('bg'),
+        #     image=None
+        # )
+        
+        self.imgLbl.pack_forget()
         
         self.root.update()
     

@@ -34,19 +34,21 @@ boot_steps = {
 
 # The splash screen
 
-splRoot = tk.Toplevel()
-splObj = QASplash.Splash(splRoot)
+if not QAInfo.doNotUseSplash:
+    splRoot = tk.Toplevel()
+    splObj = QASplash.Splash(splRoot)
 
-splObj.setImg(QAInfo.icons_png.get('admt'))
-splObj.setTitle("Administrator Tools")
+    splObj.setImg(QAInfo.icons_png.get('admt'))
+    splObj.setTitle("Administrator Tools")
 
 def set_boot_progress(ind, resolution=1000):
+    if QAInfo.doNotUseSplash: return
+    
     global boot_steps; global boot_steps_amnt; global splObj
     
     splObj.setInfo(boot_steps[ind])
     
     ind -= 1 # 0 >> Max
-    Max = boot_steps_amnt-1
     prev = ind - 1 if ind > 0 else ind
     
     for i in range(prev*resolution, ind*resolution):
@@ -57,6 +59,8 @@ def set_boot_progress(ind, resolution=1000):
         )
 
 def show_splash_completion(resolution=1000):
+    if QAInfo.doNotUseSplash: return
+    
     global boot_steps_amnt; global splObj
     
     ind = boot_steps_amnt - 1
@@ -1942,10 +1946,10 @@ set_boot_progress(5)
 if not QA_OVC.check():
     tkmsb.showwarning(apptitle, f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
 
-# Close the splash screen
-show_splash_completion()
-
-QASplash.destroy(splObj)
+# Final Splash Settings
+if not QAInfo.doNotUseSplash:
+    show_splash_completion() # Show completion
+    QASplash.destroy(splObj) # Close the splash screen
 
 # Run Boot Command (UI)
 UI()
