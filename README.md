@@ -28,7 +28,7 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <li>A less buggy quizzing form</li>
   <li>A keylogger to keep track of all actions committed by the quiz taker</li>
     <ul><li>Note that this keylogger only runs whilst the quiz taker is actively participating in the quiz.</li></ul>
-  <li>All files will noe be encrypted</li>
+  <li>All files will now be encrypted</li>
   <li>More options for administrators:</li>
   <ul>
     <li>Allow quiz taker to see there score</li>
