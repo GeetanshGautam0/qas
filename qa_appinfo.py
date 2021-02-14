@@ -77,6 +77,9 @@ codes_keys = {
     'configuration_file_error' : {
         'conf_file_missing': 'QAADMT_NO_CONFIG_FILE',
         'conf_file_corrupted': 'QAADMT_CANNOT_READ_CONFIG'
+    },
+    "quick_theme_error": {
+        "cannot_determine_path": "QAADMT_CANNOT_DETERMINE_QUICK-THEME_FILENAME"
     }
 }
 

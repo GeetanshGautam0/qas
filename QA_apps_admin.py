@@ -263,6 +263,14 @@ class UI(threading.Thread):
         
         self.screen_parent = ttk.Notebook(self.root)
         
+        # Theme
+        self.theme = QATheme.Get().get('theme')
+        
+        # Add extra elements
+        self.theme['lblFrame_font'] = (self.theme.get('font'), 11)
+        
+        self.dsbAll_fg = '#595959'
+        
         # Screens
         self.runScreen = tk.Frame(self.screen_parent)
         self.configurationScreen = tk.Frame(self.screen_parent)
@@ -317,7 +325,22 @@ class UI(threading.Thread):
         self.io_import_fn = None
         
         # Misc. Screen
+        self.quickTheme_cont = tk.LabelFrame(self.runScreen)
+
+        self.themeSel_combo_theme = ttk.Style()
+        self.themeSel_combo_theme.theme_use('default')
+        self.themeSel_combo_theme.configure(
+            "TCombobox",
+            background=self.theme.get('bg'),
+            foreground=self.theme.get('bg')
+        )
+        
         self.misc_runBugReport = tk.Button(self.runScreen)
+        self.themeSel_combo = ttk.Combobox(self.quickTheme_cont)
+        self.themeSel_lbl = tk.Label(self.quickTheme_cont)
+        self.misc_refreshTheme = tk.Button(self.runScreen)
+        self.misc_forceReloadThemes = tk.Button(self.runScreen)
+        self.themeSel_sumb = tk.Button(self.quickTheme_cont)
         
         # Global
         self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
@@ -337,17 +360,17 @@ class UI(threading.Thread):
         self.sc_inst_map = {
             self.CONFIG_SCREEN: self.configurationScreen,
             self.IO_SCREEN: self.IOScreen,
-            self.RUN_SCREEN: self.runScreen,
+            self.QUESTIONS_SCREEN: self.questionsScreen,
             self.SCORES_SCREEN: self.scoresScreen,
-            self.QUESTIONS_SCREEN: self.questionsScreen
+            self.RUN_SCREEN: self.runScreen
         }
 
         self.sc_index_mapping: dict = {
             0: self.CONFIG_SCREEN,
             1: self.IO_SCREEN,
-            2: self.RUN_SCREEN,
+            2: self.QUESTIONS_SCREEN,
             3: self.SCORES_SCREEN,
-            4: self.QUESTIONS_SCREEN
+            4: self.RUN_SCREEN
         }
         
         self.scName: str = self.CONFIG_SCREEN  # Sets the first screen
@@ -357,14 +380,6 @@ class UI(threading.Thread):
         self.IO_SCIMPORT_KEY = "<%%QAS-SCORES--IMPORT--%%>"
 
         self.IO_DIVEND_KEY = "<%%QAS-IMPORT-END_DIV%%>"
-
-        # Theme
-        self.theme = QATheme.Get().get('theme')
-        
-        # Add extra elements
-        self.theme['lblFrame_font'] = (self.theme.get('font'), 11)
-        
-        self.dsbAll_fg = '#595959'
         
         # Window sizing
         # Set window transform information
@@ -393,9 +408,15 @@ class UI(threading.Thread):
         self.update_fonts: dict = {} # Put in font tuples (Font Face, Font size)
         self.update_accent_fg: list = []
         self.update_entries: list = []
-        
+
+        # Quick Theme Defs
+        self.noThemes = 'No Themes Found'
+        self.selectFile = 'Select A Theme'
+
         # Last things
         self.start()  # Start the thread
+
+        self.root.lift() # Send the UI to the top
         
         self.root.mainloop()  # Final thing; initiate the UI mainloop
 
@@ -403,6 +424,9 @@ class UI(threading.Thread):
         global splObj
         
         # Root
+
+        self.root.geometry(f"{self.ws[0]}x{self.ws[1]}+{self.sp[0]}+{self.sp[1]}")  # Size, Position
+
         # self.root.title(
         #     f"{apptitle} - {self.sc_name_mapping.get(self.scName)}")
         self.root.protocol("WM_DELETE_WINDOW", self.safe_close)
@@ -501,7 +525,14 @@ class UI(threading.Thread):
 
         # MISC
         MISC_BUTTONS = [
-            self.misc_runBugReport            
+            self.misc_runBugReport,
+            self.themeSel_sumb,
+            self.misc_refreshTheme,
+            self.misc_forceReloadThemes
+        ]
+        MISC_LBLs = [
+            self.quickTheme_cont,
+            self.themeSel_lbl
         ]
         
         self.update_btn.extend(MISC_BUTTONS)
@@ -511,15 +542,19 @@ class UI(threading.Thread):
         
         addFontInst(self, self.io_ie_import_selectedFileLbl, (self.theme.get('font'), self.theme.get('fsize_para')))
 
+        self.update_lbl.extend(MISC_LBLs)
+
+        for i in MISC_LBLs:
+            addFontInst(self, i, (self.theme.get('font'), self.theme.get('fsize_para')))
+
+        self.update_accent_fg.append(self.quickTheme_cont)
+        addFontInst(self, self.themeSel_lbl, (self.theme.get('font'), self.theme.get('sttl_base_fsize')))
+
         # Event binding
         self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         
         # last things
-        self.update_ui() # Sets the elements
-        self.update_theme() # Sets the theme
-        self.setConfigStates() # Set the states (Conf)
-        self.conf_io_btns() # Set the states (IO)
-        self.update_frame_title()
+        self.update_sequence()
         
         self.root.deiconify()
     
@@ -538,7 +573,15 @@ class UI(threading.Thread):
         # Framing (oof)
         curr_name = self.getFrameName() # Capture frame
         self.update_frame_title()
-    
+
+    def update_sequence(self):
+        self.update_ui()  # Sets the elements
+        self.update_theme()  # Sets the theme
+        self.setConfigStates()  # Set the states (Conf)
+        self.conf_io_btns()  # Set the states (IO)
+
+        self.update_frame_title() # Set the title
+
     def update_frame_title(self):
         self.root.title(
             f"{apptitle} - {self.sc_name_mapping.get(self.scName)}")
@@ -551,7 +594,7 @@ class UI(threading.Thread):
         # Root
         self.root.config(bg=self.theme.get('bg')) # BG
         self.root.iconbitmap(self_icon) # Icon
-        self.root.geometry(f"{self.ws[0]}x{self.ws[1]}+{self.sp[0]}+{self.sp[1]}") # Size, Position
+        # self.root.geometry(f"{self.ws[0]}x{self.ws[1]}+{self.sp[0]}+{self.sp[1]}") # Size, Position
         
         # Label-likes
         for i in self.update_lbl:
@@ -588,7 +631,15 @@ class UI(threading.Thread):
                 selectbackground=self.theme['ac'],
                 insertbackground=self.theme['ac']
             )
-        
+
+        # Exceptions
+        self.misc_runBugReport.config(
+            fg=self.theme.get('hg'),
+            bg=self.theme.get('ac'),
+            activebackground=self.theme.get('bg'),
+            activeforeground=self.theme.get('ac')
+        )
+
     def update_ui(self, *args): # *args so that the event handler does not raise an error due to excessive arguments        
         # Screen specific
         self.getFrameName() # Set the screen name
@@ -607,6 +658,65 @@ class UI(threading.Thread):
         self.setup_scores_screen()
         self.setup_questions_screen()
         
+        self.update_theme_selector_cmbBox()
+    
+    def update_theme_selector_cmbBox(self, *args, **kwargs) -> None:
+        if os.path.exists(QAInfo.theme_presets_foldername):
+
+            avail: list = []
+            fol = QAInfo.theme_presets_foldername
+
+            lst = os.listdir(fol)
+            lst = [i.split('.')[0].strip() for i in lst]
+
+            def filterList(name: str, Lst: list):
+                out: list = [i.strip() for i in Lst]
+                valList = [i.lower() for i in out]
+                name = name.strip().lower()
+
+                if name in valList:
+                    ind = valList.index(name)
+                    valList.pop(ind)
+
+                    acc = out[ind]
+
+                    if not acc.lower() == name:
+                        ind2 = None
+
+                        for i in out:
+                            if i.lower() == name:
+                                ind2 = out.index(i)
+                                break
+
+                    else: ind2 = ind
+
+                    if ind2 is not None: out.pop(ind2)
+
+                return out
+
+            lst = filterList(self.noThemes, lst)
+            lst = filterList(self.selectFile, lst)
+
+            if len(lst) > 0:
+                self.themeSel_combo['values'] = lst
+                self.themeSel_combo.set(self.selectFile)
+
+            else:
+                self.themeSel_combo['values'] = [
+                    self.noThemes
+                ]
+
+                self.themeSel_combo.set(self.noThemes)
+
+        else:
+            self.themeSel_combo['values'] = [
+                self.noThemes
+            ]
+
+            self.themeSel_combo.set(self.noThemes)
+
+        return
+    
     def all_screen_widgets(self):
         _config = self.configurationScreen.winfo_children()
         _run = self.runScreen.winfo_children()
@@ -781,19 +891,71 @@ class UI(threading.Thread):
         # The actual setup
         # Theming has been taken care of already
         # Simply commit to the structure
-        
+
+        # Quick Theme
+        self.quickTheme_cont.config(
+            text="Quick Theme Selector"
+        )
+        self.quickTheme_cont.pack(fill=tk.BOTH, expand=0, padx=self.padX/2, pady=(self.padY/4, self.padY/2))
+
+        self.themeSel_lbl.config(
+            text="Select a Theme"
+        )
+        self.themeSel_lbl.pack(
+            fill=tk.BOTH, expand=1, padx=self.padX/2, pady=(self.padY/2, self.padY)
+        )
+
+        self.themeSel_combo.pack(
+            fill=tk.BOTH, expand=1, padx=(self.padX/2, self.padX/4), pady=(self.padY/4, self.padY/2), side=tk.LEFT
+        )
+
+        self.themeSel_sumb.config(
+            text="Apply Theme",
+            command=self.quickTheme_applyTheme
+        )
+        self.themeSel_sumb.pack(
+            fill=tk.BOTH, expand=1, padx=(self.padX/4, self.padX/2), pady=(self.padY/4, self.padY/2), side=tk.RIGHT
+        )
+
+        # Force Refresh
+        self.misc_refreshTheme.config(
+            text="Force Refresh Theme",
+            command=self.refresh_theme
+        )
+
+        self.misc_refreshTheme.pack(
+            fill=tk.X,
+            expand=False,
+            padx=int(self.padX / 2),
+            pady=(int(self.padY / 4), int(self.padY / 4))
+        )
+
+        # Reload Themes List
+        self.misc_forceReloadThemes.config(
+            text="Reload Quick Themes List",
+            command=self.update_theme_selector_cmbBox
+        )
+
+        self.misc_forceReloadThemes.pack(
+            fill=tk.BOTH,
+            expand=False,
+            padx=int(self.padX / 2),
+            pady=(int(self.padY / 4), int(self.padY / 4))
+        )
+
+        # Bug Report
         self.misc_runBugReport.config(
             text="Report a Bug",
-            command=self.launch_bug_report            
+            command=self.launch_bug_report,
         )
-        
+
         self.misc_runBugReport.pack(
             fill=tk.BOTH,
-            expand=True,
-            padx=int(self.padX/2),
-            pady=int(self.padY/2)
+            expand=False,
+            padx=int(self.padX / 2),
+            pady=(int(self.padY / 4), int(self.padY / 2))
         )
-        
+
         return
     
     def setup_io_screen(self):
@@ -892,6 +1054,148 @@ class UI(threading.Thread):
         self.thread.join(self, 0)
 
     # Button Functions (Event Handlers)
+    def refresh_theme(self):
+        QATheme.Get().refresh_theme()
+        __dictNew = QATheme.Get().get('theme')
+
+        for i in __dictNew:
+            self.theme[i] = __dictNew[i]  # An aux. font was added manually; cannot reset with a direct set method.
+
+        self.clearUI()
+        self.update_sequence()
+
+    def quickTheme_applyTheme(self):
+
+        def filterList(name: str, Lst: list):
+            out: list = [i.strip() for i in Lst]
+            valList = [i.lower() for i in out]
+            name = name.strip().lower()
+
+            if name in valList:
+                ind = valList.index(name)
+                valList.pop(ind)
+
+                acc = out[ind]
+
+                if not acc.lower() == name:
+                    ind2 = None
+
+                    for i in out:
+                        if i.lower() == name:
+                            ind2 = out.index(i)
+                            break
+
+                else:
+                    ind2 = ind
+
+                if ind2 is not None: out.pop(ind2)
+
+            return out
+
+        if os.path.exists(QAInfo.theme_presets_foldername):
+            psbs: list = os.listdir(QAInfo.theme_presets_foldername)
+
+            items = [i.split('.')[0].strip() for i in psbs]
+            items = filterList(self.noThemes, items); items = filterList(self.selectFile, items)
+            items = [i.lower().strip() for i in items]
+
+            curr = self.themeSel_combo.get().lower().strip()
+
+            debug(f"Quick Theme :: Apply :: {curr} in {items} :: {curr in items}")
+
+            if curr in items:
+
+                # Make path
+                path = f"{QAInfo.theme_presets_foldername}\\{self.themeSel_combo.get().strip()}.{QAInfo.export_file_extension}"
+                try:
+                    path = os.path.realpath(path)
+                    debug(f"Reading theme (quick theme import) from file '{path}'")
+
+                    if not os.path.exists(path):
+                        path = path.replace(path.split('.')[-1], '').strip('.').strip()
+
+                        path += f'.{QAInfo.exten}'
+
+                        debug(f"Reading theme (quick theme import) [<<Attempt 2>>] from file '{path}'")
+
+                        if not os.path.exists(path):
+                            raise FileNotFoundError
+
+                except FileNotFoundError:
+                    debug(f"1071:: cannot read file")
+                    tkmsb.showerror(apptitle, f"Could not determine file path\n\n(Error Code {get_error_code(QAInfo.codes_keys.get('quick_theme_error').get('cannot_determine_path'))[0]})")
+
+                else:
+                    debug(f"1075:: file '{path}' found")
+
+                    # Read the file
+                    __io = IO(path)
+                    __raw = __io.autoLoad()
+
+                    __rawList = __raw.split('\n')
+                    _pops = []
+
+                    for i in __rawList:
+                        if not len(i.strip()) > 0: _pops.append(__rawList.index(i))
+
+                    _pops = _pops[::-1]
+
+                    for i in _pops:
+                        __rawList.pop(i)
+
+                    debug(f"Cleaned raw import 1105:: {__rawList}")
+
+                    __dict = {}
+
+                    for i in __rawList:
+                        i = i.strip()
+                        if len(i) > 0:
+                            if not i[0] == "#":
+                                k = i.split(' ')[0].strip(); v = i.replace(k, '', 1).strip()
+
+                                __dict[k] = v
+
+                    debug(f"Loaded theme dict (1116):: {__dict}")
+
+                    # Validate the data
+
+                    val = QATheme.check_theme_integ(__dict, QATheme.default)
+
+                    if not val:
+                        tkmsb.showerror(apptitle, f"The data found in the requested file was deemed invalid; aborting operation.")
+                        return
+
+                    pathTo = f"{QAInfo.appdataLoc}\\{QAInfo.themeFilename}"
+
+                    if not os.path.exists(pathTo):
+                        shutil.copyfile(path, pathTo)
+
+                    else:
+                        open(pathTo, 'w').write(
+                            open(path, 'r').read()
+                        )
+
+                    # self.root.withdraw()
+
+                    QATheme.Get().refresh_theme()
+                    __dictNew = QATheme.Get().get('theme')
+
+                    for i in __dictNew:
+                        self.theme[i] = __dictNew[i] # An aux. font was added manually; cannot reset with a direct set method.
+
+                    self.clearUI()
+                    self.update_sequence()
+
+                    # self.root.deiconify()
+
+            else:
+                tkmsb.showerror(apptitle, f"Unable to set theme")
+
+        else:
+            tkmsb.showerror(apptitle, f"Unable to set theme")
+
+        return
+
     def launch_bug_report(self):
         # os.system(f"{QAInfo.bugReportLink}")
 
@@ -1928,6 +2232,19 @@ def loadConfiguration() -> dict:
         raise QAErrors.ConfigurationError(code)
     
     return _dict
+
+def get_error_code(key) -> tuple:
+    key = key.strip()
+
+    out = []
+
+    __raw = JSON().getFlag("codes.json", key, return_boolean=False)
+    __info = JSON().getFlag("codes.json", "info", return_boolean=False)
+
+    if key in __info: __info.get(key)
+    else: __info = "No Information Found"
+
+    return (__raw, __info)
 
 def conf_saved() -> bool:
     global configuration_begining

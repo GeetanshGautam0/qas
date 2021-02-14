@@ -250,6 +250,8 @@ def integ(_reload: bool = False, src=None, check_theme_file: bool = True) -> boo
     return True
 
 def check_theme_integ(loaded: dict, ref: dict):
+    if ref is None:
+        ref = default
     jsr_debug(f"Loaded dictionary keys: {loaded.keys()}; reference dictionary keys: {ref.keys()}")
 
     for i in ref.keys():

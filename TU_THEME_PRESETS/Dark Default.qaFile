@@ -9,14 +9,14 @@ Credit Geetansh Gautam, Coding Made Fun
 # This comment header will remain
 # All other comments will be overwritten
 
-font Century Gothic
+font century gothic
 fsize_para 10
 btn_fsize 13
 sttl_base_fsize 18
 min_fsize 10
-bg #151515
+bg #202020
 fg #ffffff
-ac #e6ac00
-hg #000000
+ac #008888
+hg #ffffff
 border_color #ffffff
 border 0

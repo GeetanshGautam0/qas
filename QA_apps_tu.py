@@ -1500,7 +1500,7 @@ class UI(threading.Thread):
             d = self.previews[i]
             tmp_preview = i.config(
                                     text=self.theme[d],
-                                    bd=1,
+                                    bd=0,
                                     highlightbackground=f'#{invert_hex(self.theme[d])}',
                                     background=self.theme[d],
                                     activebackground=self.theme[d],
@@ -1609,7 +1609,7 @@ self.theme_set_canvas_new.width = {self.theme_set_canvas_new.cget('width')}
         self.theme_btn.append(self.save_refresh_btn)
 
         # self.save_refresh_btn.config(command=self.save)
-        self.save_refresh_btn.config(command=self.update) # Button only used to refresh now.
+        self.save_refresh_btn.config(command=self.reload) # Button only used to refresh now.
 
         # Restore Button
         self.restore_btn.pack(fill=tk.BOTH, expand=1, padx=self.padX, pady=(int(self.padY / 2), self.padY))
@@ -1690,6 +1690,11 @@ self.theme_set_canvas_new.width = {self.theme_set_canvas_new.cget('width')}
         jsr_debug("UI.run: set root_handler.theme_lbl to {} and root_handler.theme.btn to {}.".format(self.theme_lbl, self.theme_btn))
 
         # Update the theme of the elements
+        self.update()
+
+    def reload(self):
+        Theme.Get().refresh_theme()
+        self.theme = Theme.Get().get('theme')
         self.update()
 
     def onFrameConfig(self, event): # for scbar
