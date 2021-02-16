@@ -13,6 +13,8 @@ import qa_typeConvertor as QATypeConv
 import qa_errors as QAErrors
 import qa_splash as QASplash
 import qa_onlineVersCheck as QA_OVC
+import qa_questionEntryForm as QAQEF
+import qa_questionViewForm as QAQVF
 
 # Misc. Imports
 import threading, sys, os, shutil, traceback, json, time, random, subprocess
@@ -258,18 +260,46 @@ class UI(threading.Thread):
         # Instead, use the button states to simulate the dictionary.
         
         # Global
-        self.root = tk.Tk()  # Main frame
+        self.root = tk.Toplevel()  # Main frame
         self.root.withdraw()
-        
-        self.screen_parent = ttk.Notebook(self.root)
         
         # Theme
         self.theme = QATheme.Get().get('theme')
         
-        # Add extra elements
+        # Add extra elements (theme)
         self.theme['lblFrame_font'] = (self.theme.get('font'), 11)
         
         self.dsbAll_fg = '#595959'
+        
+        # Elements (Widgets)
+        
+        self.notebook_style = ttk.Style()
+        self.notebook_style.theme_use('default')
+        self.notebook_style.configure(
+            "TNotebook",
+            background=self.theme.get('bg'),
+            bordercolor=self.theme.get('bg'),
+            focuscolor=self.theme.get('ac')
+        )
+        self.notebook_style.configure(
+            "TNotebook.Tab",
+            background=self.theme.get('bg'),
+            foreground=self.theme.get('fg'),
+            border=0
+        )
+        self.notebook_style.map(
+            "TNotebook.Tab",
+            background=[
+                ("selected", self.theme.get('ac')),
+                ("active", self.theme.get('fg'))
+            ],
+            foreground=[
+                ("selected", self.theme.get('hg')),
+                ("active", self.theme.get('bg'))
+            ]
+        )
+        
+        self.screen_parent = ttk.Notebook(self.root, style="TNotebook")
         
         # Screens
         self.runScreen = tk.Frame(self.screen_parent)
@@ -327,16 +357,21 @@ class UI(threading.Thread):
         # Misc. Screen
         self.quickTheme_cont = tk.LabelFrame(self.runScreen)
 
-        self.themeSel_combo_theme = ttk.Style()
-        self.themeSel_combo_theme.theme_use('default')
-        self.themeSel_combo_theme.configure(
+        self.tsct = ttk.Style()
+        self.tsct.theme_use('default')
+        self.tsct.configure(
             "TCombobox",
             background=self.theme.get('bg'),
-            foreground=self.theme.get('bg')
+            foreground=self.theme.get('ac'),
+            fieldbackground=self.theme.get('bg'),
+            selectbackground=self.theme.get('ac'),
+            selectforeground=self.theme.get('hg'),
+            bordercolor=self.theme.get('bg'),
+            insertcolor=self.theme.get('ac'),
+            arrowcolor=self.theme.get('ac')
         )
-        
+        self.themeSel_combo = ttk.Combobox(self.quickTheme_cont, style="TCombobox")
         self.misc_runBugReport = tk.Button(self.runScreen)
-        self.themeSel_combo = ttk.Combobox(self.quickTheme_cont)
         self.themeSel_lbl = tk.Label(self.quickTheme_cont)
         self.misc_refreshTheme = tk.Button(self.runScreen)
         self.misc_forceReloadThemes = tk.Button(self.runScreen)
@@ -549,7 +584,7 @@ class UI(threading.Thread):
 
         self.update_accent_fg.append(self.quickTheme_cont)
         addFontInst(self, self.themeSel_lbl, (self.theme.get('font'), self.theme.get('sttl_base_fsize')))
-
+        
         # Event binding
         self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         
@@ -643,22 +678,14 @@ class UI(threading.Thread):
     def update_ui(self, *args): # *args so that the event handler does not raise an error due to excessive arguments        
         # Screen specific
         self.getFrameName() # Set the screen name
-        
-        # if self.scName == self.CONFIG_SCREEN: self.setup_config_screen()
-            
-        # elif self.scName == self.IO_SCREEN: self.setup_io_screen()
-            
-        # elif self.scName == self.RUN_SCREEN: self.setup_run_screen()
-            
-        # elif self.scName == self.SCORES_SCREEN: self.setup_scores_screen()
 
+        self.update_theme_selector_cmbBox()
+        
         self.setup_config_screen()
         self.setup_io_screen()
         self.setup_run_screen()
         self.setup_scores_screen()
         self.setup_questions_screen()
-        
-        self.update_theme_selector_cmbBox()
     
     def update_theme_selector_cmbBox(self, *args, **kwargs) -> None:
         if os.path.exists(QAInfo.theme_presets_foldername):
@@ -891,24 +918,25 @@ class UI(threading.Thread):
         # The actual setup
         # Theming has been taken care of already
         # Simply commit to the structure
-
+        
         # Quick Theme
         self.quickTheme_cont.config(
             text="Quick Theme Selector"
         )
         self.quickTheme_cont.pack(fill=tk.BOTH, expand=0, padx=self.padX/2, pady=(self.padY/4, self.padY/2))
-
+        
+        
         self.themeSel_lbl.config(
             text="Select a Theme"
         )
         self.themeSel_lbl.pack(
             fill=tk.BOTH, expand=1, padx=self.padX/2, pady=(self.padY/2, self.padY)
         )
-
+        
         self.themeSel_combo.pack(
             fill=tk.BOTH, expand=1, padx=(self.padX/2, self.padX/4), pady=(self.padY/4, self.padY/2), side=tk.LEFT
         )
-
+        
         self.themeSel_sumb.config(
             text="Apply Theme",
             command=self.quickTheme_applyTheme
@@ -916,7 +944,7 @@ class UI(threading.Thread):
         self.themeSel_sumb.pack(
             fill=tk.BOTH, expand=1, padx=(self.padX/4, self.padX/2), pady=(self.padY/4, self.padY/2), side=tk.RIGHT
         )
-
+        
         # Force Refresh
         self.misc_refreshTheme.config(
             text="Force Refresh Theme",
