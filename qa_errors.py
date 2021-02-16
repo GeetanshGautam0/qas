@@ -36,3 +36,13 @@ class ConfigurationError(Exception):
         err = f"{stem} An error occured whilst attempting to handle the configuration settings"
         err += ": {self.info}" if self.info is not None else '.'
         return err
+
+class QA_InvalidFlag(Exception):
+    def __init__(self, info=None):
+        self.info = info
+        
+    def __str__(self):
+        global stem
+        err = f"{stem} QA_InvalidFlag :: An error occured whilst attempting to run application scripts"
+        err += f": {self.info}" if type (self.info) is str else '.'
+        return err
