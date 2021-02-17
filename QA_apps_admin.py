@@ -629,6 +629,43 @@ class UI(threading.Thread):
         # Root
         self.root.config(bg=self.theme.get('bg')) # BG
         self.root.iconbitmap(self_icon) # Icon
+
+        self.notebook_style.configure(
+            "TNotebook",
+            background=self.theme.get('bg'),
+            bordercolor=self.theme.get('bg'),
+            focuscolor=self.theme.get('ac')
+        )
+        self.notebook_style.configure(
+            "TNotebook.Tab",
+            background=self.theme.get('bg'),
+            foreground=self.theme.get('fg'),
+            border=0
+        )
+        self.notebook_style.map(
+            "TNotebook.Tab",
+            background=[
+                ("selected", self.theme.get('ac')),
+                ("active", self.theme.get('fg'))
+            ],
+            foreground=[
+                ("selected", self.theme.get('hg')),
+                ("active", self.theme.get('bg'))
+            ]
+        )
+
+        self.tsct.configure(
+            "TCombobox",
+            background=self.theme.get('bg'),
+            foreground=self.theme.get('ac'),
+            fieldbackground=self.theme.get('bg'),
+            selectbackground=self.theme.get('ac'),
+            selectforeground=self.theme.get('hg'),
+            bordercolor=self.theme.get('bg'),
+            insertcolor=self.theme.get('ac'),
+            arrowcolor=self.theme.get('ac')
+        )
+
         # self.root.geometry(f"{self.ws[0]}x{self.ws[1]}+{self.sp[0]}+{self.sp[1]}") # Size, Position
         
         # Label-likes
