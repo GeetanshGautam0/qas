@@ -1,11 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox as tkmsb
 import threading, sys, os
 
 import qa_appinfo as QAInfo
 import qa_theme as QATheme
 import qa_fileIOHandler as QAFileIO
 import qa_errors as QAExceptions
+import qa_questions as QAQuestionStandard
 
 class IO:    
     def __init__(self, fn: str, **kwargs):
@@ -126,6 +128,7 @@ class UI(threading.Thread):
         self.vsb.pack(fill=tk.Y, expand=False, side=tk.RIGHT)
         self.frame.pack(fill=tk.BOTH, expand=True)
 
+        self.loadingLbl.config(text="Loading questions; please wait.")
         self.loadingLbl.pack(fill=tk.X, expand=False, padx=10, pady=10)
         self.update_lbl.append(self.loadingLbl)
         self.update_accent_foreground.append(self.loadingLbl)
@@ -135,10 +138,6 @@ class UI(threading.Thread):
         )
         
         self.questions = loadQuestions()
-        
-        self.questions = formatQuestions(self.questions)
-        
-        print(f"\n\n==========\n{self.questions}\n==========\n\n")
         
         self.loadingLbl.config(text="Inserting questions into UI...")
         
@@ -159,10 +158,27 @@ class UI(threading.Thread):
                 self.frame,
                 text=f"Answer: {self.questions.get(i).strip()}",
                 anchor=tk.W,
-                wraplength=int((int(self.ws[0] - self.ws[0]*0.04) - 10))
+                wraplength=int((int(self.ws[0] - self.ws[0]*0.08)))
             )
             
-            tempAnswerLbl.pack(fill=tk.BOTH, expand=False, padx=10, pady=(0, 10))
+            tempAnswerLbl.pack(fill=tk.BOTH, expand=False, padx=10, pady=(1, 1))
+            
+            tk.Button(
+                self.frame,
+                text="Remove Question",
+                fg=self.theme.get('fg'),
+                bg=self.theme.get('bg'),
+                activebackground="red",
+                activeforeground="white",
+                bd=0,
+                anchor=tk.SW,
+                command=lambda: self.rm_q(i.strip())
+            ).pack(
+                fill=tk.BOTH,
+                expand=False,
+                padx=10,
+                pady=(0, 10)
+            )
             
             self.update_lbl.append(tempAnswerLbl)
             self.update_text_font[tempAnswerLbl] = (self.theme.get('font'), 14)
@@ -214,6 +230,25 @@ class UI(threading.Thread):
             self.root.winfo_width(),
             self.root.winfo_height()
         ]
+    
+    def rm_q(self, question) -> None:        
+        conf = tkmsb.askyesno("Confirm Removal", "Are you sure you want to remove the following question:\n\n'{}'".format(question))
+
+        if not conf: return
+        
+        questions = self.questions
+        self.questions.pop(question)
+        
+        # Save
+        save: str = QAQuestionStandard.dictToSaveStr(self.questions)
+        io = IO(f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}", encrypt=True)
+        io.save(save)
+        
+        # Reset UI
+        children = self.frame.winfo_children()
+        for i in children: i.pack_forget()
+        
+        self.run()
         
     def update_theme(self):
         self.theme = QATheme.Get().get('theme')
@@ -336,6 +371,8 @@ def loadQuestions() -> dict:
     __io = IO(path)
     __raw = __io.autoLoad()
     
+    out = QAQuestionStandard.convRawToDict(__raw)
+    
     if len(out) <= 0: out = {"No questions found": "No answers found"}
     
     return out
@@ -356,11 +393,6 @@ def dict_getIndex(dictionary: dict, key: str, add: int = 0, changeToStr: bool = 
     elif changeToStr: ind = " << Unknown Index >> "
     
     return ind
-
-def formatQuestions(raw: dict) -> dict:
-    out: dict = {}
-    
-    return out
 
 if __name__ == "__main__":
     UI()
