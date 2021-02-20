@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox as tkmsb
 import threading, os, sys
 
 import qa_theme as QATheme
 import qa_appinfo as QAInfo
 import qa_fileIOHandler as QAFileIO
+import qa_questions as QAQuestionStandard
 
 class UI(threading.Thread):
     def __init__(self):
@@ -48,7 +50,9 @@ class UI(threading.Thread):
         self.theme_label_font: dict = {}
         self.theme_button: list = []
         self.theme_accent: list = []
-        
+
+        self.mc = False
+
         self.start()
         self.root.mainloop()
         
@@ -69,7 +73,7 @@ class UI(threading.Thread):
         
         # The actual control
         
-        ttl = tk.Label(self.frame, text="Add Questions")
+        ttl = tk.Label(self.frame, text="Add Question")
         ttl.pack(fill=tk.BOTH, expand=False, padx=5, pady=5)
         
         self.theme_label.append(ttl)
@@ -262,7 +266,7 @@ class UI(threading.Thread):
             try:
                 if type(i) is tuple or type(i) is list:
                     
-                    if i[0] is 'bg':
+                    if i[0] == 'bg':
                         i[-1].config(
                             bg=self.theme.get('ac'),
                             fg=i[1]
@@ -295,43 +299,178 @@ class UI(threading.Thread):
         pdf = QAInfo.QA_ENTRY_HELP
         os.system(f"{pdf}")
     
-    def submit(self):
-        pass
+    def mc_click(self):
+        self.mc = not self.mc
+
+        self.mcSel.config(
+            bg=self.theme.get('ac' if self.mc else 'bg'),
+            fg=self.theme.get('hg' if self.mc else 'fg'),
+            text=(
+                self.mcSel.cget('text').replace('\u2713', '').strip() + (
+                    ' \u2713' if self.mc else ''
+                )
+            )
+        )
     
-    def mc_click(self): 
-        pass
-    
-    def delAll(self): 
-        pass
-    
+    def delAll(self):
+        conf = tkmsb.askyesno("Delete All Questions", "Are you sure you want to delete all questions? This process cannot be undone.")
+        if not conf: return
+
+        file = "{}\\{}".format(
+            QAInfo.appdataLoc,
+            QAInfo.qasFilename
+        )
+        IO(file, append=False, encrypt=True).save('')
+
+        tkmsb.showinfo("Deleted All Questions", "Successfully deleted all questions.")
+
     def add(self):
-        pass
-    
+
+        data = QAQuestionStandard.convertToQuestionStr(
+            self.question_entry.get("1.0", "end-1c").strip() if not self.mc else (
+                QAInfo.QAS_MCCode + " " + self.question_entry.get("1.0", "end-1c").strip()
+            ),
+            self.answer_entry.get("1.0", "end-1c").strip()
+        )
+
+        file = "{}\\{}".format(
+            QAInfo.appdataLoc,
+            QAInfo.qasFilename
+        )
+
+        IO(file, encrypt=True, append=True, append_sep="\n").save(data)
+
+        self.submitButton.config(
+            state=tk.DISABLED,
+            disabledforeground="#595959"
+        )
+
+        self.clearButton.config(
+            state=tk.DISABLED,
+            background=self.theme.get('bg'),
+            disabledforeground="#595959"
+        )
+
+        self.helpButton.config(
+            state=tk.DISABLED,
+            background=self.theme.get('bg'),
+            disabledforeground="#595959"
+        )
+
+        tkmsb.showinfo("QAS", "Added question successfully")
+
+        self.close()
+
     def __del__(self):
         self.thread.join(0, self)
-    
-class IO:
-    def __init__(self):
-        pass
-    
-    def save(self, data):
-        pass
-    
-    def autoLoad(self):
-        pass
-    
-    def rawLoad(self):
-        pass
-    
-    def encrypt(self):
-        pass
-    
-    def decrypt(self):
-        pass
-    
-    def __del__(self):
-        pass
 
+
+class IO:
+    def __init__(self, fn: str, **kwargs):
+        self.filename = fn
+        self.object = QAFileIO.create_fileIO_object(self.filename)
+
+        self.flagsHandlerDict = {
+            'append': [False, (bool,)],
+            'append_sep': ["\n", (str, bytes)],
+            'suppressError': [False, (bool,)],
+            'encoding': ['utf-8', (str,)],
+            'encrypt': [False, (bool,)]
+        }
+
+        print(kwargs)
+
+        self.flags = {};
+        KWARGS(self, 'f', flags=kwargs)
+
+        print(self.flags)
+
+    def rawLoad(self) -> bytes:
+        return QAFileIO.load(self.object)
+
+    def save(self, Data):  # Secure Save
+        QAFileIO.save(
+            self.object,
+            Data,
+            append=self.flags['append'],
+            appendSeperator=self.flags['append_sep'],
+            encryptData=self.flags['encrypt'],
+            encoding=self.flags['encoding']
+        )
+
+    def clear(self) -> None:
+        open(self.object.filename, 'w').close()
+
+    def autoLoad(self) -> str:
+        return QAFileIO.read(self.object)
+
+    def encrypt(self) -> None:
+        QAFileIO.encrypt(self.object)
+
+    def decrypt(self) -> None:
+        QAFileIO.decrypt(self.object)
+
+
+def KWARGS(Object: object, call: str, flags: dict = {},
+           **kwargs) -> any:  # KWARGS :: Object-Oriented flag handler (rev2)
+    chKey = "c";
+    fHKey = "f"
+    call = call.lower().strip()
+
+    def flagsHandler(Object: object, kwargs: dict, __raiseErr: bool = True, __ignoreLen: bool = True):
+
+        if len(kwargs) <= 0 and not __ignoreLen: return  # Do not waste time
+        # Actual - Filters
+        ac_ks = [i.strip() for i in Object.flagsHandlerDict.keys()]  # str
+        ac_vs = [i for i in Object.flagsHandlerDict.values()]  # list
+        ac_fs = {ac_ks[i]: ac_vs[i] for i in range(0, len(ac_ks))}  # Flags
+
+        # Given - Filters
+        g_ks = [i.strip() for i in kwargs.keys()]  # str
+        g_vs = [i for i in kwargs.values()]  # list
+        g_fs = {g_ks[i]: g_vs[i] for i in range(0, len(g_ks))}  # Flags
+
+        # Output
+        out = ac_fs  # Set all other flags automatically
+
+        # Logic
+        for i in g_fs:
+            if not i in ac_fs and __raiseErr:
+                raise QAExceptions.QA_InvalidFlag(f"Invalid flag name '{i}'")
+            else:
+                if not type(g_fs.get(i)) in ac_fs.get(i)[-1]:
+                    raise QAExceptions.QA_InvalidFlag(
+                        f"Invalid data type {type(g_fs.get(i))} for flag '{i}'; expected one of: {ac_fs.get(i)[-1]}")
+
+                else:
+                    out[i] = [g_fs.get(i), ac_fs[i][-1]]  # Reconstruct the specific flag with the new data
+
+        # Set
+        # Flags for this function:
+        Object.flagsHandlerDict = out
+
+        # Plain + Set
+        plain = {
+            i: out[i][0] for i in out
+        };
+        Object.flags = plain
+
+        print((out, plain))
+
+        return (out, plain)  # Tuple; cannot change
+
+    if call == chKey:
+        # change(Object, kwargs)
+        return flagsHandler(Object, kwargs)
+
+    elif call == fHKey:
+        return flagsHandler(Object, flags)
+
+    else:
+        return {
+            "change": chKey,
+            "flagsHandler": fHKey
+        }
 
 if __name__ == "__main__":
     UI()
