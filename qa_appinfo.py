@@ -138,6 +138,12 @@ QuestionSeperators = {
     'QA': '<<%%QA::0&000003%%>>' # Question Answer
 }
 
+QAS_MCCode = "<QAS :: MC_set?True>"
+QAS_MC_OPTION_CODE = "[QAS :: Option]"
+QAS_TFCode = "<<QAS :: T/F>>"
+
+QA_ENTRY_HELP = "ADMT_QENTRY_AID\\ADMT_Q-ADD_AID.pdf"
+
 questions_file_info = {
     'enc': True,
     'encoding': 'utf-16'
