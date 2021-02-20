@@ -376,7 +376,12 @@ class UI(threading.Thread):
         self.misc_refreshTheme = tk.Button(self.runScreen)
         self.misc_forceReloadThemes = tk.Button(self.runScreen)
         self.themeSel_sumb = tk.Button(self.quickTheme_cont)
-        
+
+        # Questions (IO) Screen
+        self.questions_editLblF = tk.LabelFrame(self.questionsScreen)
+        self.questions_edit_view = tk.Button(self.questions_editLblF)
+        self.questions_edit_add = tk.Button(self.questions_editLblF)
+
         # Global
         self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
         self.SCORES_SCREEN = "<<%%QAS_QAAT_SCREEN-02%Scores02>>"
@@ -584,7 +589,27 @@ class UI(threading.Thread):
 
         self.update_accent_fg.append(self.quickTheme_cont)
         addFontInst(self, self.themeSel_lbl, (self.theme.get('font'), self.theme.get('sttl_base_fsize')))
-        
+
+        # Questions Screen
+        QsLbls = [
+            self.questions_editLblF
+        ]; QsBtns = [
+            self.questions_edit_add,
+            self.questions_edit_view
+        ]
+
+        for i in QsBtns:
+            addFontInst(self, i, (self.theme.get('font'), self.theme.get('btn_fsize')))
+
+        self.update_btn.extend(QsBtns)
+
+        for i in QsLbls:
+            addFontInst(self, i, (self.theme.get('font'), self.theme.get('fsize_para')))
+
+        self.update_lbl.extend(QsLbls)
+
+        self.update_accent_fg.append(self.questions_editLblF)
+
         # Event binding
         self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
         
@@ -811,8 +836,27 @@ class UI(threading.Thread):
             except: continue
     
     def setup_questions_screen(self):
-        pass
-    
+        self.questions_editLblF.config(
+            text="Edit Questions"
+        )
+        self.questions_editLblF.pack(fill=tk.BOTH, expand=True, padx=self.padX/2, pady=self.padY/2)
+
+        self.questions_edit_view.config(
+            text="View/Delete Questions",
+            command=self.viewQs
+        )
+        self.questions_edit_view.pack(
+            fill=tk.BOTH, expand=True, padx=(self.padX/2, self.padX/4), pady=self.padY/2, side=tk.LEFT
+        )
+
+        self.questions_edit_add.config(
+            text="Add a Question",
+            command=self.addQ
+        )
+        self.questions_edit_add.pack(
+            fill=tk.BOTH, expand=True, padx=(self.padX / 4, self.padX / 2), pady=self.padY / 2, side=tk.RIGHT
+        )
+
     def setup_config_screen(self):
         
         # The actual setup
@@ -1119,6 +1163,12 @@ class UI(threading.Thread):
         self.thread.join(self, 0)
 
     # Button Functions (Event Handlers)
+    def addQ(self):
+        QAQEF.UI()
+
+    def viewQs(self):
+        QAQVF.UI()
+
     def refresh_theme(self):
         QATheme.Get().refresh_theme()
         __dictNew = QATheme.Get().get('theme')
