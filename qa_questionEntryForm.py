@@ -317,7 +317,7 @@ class UI(threading.Thread):
     
     def help(self):
         pdf = QAInfo.QA_ENTRY_HELP
-        os.system(f"{pdf}")
+        os.startfile(f"\"{pdf}\"")
     
     def mc_click(self):
         self.mc = not self.mc

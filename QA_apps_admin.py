@@ -15,6 +15,7 @@ import qa_splash as QASplash
 import qa_onlineVersCheck as QA_OVC
 import qa_questionEntryForm as QAQEF
 import qa_questionViewForm as QAQVF
+import qa_questions as QAQuestionStandard
 
 # Misc. Imports
 import threading, sys, os, shutil, traceback, json, time, random, subprocess
@@ -383,6 +384,7 @@ class UI(threading.Thread):
         self.questions_edit_add = tk.Button(self.questions_editLblF)
 
         self.questions_delAll = tk.Button(self.questionsScreen)
+        self.questions_pdf = tk.Button(self.questionsScreen)
 
         # Global
         self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
@@ -598,7 +600,8 @@ class UI(threading.Thread):
         ]; QsBtns = [
             self.questions_edit_add,
             self.questions_edit_view,
-            self.questions_delAll
+            self.questions_delAll,
+            self.questions_pdf
         ]
 
         for i in QsBtns:
@@ -627,7 +630,7 @@ class UI(threading.Thread):
         self.root.deiconify()
     
     def safe_close(self):
-        global apptitle
+        global apptitle; global configuration_begining; global configuration_saved
         
         debug(f"\nB: {configuration_begining}\nComparing /\\ to \\/\nS: {configuration_saved}")
         
@@ -871,6 +874,25 @@ class UI(threading.Thread):
         self.questions_edit_add.pack(
             fill=tk.BOTH, expand=True, padx=(self.padX / 4, self.padX / 2), pady=self.padY / 2, side=tk.RIGHT
         )
+
+        lbl = tk.Label(
+            self.questionsScreen,
+            text="Note: Recent changes may not show up in the PDF until the application is restarted",
+            wraplength=(self.questionsScreen.winfo_width() - 30)
+        )
+
+        lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX / 2, pady=self.padY / 4)
+
+        self.update_lbl.append(lbl)
+        self.update_fonts[lbl] = (self.theme.get('font'), 10)
+        self.update_accent_fg.append(lbl)
+
+        self.questions_pdf.config(
+            text="Output Questions (PDF)",
+            command=self.qPDF
+        )
+
+        self.questions_pdf.pack(fill=tk.BOTH, expand=False, padx=self.padX/2, pady=self.padY/4)
 
         self.questions_delAll.config(
             text="DELETE ALL QUESTIONS",
@@ -1185,6 +1207,23 @@ class UI(threading.Thread):
         self.thread.join(self, 0)
 
     # Button Functions (Event Handlers)
+    def qPDF(self):
+        fn = tkfldl.asksaveasfilename(
+            defaultextension=f".pdf",
+            filetypes=((f"PDF (*.pdf)", f"*.pdf"),)
+        )
+
+        if type(fn) is str:
+            fn = fn.strip()
+
+            if len(fn) > 0:
+
+                if fn.split('.')[-1] == "pdf":
+                    questionsToPDF(fn)
+
+                else:
+                    tkmsb.showerror(apptitle, f"Invalid file extension '.{fn.split('.')[-1]}'")
+
     def qs_delAll(self):
         global apptitle
 
@@ -1193,6 +1232,8 @@ class UI(threading.Thread):
 
         path = f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}"
         IO(path, append=False, encrypt=True).saveData('') # Overwrite
+
+        tkmsb.showinfo(apptitle, f"Deleted all questions.")
 
     def addQ(self):
         QAQEF.UI()
@@ -1996,7 +2037,8 @@ class UI(threading.Thread):
                 return
 
             # Set
-            configuration_begining = configuration_saved = conf_conv
+            configuration_saved = conf_conv
+            configuration_begining = configuration_saved
             __save = json.dumps(conf_conv, indent=4)
 
             # Write
@@ -2397,6 +2439,79 @@ def conf_saved() -> bool:
     global configuration_saved
     
     return configuration_saved == configuration_begining
+
+def loadQuestions() -> dict:
+    path = f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}"
+    __raw = IO(path).autoLoad()
+
+    __out = QAQuestionStandard.convRawToDict(__raw)
+    return __out
+
+def questionsToPDF(filename: str):
+    qs: dict = loadQuestions()
+
+    sep = "\n ================================== \n"
+
+    __out = []
+
+    __out.extend([
+        "Quizzing Application v2.x",
+        "Coding Made Fun, 2021",
+        f'Questions from {QATime.now().strftime("%a, %d %b %Y - %H:%M")}',
+        "",
+        "Notes and Warnings:",
+        "",
+        "Note: The following PDF may not have the correct information in it; if changes were made recently and are not shown, restart the application and try to create the PDF again.",
+        "",
+        "Warning: This file is for human reference; it cannot be imported into the application",
+        "",
+        sep.strip(),
+        ""
+    ])
+
+    if len(qs) <= 0: __out.append("No Questions Found")
+
+    print(qs)
+
+    # Clean
+    c: dict = {}
+    for i in qs:
+        j = i
+
+        mc = QAInfo.QAS_MCCode in i
+        tf = QAInfo.QAS_TFCode in i
+        i = f"{i}".replace(QAInfo.QAS_MCCode, ''); i = i.replace(QAInfo.QAS_MCCode, ''); i = i.replace(QAInfo.QAS_TFCode, '')
+
+        print(i, qs.get(i))
+
+        q = i.strip().replace(QAInfo.QAS_MC_OPTION_CODE, '')
+        a = f"{qs.get(j)}".replace(QAInfo.QAS_MC_OPTION_CODE, '')
+
+        c[q] = [a, [f"Multiple Choice Question: {mc}", f"True/False Question: {tf}"]]
+
+    qs = c
+
+    print(qs)
+
+    for i in qs:
+        __out.extend(
+            [
+                "",
+                "Question: {}".format(i),
+                "Answer: {}".format(qs.get(i)[0]),
+                "",
+                *qs.get(i)[-1],
+                "",
+                sep
+            ]
+        )
+
+    QAPDFGen.createPDF(__out, filename)
+
+    os.startfile(f"\"{filename}\"")
+
+    tkmsb.showinfo(apptitle,
+                   f"PDF with questions generated!\n\nWarning: This file cannot be imported back into the application.")
 
 def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=False) -> dict:
     debug(f"Refference ::: {reference}")
