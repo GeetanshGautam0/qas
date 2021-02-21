@@ -106,7 +106,7 @@ class JSON:
         
         self.noFuncID = self.jsonHandlerInst.no_func_id
     
-    def logCrash(self, info:str, functionCall=None):
+    def logCrash(self, info: str, functionCall=None):
         id = self.crashID
         time = f"{QATime.now()}"
 
@@ -382,6 +382,8 @@ class UI(threading.Thread):
         self.questions_edit_view = tk.Button(self.questions_editLblF)
         self.questions_edit_add = tk.Button(self.questions_editLblF)
 
+        self.questions_delAll = tk.Button(self.questionsScreen)
+
         # Global
         self.CONFIG_SCREEN = "<<%%QAS_QAAT_SCREEN-01%Configuration01>>"
         self.SCORES_SCREEN = "<<%%QAS_QAAT_SCREEN-02%Scores02>>"
@@ -595,7 +597,8 @@ class UI(threading.Thread):
             self.questions_editLblF
         ]; QsBtns = [
             self.questions_edit_add,
-            self.questions_edit_view
+            self.questions_edit_view,
+            self.questions_delAll
         ]
 
         for i in QsBtns:
@@ -609,6 +612,11 @@ class UI(threading.Thread):
         self.update_lbl.extend(QsLbls)
 
         self.update_accent_fg.append(self.questions_editLblF)
+
+        addFontInst(self, self.questions_delAll, (
+            self.theme.get('font'),
+            int(int(self.theme.get('btn_fsize'))*1.5)
+        ))
 
         # Event binding
         self.screen_parent.bind(f"<<NotebookTabChanged>>", self.tab_changed)
@@ -737,6 +745,13 @@ class UI(threading.Thread):
             activeforeground=self.theme.get('ac')
         )
 
+        self.questions_delAll.config(
+            bg="red",
+            fg="white",
+            activebackground="white",
+            activeforeground="red"
+        )
+
     def update_ui(self, *args): # *args so that the event handler does not raise an error due to excessive arguments        
         # Screen specific
         self.getFrameName() # Set the screen name
@@ -856,6 +871,13 @@ class UI(threading.Thread):
         self.questions_edit_add.pack(
             fill=tk.BOTH, expand=True, padx=(self.padX / 4, self.padX / 2), pady=self.padY / 2, side=tk.RIGHT
         )
+
+        self.questions_delAll.config(
+            text="DELETE ALL QUESTIONS",
+            command=self.qs_delAll
+        )
+
+        self.questions_delAll.pack(fill=tk.BOTH, expand=False, padx=self.padX/2, pady=(self.padY/4, self.padY/2))
 
     def setup_config_screen(self):
         
@@ -1163,6 +1185,15 @@ class UI(threading.Thread):
         self.thread.join(self, 0)
 
     # Button Functions (Event Handlers)
+    def qs_delAll(self):
+        global apptitle
+
+        conf = tkmsb.askyesno(apptitle, "Are you sure you want to delete all questions? This process cannot be undone.")
+        if not conf: return
+
+        path = f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}"
+        IO(path, append=False, encrypt=True).saveData('') # Overwrite
+
     def addQ(self):
         QAQEF.UI()
 

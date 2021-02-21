@@ -288,6 +288,26 @@ class UI(threading.Thread):
             bd=0
         )    
 
+        self.question_entry.config(
+            selectbackground=self.theme.get('ac'),
+            selectforeground=self.theme.get('hg'),
+            wrap=tk.WORD,
+            font=(
+                self.theme.get('font'),
+                11
+            )
+        )
+
+        self.answer_entry.config(
+            selectbackground=self.theme.get('ac'),
+            selectforeground=self.theme.get('hg'),
+            wrap=tk.WORD,
+            font=(
+                self.theme.get('font'),
+                11
+            )
+        )
+
     def update(self):
         self.update_theme()
     
