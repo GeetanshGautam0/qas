@@ -362,18 +362,18 @@ def KWARGS(Object: object, call: str, flags: dict = {}, **kwargs) -> any: # KWAR
             "flagsHandler": fHKey
         }
 
-def loadQuestions() -> dict:
+def loadQuestions(__r=True) -> dict:
     out: dict = {}
     path = f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}"
     
-    if not os.path.exists(path): return {"No questions found": "No answers found"}
+    if not os.path.exists(path): return {"No questions found": "No answers found"} if __r else {}
     
     __io = IO(path)
     __raw = __io.autoLoad()
     
     out = QAQuestionStandard.convRawToDict(__raw)
     
-    if len(out) <= 0: out = {"No questions found": "No answers found"}
+    if len(out) <= 0: out = {"No questions found": "No answers found"} if __r else {}
     
     return out
 

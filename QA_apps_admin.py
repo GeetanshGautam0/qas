@@ -31,7 +31,7 @@ boot_steps = {
     2: 'Loading Functions',
     3: 'Loading Configuration',
     4: 'Running Boot Checks',
-    5: 'Fetching Version Information Online'
+    5: 'Fetching Version Information (Online)'
 }; boot_steps_amnt = len(boot_steps)  
 
 # The splash screen
@@ -2435,9 +2435,7 @@ def get_error_code(key) -> tuple:
     return (__raw, __info)
 
 def conf_saved() -> bool:
-    global configuration_begining
-    global configuration_saved
-    
+    global configuration_begining; global configuration_saved
     return configuration_saved == configuration_begining
 
 def loadQuestions() -> dict:
@@ -2448,7 +2446,8 @@ def loadQuestions() -> dict:
     return __out
 
 def questionsToPDF(filename: str):
-    qs: dict = loadQuestions()
+    # qs: dict = loadQuestions()
+    qs: dict = QAQVF.loadQuestions(False)
 
     sep = "\n ================================== \n"
 
@@ -2464,8 +2463,6 @@ def questionsToPDF(filename: str):
         "Note: The following PDF may not have the correct information in it; if changes were made recently and are not shown, restart the application and try to create the PDF again.",
         "",
         "Warning: This file is for human reference; it cannot be imported into the application",
-        "",
-        sep.strip(),
         ""
     ])
 
@@ -2475,30 +2472,36 @@ def questionsToPDF(filename: str):
 
     # Clean
     c: dict = {}
+
     for i in qs:
         j = i
 
-        mc = QAInfo.QAS_MCCode in i
-        tf = QAInfo.QAS_TFCode in i
-        i = f"{i}".replace(QAInfo.QAS_MCCode, ''); i = i.replace(QAInfo.QAS_MCCode, ''); i = i.replace(QAInfo.QAS_TFCode, '')
+        mc = QAInfo.QAS_MCCode.lower() in i.lower()
+        tf = QAInfo.QAS_TFCode.lower() in i.lower()
 
-        print(i, qs.get(i))
+        i = f"{i}".replace(QAInfo.QAS_MCCode, ''); i = i.replace(QAInfo.QAS_MCCode, ''); i = i.replace(QAInfo.QAS_TFCode, '')
 
         q = i.strip().replace(QAInfo.QAS_MC_OPTION_CODE, '')
         a = f"{qs.get(j)}".replace(QAInfo.QAS_MC_OPTION_CODE, '')
 
         c[q] = [a, [f"Multiple Choice Question: {mc}", f"True/False Question: {tf}"]]
 
-    qs = c
+    qs = c; c_qs = [*qs.keys()]
 
-    print(qs)
+    __out.extend(
+        [
+            "Total number of (valid) questions: {}".format(len(qs)),
+            "",
+            sep.strip()
+        ]
+    )
 
     for i in qs:
         __out.extend(
             [
                 "",
-                "Question: {}".format(i),
-                "Answer: {}".format(qs.get(i)[0]),
+                "Question {}/{}: {}".format(c_qs.index(i)+1, len(qs), i),
+                "Answer for #{}: {}".format(c_qs.index(i)+1, qs.get(i)[0]),
                 "",
                 *qs.get(i)[-1],
                 "",
@@ -2579,7 +2582,7 @@ if type(configuration_begining) is not dict:
 # Pre-boot logic
 
 debug(f"Configuraion Loaded: {configuration_begining}")
-configuration_saved = configuration_begining
+configuration_saved = loadConfiguration()
 
 if not configuration_begining.get(QAConfig.keys_inDist):
     QASplash.hide(splObj)
@@ -2597,11 +2600,15 @@ JSON().boot_check() # Boot checks (global_nv_flags_fn file flags run these check
 # Adjust Splash
 set_boot_progress(5)
 
-if not QA_OVC.check():
-    QASplash.hide(splObj)
-    tkmsb.showwarning(apptitle, f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
-    QASplash.show(splObj)
-    
+try:
+    if not QA_OVC.check():
+        QASplash.hide(splObj)
+        tkmsb.showwarning(apptitle, f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
+        QASplash.show(splObj)
+
+except:
+    tkmsb.showwarning(apptitle, f"Non fatal: Failed to load version information (online)")
+
 # Final Splash Settings
 if not QAInfo.doNotUseSplash:
     show_splash_completion() # Show completion

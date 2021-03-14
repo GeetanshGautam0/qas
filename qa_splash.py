@@ -4,6 +4,7 @@ from tkinter import *
 import tkinter.ttk as ttk
 import qa_theme as QATheme
 import qa_appinfo as QAInfo
+import qa_colors as QAColors
 
 # theme = QATheme.Get().get('theme')
 
@@ -21,7 +22,7 @@ theme = {
     # Color
     'bg': '#ffffff', # Background
     'fg': '#000000', # Main foreground
-    'ac': '#29AFE6', # Accent Color
+    'ac': '#000000', # Accent Color
     'hg': '#ffffff', # Highlight color (back of fields)
     'border_color': '#ffffff', # Border color for buttons
 
@@ -38,13 +39,6 @@ class Splash(Toplevel):
         
         self.pbarStyle = ttk.Style()
         self.pbarStyle.theme_use('default')
-        self.pbarStyle.configure(
-            "Horizontal.TProgressbar",
-            foreground=self.theme.get('ac'),
-            background=self.theme.get('ac'),
-            borderwidth=0,
-            thickness=2
-        )
         
         self.root = master
         self.frame = Frame(self.root)
@@ -64,7 +58,20 @@ class Splash(Toplevel):
         self.title = "Quizzing Application"
         self.information = "Loading...\n\nCoding Made Fun"
         self.img = os.path.abspath(f"{QAInfo.icons_png['qt']}").replace('/', '\\')
-        
+
+        self.ac_start = "#000000"
+        self.ac_end = "#00aeae"
+        self.grad = QAColors.monoFade(self.ac_start, self.ac_end, 0, 4, 4)
+        self.complete = False
+
+        self.pbarStyle.configure(
+            "Horizontal.TProgressbar",
+            foreground=self.grad[0],
+            background=self.grad[0],
+            borderwidth=0,
+            thickness=2
+        )
+
         # UI Config
         self.run()
 
@@ -102,7 +109,8 @@ class Splash(Toplevel):
     
     def completeColor(self) -> None:
         compTheme = QATheme.Get().get('theme')
-        
+        self.complete = True
+
         self.pbarStyle.configure(
             "Horizontal.TProgressbar",
             foreground=compTheme.get('ac'),
@@ -139,7 +147,19 @@ class Splash(Toplevel):
     
     def changePbar(self, per: float) -> None:
         self.pbar['value'] = per
-        self.pbar.configure(style="Horizontal.TProgressbar")
+
+        if not self.complete:
+            self.pbarStyle.configure(
+                "Horizontal.TProgressbar",
+                background=self.grad[int((len(self.grad) - 1) * (per/100)*0.8)],
+                foreground=self.grad[int((len(self.grad) - 1) * (per/100)*0.8)]
+            )
+            self.titleLbl.config(fg=self.grad[int((len(self.grad) - 1) * per/100)])
+
+        self.pbar.configure(
+            style="Horizontal.TProgressbar"
+        )
+
         self.root.update()
         
     def setInfo(self, text) -> None:
