@@ -912,7 +912,8 @@ class UI(threading.Thread):
         
         # self.config_mainContainer <= Parent Container
         self.config_mainContainer.pack(fill=tk.BOTH, expand=True, padx=int(self.padX/2), pady=int(self.padY/2))
-        self.config_mainContainer.config(text="Edit Configuration")
+        # self.config_mainContainer.config(text="Edit Configuration")
+        self.config_mainContainer.config(bd='0')
         
         pady = int(self.padY/4); padx = int(self.padX/2)
         

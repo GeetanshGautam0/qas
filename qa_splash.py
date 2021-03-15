@@ -43,7 +43,7 @@ class Splash(Toplevel):
         self.root = master
         self.frame = Frame(self.root)
         
-        self.geo = "600x250+{}+{}".format(
+        self.geo = "600x225+{}+{}".format(
             int(self.root.winfo_screenwidth()/2 - 300),
             int(self.root.winfo_screenheight()/2 - 125)
         )
@@ -68,6 +68,7 @@ class Splash(Toplevel):
             "Horizontal.TProgressbar",
             foreground=self.grad[0],
             background=self.grad[0],
+            troughcolor=self.theme.get('bg'),
             borderwidth=0,
             thickness=2
         )
@@ -114,7 +115,8 @@ class Splash(Toplevel):
         self.pbarStyle.configure(
             "Horizontal.TProgressbar",
             foreground=compTheme.get('ac'),
-            background=compTheme.get('ac')
+            background=compTheme.get('ac'),
+            troughcolor=self.theme.get('bg')
         )
         self.titleLbl.config(
             fg=compTheme.get('ac'),
@@ -152,7 +154,8 @@ class Splash(Toplevel):
             self.pbarStyle.configure(
                 "Horizontal.TProgressbar",
                 background=self.grad[int((len(self.grad) - 1) * (per/100)*0.8)],
-                foreground=self.grad[int((len(self.grad) - 1) * (per/100)*0.8)]
+                foreground=self.grad[int((len(self.grad) - 1) * (per/100)*0.8)],
+                troughcolor=self.theme.get('bg')
             )
             self.titleLbl.config(fg=self.grad[int((len(self.grad) - 1) * per/100)])
 

@@ -45,7 +45,7 @@ default = { # If you change something here, define the new behaviour in conv_to_
     # Color
     'bg': '#ffffff', # Background
     'fg': '#000000', # Main foreground
-    'ac': '#e6ac00', # Accent Color
+    'ac': '#008888', # Accent Color
     'hg': '#ffffff', # Highlight color (back of fields)
     'border_color': '#ffffff', # Border color for buttons
 

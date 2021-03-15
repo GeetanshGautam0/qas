@@ -875,7 +875,7 @@ class IO:
                                 raise IOError(f"No delete condition met for entry {self.appdata}\\{i}") # Will not terminate but will end the file copying routine
 
                     if tkmsb.askyesno(apptitle, f"Copied old data to {new_location}; open folder?"):
-                        open_file(new_location)
+                        openFile(new_location)
 
             except Exception as e:
                 if g:
