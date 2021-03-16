@@ -480,7 +480,7 @@ class UI(threading.Thread):
         for i in self.sc_inst_map:
             # txt = self.sc_name_mapping[self.sc_index_mapping[i]]
             ref = self.sc_inst_map[i]
-            txt = self.sc_name_mapping[i]
+            txt = "%s%s%s" % ("  ", self.sc_name_mapping[i], "  ")
             self.screen_parent.add(ref, text=txt) # Keeps the order
             self.update_bg.append(self.sc_inst_map[i]) # Frames
         
@@ -927,7 +927,7 @@ class UI(threading.Thread):
         self.config_qs_pa_container.config(text="Questions: Part Or All")
         
         self.config_qs_divF_container.pack(fill=tk.BOTH, expand=True, padx=padx, pady=pady, side=tk.RIGHT)
-        self.config_qs_divF_container.config(text="Divisor")
+        self.config_qs_divF_container.config(text="Divisor", bd='0')
         
         # self.config_deduc_ed_container
         #   self.config_deduc_points_container
@@ -935,7 +935,7 @@ class UI(threading.Thread):
         self.config_deduc_ed_container.config(text="Deductions")
         
         self.config_deduc_points_container.pack(fill=tk.BOTH, expand=True, padx=padx, pady=pady, side=tk.RIGHT)
-        self.config_deduc_points_container.config(text="Deduction Amount")
+        self.config_deduc_points_container.config(text="Deduction Amount", bd='0')
         
         # Button Configuration + Info LBL conf.
         wl = int(self.ss[0]-self.ss[0]*0.55)

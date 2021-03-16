@@ -1295,7 +1295,7 @@ class UI(threading.Thread):
             0] else "Quizzing Application Theming Utility"
 
         # Main window
-        self.root = tk.Tk()
+        self.root = tk.Tk(); self.root.withdraw()
 
         # Set window transform information
         self.txy = {'x': 0, 'y': 1}  # Coordinate template
@@ -1690,6 +1690,7 @@ self.theme_set_canvas_new.width = {self.theme_set_canvas_new.cget('width')}
         jsr_debug("UI.run: set root_handler.theme_lbl to {} and root_handler.theme.btn to {}.".format(self.theme_lbl, self.theme_btn))
 
         # Update the theme of the elements
+        self.root.deiconify()
         self.update()
 
     def reload(self):
