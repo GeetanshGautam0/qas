@@ -1,4 +1,3 @@
-from logging import *
 import qa_time, appdirs, sys, json, traceback, os
 import tkinter.messagebox as msb
 import threading
@@ -35,6 +34,7 @@ except Exception as e:
 # AppData Variables
 global appdataLoc
 appdataLoc = appdirs.user_data_dir(appauthor=versionData[VFKeys['au']],appname=versionData[VFKeys['pro']],version=str(versionData[VFKeys['v']]),roaming=bool(versionData[VFKeys['roam']]))
+fileInUse = ""
 
 def filter_path(path: str, index: int, *replace):
     for i in replace: path = path.replace(i, "\\")
@@ -60,7 +60,7 @@ class Log(threading.Thread):
         self.start()
 
     def logFile_create(self, from_: str = "Unknown origin"):
-        global gen
+        global gen; global fileInUse
 
         if gen: return None
 
@@ -80,23 +80,29 @@ class Log(threading.Thread):
                 except Exception as e:
                     pass
 
-                basicConfig(level=DEBUG, filename=f)
+                fileInUse = f
 
                 print("Generating debug file {}".format(f))
-                open(f,'wt').write(__ref__['defaults'].get("def_fileHeader")[-1][-1].format(from_))
+                with open(f,'wt') as file:
+                    file.write(__ref__['defaults'].get("def_fileHeader")[-1][-1].format(from_))
+                    file.close()
 
         except Exception as _:
             gen = False  # reset the flag in case the error is suppressed and therefore ignored
             raise _  # Re-raise the error
 
     def log(self, data, from_="Unknown Origin"):
+        global fileInUse
+
         if not gen:
             self.logFile_create(from_)
 
         time = qa_time.logTime()
 
         print(f"{from_} @ {time}: {data}\n")
-        debug(f"{from_} @ {time}: {data}\n")
+        with open(fileInUse, 'a') as file:
+            file.write(f"{from_} @ {time}: {data}\n")
+            file.close()
 
     def __del__(self):
         self.thread.join(self, 0)

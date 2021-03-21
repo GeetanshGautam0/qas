@@ -24,6 +24,8 @@ from tkinter import ttk
 from tkinter import messagebox as tkmsb
 from tkinter import filedialog as tkfldl
 
+#TODO: Add "Export as Test File" option to IO screen - to be used by question entry form
+
 apptitle = f"Administrator Tools v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
 
 boot_steps = {
@@ -83,7 +85,7 @@ def show_splash_completion(resolution=1000):
 set_boot_progress(1)
 
 # Globals
-QAS_encoding = 'utf-32'
+QAS_encoding = 'utf-8'
 self_icon = QAInfo.icons_ico.get('admt')
 configruationFilename = '{}\\{}'.format(QAInfo.appdataLoc.strip('\\').strip(), QAInfo.confFilename)
 configuration_saved: dict = {}
@@ -829,6 +831,7 @@ class UI(threading.Thread):
         _run = self.runScreen.winfo_children()
         _io = self.IOScreen.winfo_children()
         _scores = self.scoresScreen.winfo_children()
+        _questions = self.questionsScreen.winfo_children()
         
         for item in _config:
             if item.winfo_children(): _config.extend(item.winfo_children())
@@ -841,10 +844,13 @@ class UI(threading.Thread):
         
         for item in _scores:
             if item.winfo_children(): _scores.extend(item.winfo_children())
+
+        for item in _questions:
+            if item.winfo_children(): _questions.extend(item.winfo_children())
         
-        __all = [*_config, *_run, *_io, *_scores]
+        __all = [*_config, *_run, *_io, *_scores, *_questions]
         
-        return (__all, _config, _scores, _io, _run)        
+        return [__all, _config, _scores, _io, _run, _questions]
     
     def clearUI(self):
         widgets = self.all_screen_widgets()[0]

@@ -33,10 +33,10 @@ def errorHandler(errCode="Error Code Unknown", exit=False, exit_code="Exit Code 
 # Version File Variables + Loading + Checking
 versionFilename = "qa_versionInfo.json"
 VFKeys = {
-    'au' : 'AuthorName',
-    'v' : 'Version',
-    'pro' : 'Product',
-    'roam' : "Roaming"
+    'au': 'AuthorName',
+    'v': 'Version',
+    'pro': 'Product',
+    'roam': "Roaming"
 }
 
 qa_flags_ref = qaFlags.QAFlags()
@@ -86,7 +86,7 @@ codes_keys = {
 exten = 'qaFile'
 
 # FTSRA Variables
-ftsFolder = "QAFTSRA"
+ftsFolder = ".fts"
 QaFTSRAFiles = ("configuration.json", "qas.qaFile", "disp.qaFile", "theme.qaFile", "Scores")
 
 # Flags File
@@ -96,37 +96,31 @@ global_nv_flags_fn = f"{appdataLoc}\\{qa_flags_ref.flags_fn}"
 THEME: dict = themegetter.get('theme')
 SuiteName: str = "Quizzing Application"
 AppNames: dict = {
-    'ftsra' : "First Time Setup + Recovery Agent\nUtility",
-    'quf' : 'Quizzing Form',
-    'adts' : 'Administrator Tools',
-    'th' : 'Custom Theming Utility'
+    'ftsra': "First Time Setup + Recovery Agent\nUtility",
+    'quf': 'Quizzing Form',
+    'adts': 'Administrator Tools',
+    'th': 'Custom Theming Utility'
 }
 def getAppName(key: str): return AppNames[key] if key in AppNames else None
 
 # Icons
 icons_ico = {
-    'tu': 'icons\\themer.ico',
-    'ftsra': 'icons\\ftsra.ico',
-    'admt': 'icons\\admin_tools.ico',
-    'qt': 'icons\\quizzing_tool.ico'
-}; icons_png  = {
-    'tu': 'icons\\themer.png',
-    'ftsra': 'icons\\ftsra.png',
-    'admt': 'icons\\admin_tools.png',
-    'qt': 'icons\\quizzing_tool.png'
+    'tu': '.icons\\themer.ico',
+    'ftsra': '.icons\\ftsra.ico',
+    'admt': '.icons\\admin_tools.ico',
+    'qt': '.icons\\quizzing_tool.ico',
+    'installer': '.icons\\installer.ico'
+}; icons_png = {
+    'tu': '.icons\\themer.png',
+    'ftsra': '.icons\\ftsra.png',
+    'admt': '.icons\\admin_tools.png',
+    'qt': '.icons\\quizzing_tool.png'
 }
 
 help_files = {
-    'ftsra': f"FTSRA_AID\\FTSRA_AID.pdf"
+    'ftsra': f".ftsraAid\\FTSRA_AID.pdf"
 }
-
-theme_presets: dict = {
-    'Monochrome Dark': 'TU_MONOCHROME_DARK.qaFile',
-    'Monochrome Light': 'TU_MONOCHROME_LIGHT.qaFile',
-    'Dark': 'TU_DARK.qaFile',
-    'Default': 'TU_DEFAULT.qaFile',
-    'High Contrast': 'TU_HIGH_CONTRAST.qaFile'
-}; theme_presets_foldername = 'TU_THEME_PRESETS'
+theme_presets_foldername = '.defaultThemes'
 
 export_file_extension = "qa_export"
 
@@ -142,7 +136,7 @@ QAS_MCCode = "<QAS :: MC_set?True>"
 QAS_MC_OPTION_CODE = "[QAS :: Option]"
 QAS_TFCode = "<<QAS :: T/F>>"
 
-QA_ENTRY_HELP = "ADMT_QENTRY_AID\\ADMT_Q-ADD_AID.pdf"
+QA_ENTRY_HELP = ".questionAid\\ADMT_Q-ADD_AID.pdf"
 
 questions_file_info = {
     'enc': True,
@@ -153,7 +147,6 @@ bugReportLink = "https://codingmadefun.wixsite.com/database/qas-bug-report-form"
 version_check_url = "https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/qas.json"
 
 
-
-
 # ------------------------------ Control Variables ---------------------------
+
 doNotUseSplash = False # If set to True, the splash screen won't be shown

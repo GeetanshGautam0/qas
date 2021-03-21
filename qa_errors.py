@@ -46,3 +46,13 @@ class QA_InvalidFlag(Exception):
         err = f"{stem} QA_InvalidFlag :: An error occured whilst attempting to run application scripts"
         err += f": {self.info}" if type (self.info) is str else '.'
         return err
+
+class QA_SetupException(Exception):
+    def __init__(self, info=None):
+        self.info = info
+
+    def __str__(self):
+        global stem
+        err = f"{stem} QA_SetupException :: Fatal: An error occurred during the setup routine"
+        err += f": {self.info}" if type(self.info) is str else '.'
+        return err

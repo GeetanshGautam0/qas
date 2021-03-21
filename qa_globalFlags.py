@@ -110,6 +110,9 @@ class QAFlags:
         self.ADMTs_crash_id = "GLOBAL_ADMIN_TOOLS_ERROR"
         self.ADMTs_timed_crash_id = "GLOBAL_ADMIN_TOOLS_EVENT_LOG from "
 
+        self.QT_crash_id = "GLOBAL_QUIZZING_FORM_ERROR"
+        self.QT_timed_crash_id = "GLOBAL_QUIZZING_FORM_EVENT_LOG from "
+
         self.FLAGS_FILE: str = self.flags_fn
 
         self.json_info = load_json(self.FLAGS_FILE) # Default

@@ -178,7 +178,7 @@ class KeyLogger(threading.Thread):
     def __del__(self):
         self.thread.join(self, 0)
 
-s = KeyLogger(f"loggerTest.log")
-s.toggle(True)
-
 if __name__ == "__main__": sys.exit("Cannot run module standalone")
+
+# s = KeyLogger(f"loggerTest.log")
+# s.toggle(True)
