@@ -18,13 +18,23 @@ import qa_questionViewForm as QAQVF
 import qa_questions as QAQuestionStandard
 
 # Misc. Imports
-import threading, sys, os, shutil, traceback, json, time, random, subprocess
+import threading, sys, os, shutil, traceback, json, time, random, subprocess, sqlite3
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
 from tkinter import filedialog as tkfldl
 
-#TODO: Add "Export as Test File" option to IO screen - to be used by question entry form
+# TODO: Read the following comment for description
+"""
+    * Add "Export as Test File" option to IO screen - to be used by question entry form
+        * use sqlite3 database;
+        * encrypt the file and save with custom extension
+        * should include a config tbl, and a question tbl
+        * export as a sqlite db too, add convertor to this app to convert the db to a pdf for the teacher
+            - db should have a config tbl and a scores tbl, which includes the correct and incorrect responses.
+            
+    * Read the last bullet point for the next implementation required.
+"""
 
 apptitle = f"Administrator Tools v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
 
@@ -45,7 +55,7 @@ if not QAInfo.doNotUseSplash:
     splObj.setImg(QAInfo.icons_png.get('admt'))
     splObj.setTitle("Administrator Tools")
 
-def set_boot_progress(ind, resolution=1000):
+def set_boot_progress(ind, resolution=100):
     if QAInfo.doNotUseSplash: return
     
     global boot_steps; global boot_steps_amnt; global splObj
@@ -62,7 +72,7 @@ def set_boot_progress(ind, resolution=1000):
             (i/boot_steps_amnt)/(resolution/100)
         )
 
-def show_splash_completion(resolution=1000):
+def show_splash_completion(resolution=100):
     if QAInfo.doNotUseSplash: return
     
     global boot_steps_amnt; global splObj

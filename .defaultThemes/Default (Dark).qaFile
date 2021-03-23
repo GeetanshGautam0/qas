@@ -14,7 +14,7 @@ fsize_para 10
 btn_fsize 13
 sttl_base_fsize 18
 min_fsize 10
-bg #1a1a1a
+bg #202020
 fg #ffffff
 ac #008888
 hg #ffffff

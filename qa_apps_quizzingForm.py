@@ -1,12 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog as tkfld
 from tkinter import messagebox as tkmsb
-import os, sys, threading, shutil, time, json
+import os, sys, threading, shutil, time, json, sqlite3
 
 import qa_appinfo as QAInfo
 import qa_diagnostics as QADiagnostics
 import qa_splash as QASplash
-import qa_keylogger as QAKeyLogger
 import qa_typeConvertor as QAConvertor
 import qa_logging as QALogging
 import qa_fileIOHandler as QAFileIO
@@ -16,6 +16,7 @@ import qa_time as QATime
 import qa_globalFlags as QAJSONHandler
 import qa_errors as QAErrors
 import qa_questions as QAQuestionStandard
+import qa_theme as QATheme
 
 boot_steps = {
     1: 'Loading Variables',
@@ -33,7 +34,7 @@ if not QAInfo.doNotUseSplash:
     splObj.setTitle("Quizzing Form")
 
 
-def set_boot_progress(ind, resolution=1000):
+def set_boot_progress(ind, resolution=100):
     if QAInfo.doNotUseSplash: return
 
     global boot_steps;
@@ -53,7 +54,7 @@ def set_boot_progress(ind, resolution=1000):
         )
 
 
-def show_splash_completion(resolution=1000):
+def show_splash_completion(resolution=100):
     if QAInfo.doNotUseSplash: return
 
     global boot_steps_amnt;
@@ -100,7 +101,606 @@ class LoginUI(threading.Thread):
         self.root = tk.Toplevel()
         self.root.withdraw()
 
+        # Theme
+        self.theme = QATheme.Get().get('theme')
+
+        # Other variables (theme)
+        self.lblFrame_font = (self.theme.get('font'), 11)
+        self.dsb_fg = '#595959'
+
+        # Geometry
+        self.txy = {'x': 0, 'y': 1}  # Coordinate template
+        self.ss = (self.root.winfo_screenwidth(), self.root.winfo_screenheight())  # Screen size
+        self.ds_ratio = (
+            1000 / 1920,  # Width
+            900 / 1080  # Height
+        )
+        self.ds = (int(self.ds_ratio[0] * self.ss[0]),
+                   int(self.ds_ratio[1] * self.ss[1]))  # Default size
+        self.ws = [
+            self.ds[self.txy['x']] if self.ds[self.txy['x']] < self.ss[self.txy['x']] else int(
+                self.ss[self.txy['x']] * self.ds_ratio[0]),
+            self.ds[self.txy['y']] if self.ds[self.txy['y']] < self.ss[self.txy['y']] else int(
+                self.ss[self.txy['y']] * self.ds_ratio[1])
+        ]  # Window size (adjustable)
+        self.sp = (int(self.ss[self.txy['x']] / 2 - self.ws[self.txy['x']] / 2),
+                   int(self.ss[self.txy['y']] / 2 - self.ws[self.txy['y']] / 2))  # Position on screen
+
+        self.gem = "{}x{}+{}+{}".format(self.ws[0], self.ws[1], self.sp[0], self.sp[1])
+
+        # Padding x and y
+        self.padX = 10
+        self.padY = 5
+
+        # Frames
+        self.dbSelctFrame = tk.Frame(self.root)
+        self.credFrame = tk.Frame(self.root)
+        self.configFrame = tk.Frame(self.root)
+        self.finalFrame = tk.Frame(self.root)
+
+        # Screen Indexing System
+        self.screen_index = 0
+        self.scI_mapping = {
+            0: ["Database Selection", self.dbSelctFrame, self.screen_1],
+            1: ["Credentials", self.credFrame, self.screen_2],
+            2: ["Configuration", self.configFrame, self.screen_3],
+            3: ["Preparing Quiz", self.finalFrame, self.screen_4]
+        }
+
+        self.sc_navButton_next_states = {
+            0: True,
+            1: True,
+            2: True,
+            3: True
+        }; self.screen_data = {
+            0: {
+                'defaults': {
+                    'i': 'Internal Database',
+                    'e': 'External Database'
+                },
+                'flags': {
+                    'selected': False
+                },
+                'strs': {
+                    'errors': {
+                        'selectDB': 'ERROR: Please select a database',
+                        'notValid': 'ERROR: Invalid DB file selected'
+                    }
+                }
+            },
+            1: {
+                'strs': {
+                    'errors': {
+                        'addInformation': 'ERROR: Please enter the requested information'
+                    }
+                }
+            },
+            2: {},
+            3: {}
+        }
+
+        # Frame Elements
+        # Root Elements *excluding frames
+        self.previous_button = tk.Button(self.root)
+        self.next_button = tk.Button(self.root)
+
+        self.creditLbl = tk.Label(self.root)
+
+        #   - Frame 1: Database selection
+        self.dbSel_ttl = tk.Label(self.dbSelctFrame)
+        self.dbSel_info = tk.Label(self.dbSelctFrame)
+        self.dbSel_btnContainer = tk.LabelFrame(self.dbSelctFrame)
+        self.dbSel_btns_external = tk.Button(self.dbSel_btnContainer)
+        self.dbSel_btns_internal = tk.Button(self.dbSel_btnContainer)
+        self.dbSel_error_lbl = tk.Label(self.dbSelctFrame)
+
+        #   - Frame 2: Credentials
+        self.cred_ttl = tk.Label(self.credFrame)
+        self.cred_info = tk.Label(self.credFrame)
+        self.cred_container = tk.LabelFrame(self.credFrame)
+        self.cred_name_cont = tk.LabelFrame(self.cred_container)
+        self.cred_first_invis_cont = tk.LabelFrame(self.cred_name_cont)
+        self.cred_first = tk.Entry(self.cred_first_invis_cont)
+        self.cred_first_lbl = tk.Label(self.cred_first_invis_cont)
+        self.cred_last_invis_cont = tk.LabelFrame(self.cred_name_cont)
+        self.cred_last = tk.Entry(self.cred_last_invis_cont)
+        self.cred_last_lbl = tk.Label(self.cred_last_invis_cont)
+        self.cred_studentID_invis_cont = tk.LabelFrame(self.cred_container)
+        self.cred_studentID_lbl = tk.Label(self.cred_studentID_invis_cont)
+        self.cred_studentID_field = tk.Entry(self.cred_studentID_invis_cont)
+        self.cred_error_lbl = tk.Label(self.credFrame)
+
+        # UI Update System
+        self.update_element = {
+            'lbl': [],
+            'btn': [],
+            'acc_fg': [],
+            'acc_bg': [],
+            'font': [],
+            'frame': [],
+            'error_lbls': []
+        }
+
+        # Final calls
         self.start()
+        self.root.mainloop()
+
+    def close(self):
+        conf = tkmsb.askyesno(apptitle, "Are you sure you want to exit?")
+        if conf: sys.exit(0)
+
+    def run(self):
+        global apptitle
+        self.root.title(apptitle)
+        self.root.geometry(self.gem)
+        self.root.protocol("WM_DELETE_WINDOW", self.close)
+
+        self.update_element['lbl'].extend([
+            self.dbSel_ttl,
+            self.dbSel_btnContainer,
+            self.dbSel_info,
+            self.cred_ttl,
+            self.cred_info,
+            self.cred_container,
+            self.cred_name_cont,
+            self.cred_first_lbl,
+            self.cred_last_lbl,
+            self.cred_studentID_lbl,
+            self.cred_error_lbl,
+            self.dbSel_error_lbl
+        ])
+
+        self.update_element['btn'].extend([
+            self.dbSel_btns_external,
+            self.dbSel_btns_internal
+        ])
+
+        self.update_element['acc_fg'].extend([
+            self.dbSel_btnContainer,
+            self.dbSel_ttl,
+            self.cred_ttl,
+            self.cred_container,
+            self.cred_name_cont
+        ])
+
+        self.update_element['acc_bg'].extend([
+            self.root
+        ])
+
+        self.update_element['font'].extend([
+            [self.next_button, (self.theme.get('font'), 12)],
+            [self.previous_button, (self.theme.get('font'), 12)],
+            [self.creditLbl, (self.theme.get('font'), 8)],
+
+            [self.dbSel_ttl, (self.theme.get('font'), 32)],
+            [self.dbSel_info, (self.theme.get('font'), 12)],
+            [self.dbSel_btnContainer, (self.theme.get('font'), 10)],
+            [self.dbSel_btns_external, (self.theme.get('font'), 14)],
+            [self.dbSel_btns_internal, (self.theme.get('font'), 14)],
+            [self.dbSel_error_lbl, (self.theme.get('font'), 11)],
+
+            [self.cred_ttl, (self.theme.get('font'), 32)],
+            [self.cred_info, (self.theme.get('font'), 12)],
+            [self.cred_container, (self.theme.get('font'), 10)],
+            [self.cred_name_cont, (self.theme.get('font'), 10)],
+            [self.cred_first, (self.theme.get('font'), 13)],
+            [self.cred_last, (self.theme.get('font'), 13)],
+            [self.cred_first_lbl, (self.theme.get('font'), 13)],
+            [self.cred_last_lbl, (self.theme.get('font'), 13)],
+            [self.cred_studentID_field, (self.theme.get('font'), 13)],
+            [self.cred_studentID_lbl, (self.theme.get('font'), 13)],
+            [self.cred_error_lbl, (self.theme.get('font'), 11)]
+        ])
+
+        self.update_element['frame'].extend([
+            self.configFrame,
+            self.dbSelctFrame,
+            self.credFrame,
+            self.finalFrame
+        ])
+
+        self.update_element['error_lbls'].extend([
+            self.cred_error_lbl,
+            self.dbSel_error_lbl
+        ])
+
+        self.next_button.config(
+            text="Next >",
+            command=self.next_page,
+            anchor=tk.E
+        )
+
+        self.previous_button.config(
+            text="< Previous",
+            command=self.prev_page,
+            anchor=tk.W
+        )
+
+        self.creditLbl.config(
+            text="Coding Made Fun, {}".format(QATime.form('%Y')),
+            anchor=tk.E,
+            justify=tk.RIGHT
+        )
+
+        self.update_ui(0, True)
+        self.root.deiconify()
+
+    def update_ui(self, screenI_counter=0, force_refresh=False):
+        # Config.
+        self.screen_index += screenI_counter
+        if self.screen_index < 0: self.screen_index = 0
+        elif self.screen_index >= len(self.scI_mapping): self.screen_index = len(self.scI_mapping) - 1
+
+        self.title()
+
+        debug("Screen data on ui redraw: ", self.screen_data, "; re-draw params: i. scic = ", screenI_counter, "; ii. f_r = ", force_refresh)
+
+        if screenI_counter != 0 or force_refresh:
+            self.clear_screen()
+
+            self.scI_mapping.get(self.screen_index)[-1]() # Call the screen setup function
+
+            # if self.screen_index > 0: self.previous_button.pack(fill=tk.X, expand=True, side=tk.LEFT)
+            # if self.screen_index < len(self.scI_mapping) - 1: self.next_button.pack(fill=tk.X, expand=True, side=tk.RIGHT)
+
+            self.creditLbl.pack(fill=tk.X, expand=False, side=tk.BOTTOM)
+
+            self.previous_button.pack(fill=tk.X, expand=True, side=tk.LEFT)
+            self.next_button.pack(fill=tk.X, expand=True, side=tk.RIGHT)
+            self.config_nav_buttons()
+
+        # Theme
+        self.root.config(bg=self.theme.get('bg'))
+
+        for i in self.scI_mapping:
+            self.scI_mapping[i][1].config(bg=self.theme.get('bg'))
+
+        for i in self.update_element['lbl']:
+            try:
+                i.config(
+                    bg=self.theme.get('bg'),
+                    fg=self.theme.get('fg')
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst theming lbl {i}: {e}")
+
+        for i in self.update_element['btn']:
+            try:
+                i.config(
+                    bg=self.theme.get('bg'),
+                    fg=self.theme.get('fg'),
+                    activebackground=self.theme.get('ac'),
+                    activeforeground=self.theme.get('hg'),
+                    bd='0'
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst theming btn {i}: {e}")
+
+        for i in self.update_element['acc_fg']:
+            try:
+                i.config(
+                    fg=self.theme.get('ac')
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst applying the accent color as fg to {i}: {e}")
+
+        for i in self.update_element['acc_bg']:
+            try:
+                i.config(
+                    bg=self.theme.get('ac')
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst applying the accent color as bg to {i}: {e}")
+
+        for i in self.update_element['font']:
+            try:
+                i[0].config(
+                    font=i[1]
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst applying font {i[1]} to {i[0]}: {e}")
+
+        for i in self.update_element['frame']:
+            try:
+                i.config(
+                    bg=self.theme.get('bg')
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst theming frame {i}: {e}")
+
+        for i in self.update_element['error_lbls']:
+            i.config(
+                fg=self.theme.get('ac'),
+                text=""
+            )
+
+        # Exceptions
+
+        for i in [self.next_button, self.previous_button]:
+            i.config(
+                bg=self.theme.get('ac'),
+                fg=self.theme.get('hg'),
+                activebackground=self.theme.get('hg'),
+                activeforeground=self.theme.get('ac'),
+                bd='0'
+            )
+
+        self.creditLbl.config(
+            bg=self.theme.get('ac'),
+            fg=self.theme.get('hg')
+        )
+
+        for i in [self.dbSel_btns_external, self.dbSel_btns_internal]:
+            i.config(
+                disabledforeground=self.theme.get('hg')
+            )
+
+        for i in [self.cred_last_invis_cont, self.cred_first_invis_cont, self.cred_studentID_invis_cont]:
+            i.config(bd='0', bg=self.theme.get('bg'))
+
+        for i in [self.cred_first, self.cred_last, self.cred_studentID_field]:
+            i.config(
+                fg=self.theme['fg'],
+                bg=self.theme['bg'],
+                selectforeground=self.theme['hg'],
+                selectbackground=self.theme['ac'],
+                insertbackground=self.theme['ac']
+            )
+
+        if screenI_counter != 0 or force_refresh:
+            self.update_ui_elements()
+
+        # --- end ---
+
+    def update_ui_elements(self):
+        debug("screen_data[0].get('database_selection'): ", self.screen_data[0].get('database_selection'))
+
+        if self.screen_data[0].get('database_selection') == 'i':
+            self.dbSel_btns_internal.config(state=tk.DISABLED, bg=self.theme.get('ac'))
+            self.dbSel_btns_external.config(state=tk.NORMAL, bg=self.theme.get('bg'))
+
+        elif self.screen_data[0].get('database_selection') == 'e':
+            self.dbSel_btns_internal.config(state=tk.NORMAL, bg=self.theme.get('bg'))
+            self.dbSel_btns_external.config(state=tk.DISABLED, bg=self.theme.get('ac'))
+
+    def all_screen_widgets(self) -> list:
+        _db = self.dbSelctFrame.winfo_children()
+        _cred = self.credFrame.winfo_children()
+        _conf = self.configFrame.winfo_children()
+        _fin = self.finalFrame.winfo_children()
+        __all = self.root.winfo_children()
+
+        for item in _db:
+            if item.winfo_children(): _db.extend(item.winfo_children())
+
+        for item in _cred:
+            if item.winfo_children(): _cred.extend(item.winfo_children())
+
+        for item in _conf:
+            if item.winfo_children(): _conf.extend(item.winfo_children())
+
+        for item in _fin:
+            if item.winfo_children(): _fin.extend(item.winfo_children())
+
+        for item in __all:
+            if item.winfo_children(): __all.extend(item.winfo_children())
+
+        return [__all, _db, _cred, _conf, _fin]
+
+    def clear_screen(self):
+        widgets = self.all_screen_widgets()[0]
+
+        for i in widgets:
+            try: i.pack_forget()
+            except Exception as e: debug(f'exception whilst clearing screen: {e}')
+
+    def title(self):
+        global apptitle
+        self.root.title(f"{apptitle} - {self.scI_mapping.get(self.screen_index)[0]}")
+
+    def screen_1(self): # DB Selection
+        debug(f"Setting up DB Select Page (ind = {self.screen_index})")
+
+        self.dbSelctFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+
+        self.dbSel_ttl.config(text="Quizzing Form", anchor=tk.W)
+        self.dbSel_ttl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY, self.padY/4))
+
+        self.dbSel_info.config(
+            text="Step 1/{}: Question Database Selection;\nSelect a database from an external file, or the internal database by selecting the appropriate buttons below.".format(
+                len(self.scI_mapping)
+            ),
+            anchor=tk.W,
+            justify=tk.LEFT,
+            wraplength=int(self.ws[0] - self.padX*2)
+        )
+        self.dbSel_info.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY/4, self.padY))
+
+        self.dbSel_btnContainer.config(text="Options")
+        self.dbSel_btnContainer.pack(
+            fill=tk.BOTH,
+            expand=True,
+            padx=self.padX,
+            pady=self.padY*3
+        )
+
+        self.dbSel_btns_internal.config(text=self.screen_data[0]['defaults']['i'], command=self.btns_dbSel_int)
+        self.dbSel_btns_internal.pack(fill=tk.BOTH, expand=True, padx=(self.padX / 2, self.padX), pady=self.padY,
+                                      side=tk.LEFT)
+
+        self.dbSel_btns_external.config(text=self.screen_data[0]['defaults']['e'], command=self.btns_dbSel_ext)
+        self.dbSel_btns_external.pack(fill=tk.BOTH, expand=True, padx=(self.padX, self.padX/2), pady=self.padY, side=tk.LEFT)
+
+        self.dbSel_error_lbl.config(
+            wraplength=(self.ws[0] - self.padX * 2)
+        )
+        self.dbSel_error_lbl.pack(
+            fill=tk.X,
+            expand=False,
+            side=tk.BOTTOM
+        )
+
+    def screen_2(self): # Credentials
+        debug(f"Setting up Credentials Page (ind = {self.screen_index})")
+
+        self.credFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+
+        self.cred_ttl.config(text="Quizzing Form", anchor=tk.W, justify=tk.LEFT)
+        self.cred_ttl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY, self.padY/4))
+
+        self.cred_info.config(
+            text="Step 2/{}: Credentials;\nEnter the information requested in the form below.".format(
+                len(self.scI_mapping)
+            ),
+            anchor=tk.W,
+            justify=tk.LEFT,
+            wraplength=int(self.ws[0] - self.padX * 2)
+        )
+        self.cred_info.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY))
+
+        self.cred_container.config(text="Information Required")
+        self.cred_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+        self.cred_name_cont.config(text="Full Name")
+        self.cred_name_cont.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY / 2))
+
+        self.cred_first_invis_cont.pack(fill=tk.BOTH, expand=False, pady=(self.padY, self.padY / 2))
+        self.cred_last_invis_cont.pack(fill=tk.BOTH, expand=False, pady=(self.padY / 2, self.padY))
+
+        self.cred_first_lbl.config(text="First Name")
+        self.cred_first_lbl.pack(fill=tk.X, expand=False, side=tk.LEFT, padx=(self.padX, 0))
+
+        self.cred_first.pack(fill=tk.X, expand=True, side=tk.LEFT, padx=(0, self.padX))
+
+        self.cred_last_lbl.config(text="Last Name")
+        self.cred_last_lbl.pack(fill=tk.X, expand=False, side=tk.LEFT, padx=(self.padX, 0))
+
+        self.cred_last.pack(fill=tk.X, expand=True, side=tk.LEFT, padx=(0, self.padX))
+
+        self.cred_studentID_invis_cont.pack(fill=tk.BOTH, expand=False, pady=(self.padY / 2, self.padY))
+
+        self.cred_studentID_lbl.config(text="Student ID")
+        self.cred_studentID_lbl.pack(fill=tk.X, expand=False, side=tk.LEFT, padx=(self.padX, 0))
+
+        self.cred_studentID_field.pack(fill=tk.X, expand=True, side=tk.LEFT, padx=(0, self.padX))
+
+        self.cred_error_lbl.config(
+            wraplength=(self.ws[0] - self.padX * 2)
+        )
+        self.cred_error_lbl.pack(
+            fill=tk.X,
+            expand=False,
+            side=tk.BOTTOM
+        )
+        
+    def screen_3(self): # Configuration
+        debug(f"Setting up Configuration Page (ind = {self.screen_index})")
+
+        self.configFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+
+    def screen_4(self): # Final (Wait)
+        debug(f"Setting up final page (ind = {self.screen_index})")
+
+        self.finalFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+
+    def config_nav_buttons(self, index=None, setTo=None):
+        if self.screen_index == 0: self.previous_button.config(state=tk.DISABLED)
+        else: self.previous_button.config(state=tk.NORMAL)
+
+        if type(index) is int and type(setTo) is bool:
+            self.sc_navButton_next_states[index] = setTo
+
+        if self.sc_navButton_next_states[self.screen_index]:
+            self.next_button.config(state=tk.NORMAL)
+        else:
+            self.next_button.config(state=tk.DISABLED)
+
+    # Button Handlers
+    def btns_dbSel_int(self):
+        self.dbSel_btns_internal.config(
+            state=tk.DISABLED, bg=self.theme.get('ac'),
+            text=self.screen_data[0]['defaults']['i'] + ' \u2713'
+        )
+
+        self.dbSel_btns_external.config(
+            state=tk.NORMAL, bg=self.theme.get('bg'),
+            text=self.screen_data[0]['defaults']['e']
+        )
+
+        self.dbSel_error_lbl.config(
+            text=""
+        )
+
+        self.screen_data[0]['database_selection'] = 'i'
+        self.screen_data[0]['flags']['selected'] = True
+        self.config_nav_buttons(0, True)
+
+    def btns_dbSel_ext(self):
+        self.dbSel_btns_internal.config(
+            state=tk.NORMAL, bg=self.theme.get('bg'),
+            text=self.screen_data[0]['defaults']['i']
+        )
+
+        file = tkfld.askopenfilename(
+            defaultextension=f".{QAInfo.export_quizFile}",
+            filetypes=((f"QA Quiz Database (*.{QAInfo.export_quizFile})", f"*.{QAInfo.export_quizFile}"), )
+        )
+
+        ret = type(file) is not str
+        if not ret:
+            file = file.replace('/', '\\')
+            ret = ret or not((file.strip() != "") and os.path.exists(file))
+
+        debug("External database selected: ", file, "; exit = ", ret)
+
+        if ret:
+            self.screen_data[0]['flags']['selected'] = False
+            self.dbSel_error_lbl.config(
+                text=self.screen_data[0]['strs']['errors']['notValid']
+            )
+            return
+
+        self.screen_data[0]['flags']['selected'] = True
+        self.dbSel_error_lbl.config(
+            text=""
+        )
+
+        self.dbSel_btns_external.config(
+            state=tk.DISABLED, bg=self.theme.get('ac'),
+            text=self.screen_data[0]['defaults']['e'] + ' \u2713\n' + file.split('\\')[-1]
+        )
+
+        self.screen_data[0]['database_selection'] = 'e'
+        self.screen_data[0]['external_database'] = {}; self.screen_data[0]['external_database']['filename'] = file
+        self.config_nav_buttons(0, True)
+
+    def next_page(self):
+
+        # Checks
+        if self.screen_index == 0: # DB Select
+            if not self.screen_data[0]['flags']['selected']:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['selectDB']
+                )
+                return
+
+        elif self.screen_index == 1: # Credentials
+            if len(self.cred_first.get()) <= 0 or len(self.cred_last.get()) <= 0 or len(self.cred_studentID_field.get()) <= 0:
+                self.cred_error_lbl.config(
+                    text=self.screen_data[1]['strs']['errors']['addInformation']
+                )
+                return
+
+        elif self.screen_index == 2: # Configuration
+            pass
+
+        elif self.screen_index == 3: # Final
+            pass
+
+        self.update_ui(1)
+
+    def prev_page(self):
+        self.update_ui(-1)
 
     def __del__(self):
         self.thread.join(self, 0)
@@ -281,7 +881,9 @@ set_boot_progress(3)
 
 # Functions go here
 
-def debug(debugData: str):
+def debug(debugData: str, *args):
+    debugData = debugData + " ".join(str(i) for i in args)
+
     # Script Name
     try:
         scname = __file__.replace(

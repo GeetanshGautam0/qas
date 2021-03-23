@@ -123,6 +123,7 @@ help_files = {
 theme_presets_foldername = '.defaultThemes'
 
 export_file_extension = "qa_export"
+export_quizFile = 'qaQuiz'
 
 fileIO_version_info_header = "<<QA::COMPATABILITY::FILE_VERSION>> :: "
 

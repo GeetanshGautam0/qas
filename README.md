@@ -25,15 +25,9 @@ The Quizzing Application Suite is a collection of python modules that come toget
 
 <b><h3>Updated from version 1.5, this version will contain several imporvements. A few of them include</h3></b>
 <ul>
+  <li><strong>Help Files</strong> have been added where needed</li>
   <li>A less buggy quizzing form</li>
-  <li>A keylogger to keep track of all actions committed by the quiz taker</li>
-    <ul><li>Note that this keylogger only runs whilst the quiz taker is actively participating in the quiz.</li></ul>
-  <li>All files will now be encrypted</li>
-  <li>More options for administrators:</li>
-  <ul>
-    <li>Allow quiz taker to see there score</li>
-    <li>and more!</li>
-  </ul>
+  <li>Most files will now be encrypted</li>
   <li>Exporting scores and other human-readable files in *.pdf</li>
   <li>Faster algorithms to make your experience smoother</li>
   <li>More code, more functions, less disk space</li>
@@ -41,7 +35,6 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <li>All functions of the application are logged, therefore allowing the user to debug and troubleshoot.</li>
   <li>Errors now display as there own GUI</li>
   <li>More robust than ever.</li>
-  
   <li>And MUCH more....</li>
 
 <b><h1>Changes</h1></b>
@@ -65,7 +58,7 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <summary>Quizzing Form</summary>
   <b><h2>Quizzing Application Quizzing Form</h2></b>
   <ol>
-  <li> A key logger has been implemented to keep track of all keyboard inputs by the user </li>
+  <li>Improved credential and question databse management and distribution</li>
   <li> The form no longer will allow the user to temporarly exit the quizzing form and open other windows during error sequences, unlike version 1.5 and before </li>
   <li> <b>[UNCONFIRMED CHANGE]</b> Multiple choice questions will now utilize Radio Buttons for an input. </li>
   </ol>
@@ -76,7 +69,7 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <b><h2>Quizzing Application FTSRA Utility</h2></b>
   <ol>
   <li> The utility should now be able to copy directories and their sub-directories </li>
-  <li> The utility will noe allow the user to now overwrite <b>all</b> of their files if they choose to not do so. </li>
+  <li> The utility will now allow the user to now overwrite <b>all</b> of their files if they choose to do so. </li>
   <li> Added "Help Me" PDF </li>
   <li> Added internal file checks </li>
   </ol>
@@ -86,7 +79,7 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <summary>Theming Utility</summary>
   <b><h2>Quizzing Application Theming Utility</h2></b>
   <ol>
-    <li> Added text previews besides the button </li>
+    <li> Added text previews besides the buttons </li>
     <li> Cleaner UI than 1.xx TU </li>
     <li> Font size and font face changing for the user (size applies to buttons and paragraphs only). </li>
     <li> Minor change: the restore button will have an inverted foreground in respect to the background to ensure that it can be seen at all times. </li>
@@ -143,10 +136,43 @@ The Quizzing Application Suite is a collection of python modules that come toget
   
 </details>
 
+<details>
+
+<summary>The Installation Process</summary>
+
+<p>
+In <strong>QAS 1.5x</strong>'s installation process, one had to manually move files using the FTSRA, however, a new module (<b>qaInstallation_finish.exe</b>) has been added to automatically move the files; it can also be used to reset corrupted files if the <b>FTSRA Utility</b> fails to work.
+</p>
+
+</details>
+
 <b><h1>Resources</h1></b>
+<strong>
 
 [Report a Bug](https://codingmadefun.wixsite.com/database/qas-bug-report-form)
 
+</strong>
+
 ```
 URL: https://codingmadefun.wixsite.com/database/qas-bug-report-form
+```
+
+<strong>
+
+[Utility to fix corrupted files](https://github.com/GeetanshGautam-CodingMadeFun/qas/releases/tag/installer_1.1)
+
+</strong>
+
+```
+URL: https://github.com/GeetanshGautam-CodingMadeFun/qas/releases/tag/installer_1.1
+```
+
+<strong>
+
+[Other projects](bit.ly/cmfprojects)
+
+</strong>
+
+```
+URL: bit.ly/cmfprojects
 ```

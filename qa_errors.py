@@ -56,3 +56,14 @@ class QA_SetupException(Exception):
         err = f"{stem} QA_SetupException :: Fatal: An error occurred during the setup routine"
         err += f": {self.info}" if type(self.info) is str else '.'
         return err
+
+class QAQuizDatabase_UnknownException(Exception):
+    def __init__(self, info=None):
+        self.info = info
+
+    def __str__(self):
+        global stem
+        global stem
+        err = f"{stem} QAQuizDatabase_UnknownException :: Fatal: An error occurred whilst decompiling the quiz file"
+        err += f": {self.info}" if type(self.info) is str else '.'
+        return err
