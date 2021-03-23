@@ -168,7 +168,7 @@ URL: https://github.com/GeetanshGautam-CodingMadeFun/qas/releases/tag/installer_
 
 <strong>
 
-[Other projects](bit.ly/cmfprojects)
+[Other projects](https://bit.ly/cmfprojects)
 
 </strong>
 
