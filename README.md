@@ -140,9 +140,22 @@ The Quizzing Application Suite is a collection of python modules that come toget
 
 <summary>The Installation Process</summary>
 
+<table>
+<tr>
+<td>
+
+<img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas/master/.icons/installer_48.png">
+
+</td>
+
+<td>
 <p>
 In <strong>QAS 1.5x</strong>'s installation process, one had to manually move files using the FTSRA, however, a new module (<b>qaInstallation_finish.exe</b>) has been added to automatically move the files; it can also be used to reset corrupted files if the <b>FTSRA Utility</b> fails to work.
 </p>
+</td>
+
+</tr>
+</table>
 
 </details>
 
