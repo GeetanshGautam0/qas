@@ -5,10 +5,10 @@
 The Quizzing Application Suite is a collection of python modules that come together to make a fairly powerful Quizzing Application.
 
 <p float="center">
-  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas/master/icons/admin_tools.png">
-  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas/master/icons/ftsra.png">
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/icons/quizzing_tool.png?raw=true">
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/icons/themer.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas/master/.icons/admin_tools.png">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas/master/.icons/ftsra.png">
+  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/quizzing_tool.png?raw=true">
+  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/themer.png?raw=true">
 </p>
 
 <b><h3>These include a few apps</h3></b>
@@ -43,7 +43,7 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <summary>Administrator Tools</summary>
   <p float="left">
     <b><h2>Quizzing Application Administrator Tools</h2></b>
-    <!-- <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas-2.0/main/icons/admin_tools_64.png"> -->
+    <!-- <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas-2.0/main/.icons/admin_tools_64.png"> -->
   </p>
   <ol>
   <li> Use to <b>easily</b> alter any and all settings that you may wish to change. </li>
@@ -99,63 +99,49 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <p>Take note of the exponent labeled above the fourth graph</p>
   
   <b><h2>UTF-7</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/utf7.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/utf7.png">
   
   <b><h2>UTF-8</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/utf8.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/utf8.png">
   
   <b><h2>UTF-16</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/utf16%20(post-fix).png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/utf16.png">
   
   <b><h2>UTF-32</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/utf32%20(post-fix).png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/utf32.png">
   
   <b><h2>ASCII</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/ascii.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/ascii.png">
   
   <b><h2>CP936</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/cp936.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/cp936.png">
   
   <b><h2>EUCJP</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/eucjp.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/eucjp.png">
   
   <b><h2>IBM437</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/ibm437.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/ibm437.png">
   
   <b><h2>IBM869</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/ibm869.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/ibm869.png">
   
   <b><h2>ISO-2022-JP-EXT</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/iso-2022-jp-ext.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/iso-2022-jp-ext.png">
   
   <b><h2>MS932</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/ms932.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/ms932.png">
   
   <b><h2>L1</h2></b>
-  <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas-2.0/blob/main/FileIOHandler%20Performance/L1.png?raw=true">
+  <img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/L1.png">
   
 </details>
 
 <details>
 
 <summary>The Installation Process</summary>
-
-<table>
-<tr>
-<td>
-
-<img src="https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/qas/master/.icons/installer_48.png">
-
-</td>
-
-<td>
 <p>
 In <strong>QAS 1.5x</strong>'s installation process, one had to manually move files using the FTSRA, however, a new module (<b>qaInstallation_finish.exe</b>) has been added to automatically move the files; it can also be used to reset corrupted files if the <b>FTSRA Utility</b> fails to work.
 </p>
-</td>
-
-</tr>
-</table>
 
 </details>
 
