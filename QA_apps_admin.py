@@ -344,8 +344,8 @@ class UI(threading.Thread):
         self.io_ie_frame = tk.LabelFrame(self.IOScreen)
         self.io_ie_importButton = tk.Button(self.io_ie_frame)
         self.io_ie_exportButton = tk.Button(self.io_ie_frame)
-        self.io_ie_exportScoresButton = tk.Button(self.io_ie_frame)
-        
+        self.io_export_quiz_file = tk.Button(self.io_ie_frame)
+
         self.io_ie_checkContainer = tk.LabelFrame(self.IOScreen)
         self.io_ie_cc_invisCont_left = tk.LabelFrame(self.io_ie_checkContainer)
         self.io_ie_cc_invisCont_right = tk.LabelFrame(self.io_ie_checkContainer)
@@ -390,7 +390,7 @@ class UI(threading.Thread):
         self.misc_forceReloadThemes = tk.Button(self.runScreen)
         self.themeSel_sumb = tk.Button(self.quickTheme_cont)
 
-        # Questions (IO) Screen
+        # Questions Screen
         self.questions_editLblF = tk.LabelFrame(self.questionsScreen)
         self.questions_edit_view = tk.Button(self.questions_editLblF)
         self.questions_edit_add = tk.Button(self.questions_editLblF)
@@ -557,7 +557,7 @@ class UI(threading.Thread):
             self.io_ie_IQToggle,
             self.io_ie_ISToggle,
             self.io_ie_importCommitButton,
-            self.io_ie_exportScoresButton
+            self.io_export_quiz_file
         ]; IOLBLFs = [
             self.io_ie_frame,
             self.io_ie_checkContainer,
@@ -1153,16 +1153,19 @@ class UI(threading.Thread):
             expand=True, 
             side=tk.RIGHT, 
             padx=(int(self.padX/2), int(self.padX/4)),
-            pady=int(self.padY/2),
+            pady=int(self.padY/2)
         )
 
-        self.io_ie_exportScoresButton.config(text="Export Scores", command=self.io_ie_exportScores)
-        self.io_ie_exportScoresButton.pack(
+        self.io_export_quiz_file.config(
+            text="Export Quiz File",
+            command=export_quiz_file
+        )
+        self.io_export_quiz_file.pack(
             fill=tk.BOTH,
             expand=True,
             side=tk.RIGHT,
             padx=(int(self.padX / 2), int(self.padX / 4)),
-            pady=int(self.padY / 2),
+            pady=int(self.padY / 2)
         )
         
         self.io_ie_checkContainer.config(text="Import Options")
@@ -2532,6 +2535,62 @@ def questionsToPDF(filename: str):
 
     tkmsb.showinfo(apptitle,
                    f"PDF with questions generated!\n\nWarning: This file cannot be imported back into the application.")
+
+def export_quiz_file():
+    fl = tkfldl.askdirectory() # file location
+    while True:
+        db = '{} {}.{}'.format(
+            QATime.form('%b %d, %Y %H-%M'),
+            int(random.random()*1000),
+            QAInfo.export_quizFile
+        )
+        fn = os.path.join(fl, db).replace('/', '\\')
+        if not os.path.exists(fn): break
+
+    try:
+        connector = sqlite3.connect(fn)
+        c = connector.cursor()
+
+        with connector:
+            c.execute( # Create table for config
+                """CREATE TABLE config(
+                acqc integer,
+                q_pa text,
+                q_pa_div integer,
+                deduc integer,
+                deduv_div integer
+                )"""
+            )
+
+            c.execute( # Questions table - should contain raw text data from qas file
+                """
+                CREATE TABLE qas(
+                raw text
+                )
+                """
+            )
+
+            c.execute(
+                "INSERT INTO config VALUES ('0', 'part', 1, 1, 1)"
+            )
+
+            c.execute(
+                "INSERT INTO qas VALUES (:qas)",
+                {'qas': IO(
+                    f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}"
+                ).autoLoad()}
+            )
+
+        connector.commit()
+        connector.close()
+
+        tkmsb.showinfo(apptitle, "Successfully generated quiz file:\n%s" % "\\".join(i for i in fn.split("\\")[-2::]))
+
+    except Exception as e:
+        tkmsb.showerror(
+            apptitle,
+            e
+        )
 
 def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=False) -> dict:
     debug(f"Refference ::: {reference}")

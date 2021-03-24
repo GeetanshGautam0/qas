@@ -87,10 +87,57 @@ defs_configruationFilename = '{}\\{}'.format(QAInfo.appdataLoc.strip('\\').strip
 # Adjust Splash
 set_boot_progress(2)
 
-class IO:
+class IO:  # Object Oriented like FileIOHandler
+    def __init__(self, fn: str, **kwargs):
+        self.filename = fn
+        self.object = QAFileIO.create_fileIO_object(self.filename)
+        self.flags = {
+            'append': [False, (bool, )],
+            'append_sep': ["\n", (str, bytes)],
+            'suppressError': [False, (bool,)],
+            'encoding': ['utf-8', (str, )],
+            'encrypt': [False, (bool, )]
+        }
+        self.kwargs = kwargs
 
-    def __init__(self):
-        pass
+        self.reload_kwargs()
+
+    def rawLoad(self, *args, **kwargs) -> bytes:
+        return QAFileIO.load(self.object)
+
+    def saveData(self, Data, **kwargs):  # Secure Save
+        self.flags = flags_handler(self.flags, kwargs)  # Same flags
+        flags = dc_lst(self.flags, 0)
+        QAFileIO.save(
+            self.object,
+            Data,
+            append=flags['append'],
+            appendSeperator=flags['append_sep'],
+            encryptData=flags['encrypt'],
+            encoding=flags['encoding']
+        )
+
+    def clear(self, *args, **kwargs) -> None:
+        open(self.object.filename, 'w').close()
+
+    def autoLoad(self, *args, **kwargs) -> str:
+        return QAFileIO.read(self.object)
+
+    def encrypt(self, *args, **kwargs) -> None:
+        QAFileIO.encrypt(self.object)
+
+    def decrypt(self, *args, **kwargs) -> None:
+        QAFileIO.decrypt(self.object)
+
+    def reload_kwargs(self) -> None:
+        self.flags = flags_handler(self.flags, self.kwargs)
+
+def dc_lst(Dict: dict, index) -> dict:
+    out: dict = {}
+    for i in Dict:
+        out[i] = (Dict[i][index])
+
+    return out
 
 class LoginUI(threading.Thread):
 
@@ -164,7 +211,10 @@ class LoginUI(threading.Thread):
                 'strs': {
                     'errors': {
                         'selectDB': 'ERROR: Please select a database',
-                        'notValid': 'ERROR: Invalid DB file selected'
+                        'notValid': 'ERROR: Invalid DB file selected',
+                        'unknown': 'ERROR: Unknown error (logged)',
+                        'invalidDB': 'ERROR: Invalid Database (logged; ID=0)',
+                        'invalidDB_noQs': 'ERROR: Invalid Database - no questions found (logged; ID=1)'
                     }
                 }
             },
@@ -230,9 +280,11 @@ class LoginUI(threading.Thread):
         if conf: sys.exit(0)
 
     def run(self):
-        global apptitle
+        global apptitle, self_icon
+
         self.root.title(apptitle)
         self.root.geometry(self.gem)
+        self.root.iconbitmap(self_icon)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
         self.update_element['lbl'].extend([
@@ -617,14 +669,58 @@ class LoginUI(threading.Thread):
 
     # Button Handlers
     def btns_dbSel_int(self):
-        self.dbSel_btns_internal.config(
-            state=tk.DISABLED, bg=self.theme.get('ac'),
-            text=self.screen_data[0]['defaults']['i'] + ' \u2713'
-        )
-
+        # Reset
         self.dbSel_btns_external.config(
             state=tk.NORMAL, bg=self.theme.get('bg'),
             text=self.screen_data[0]['defaults']['e']
+        )
+
+        self.screen_data[0]['flags']['selected'] = False
+
+        # Check
+        try:
+            eCode = "<!ERROR:QAS_173462374&*^^783845783845*&^*&67df7**&63569^^87>%"
+            ra = loadData_intern(eCode)
+
+            debug(f"External DB: raw load (debID: 141) : ", ra)
+
+            if ra == eCode:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['invalidDB']
+                )
+                return
+
+            elif ra[0] == eCode:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['invalidDB']
+                )
+                return
+
+            elif ra[1] == eCode:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['invalidDB']
+                )
+                return
+
+            elif len(ra[1]) <= 0:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['invalidDB_noQs']
+                )
+                return
+
+        except Exception as E:
+            debug("Error whilst loading extern_db: ", E)
+            self.dbSel_error_lbl.config(
+                text=self.screen_data[0]['strs']['errors']['unknown']
+            )
+
+            return
+
+        # Set
+
+        self.dbSel_btns_internal.config(
+            state=tk.DISABLED, bg=self.theme.get('ac'),
+            text=self.screen_data[0]['defaults']['i'] + ' \u2713'
         )
 
         self.dbSel_error_lbl.config(
@@ -636,6 +732,7 @@ class LoginUI(threading.Thread):
         self.config_nav_buttons(0, True)
 
     def btns_dbSel_ext(self):
+        # Checks
         self.dbSel_btns_internal.config(
             state=tk.NORMAL, bg=self.theme.get('bg'),
             text=self.screen_data[0]['defaults']['i']
@@ -651,6 +748,45 @@ class LoginUI(threading.Thread):
             file = file.replace('/', '\\')
             ret = ret or not((file.strip() != "") and os.path.exists(file))
 
+        try:
+            eCode = "<!ERROR:QAS_173462374&*^^783845783845*&^*&67df7**&63569^^87>%"
+            ra = loadData_extern(file, eCode)
+
+            debug(f"External DB: raw load (debID: 142) : ", ra)
+
+            if ra == eCode:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['invalidDB']
+                )
+                return
+
+            elif ra[0] == eCode:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['invalidDB']
+                )
+                return
+
+            elif ra[1] == eCode:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['invalidDB']
+                )
+                return
+
+            elif len(ra[1]) <= 0:
+                self.dbSel_error_lbl.config(
+                    text=self.screen_data[0]['strs']['errors']['invalidDB_noQs']
+                )
+                return
+
+        except Exception as E:
+            debug("Error whilst loading extern_db: ", E)
+            self.dbSel_error_lbl.config(
+                text=self.screen_data[0]['strs']['errors']['unknown']
+            )
+
+            return
+
+        # All good
         debug("External database selected: ", file, "; exit = ", ret)
 
         if ret:
@@ -683,6 +819,37 @@ class LoginUI(threading.Thread):
                     text=self.screen_data[0]['strs']['errors']['selectDB']
                 )
                 return
+
+            if self.screen_data[0]['database_selection'] == 'e':
+                try:
+                    eCode = "<!ERROR:QAS_173462374&*^^783845783845*&^*&67df7**&63569^^87>%"
+                    ra = loadData_extern(self.screen_data[0]['external_database']['filename'], eCode)
+
+                    if ra[0] == eCode:
+                        self.dbSel_error_lbl.config(
+                            text=self.screen_data[0]['strs']['errors']['invalidDB']
+                        )
+                        return
+
+                    elif ra[1] == eCode:
+                        self.dbSel_error_lbl.config(
+                            text=self.screen_data[0]['strs']['errors']['invalidDB']
+                        )
+                        return
+
+                    elif len(ra[1]) <= 0:
+                        self.dbSel_error_lbl.config(
+                            text=self.screen_data[0]['strs']['errors']['invalidDB_noQs']
+                        )
+                        return
+
+                except Exception as E:
+                    debug("Error whilst loading extern_db: ", E)
+                    self.dbSel_error_lbl.config(
+                        text=self.screen_data[0]['strs']['errors']['unknown']
+                    )
+
+                    return
 
         elif self.screen_index == 1: # Credentials
             if len(self.cred_first.get()) <= 0 or len(self.cred_last.get()) <= 0 or len(self.cred_studentID_field.get()) <= 0:
@@ -1047,6 +1214,89 @@ def __logError(errorCode: str, **kwargs):
     if flags['exit']:
         application_exit(flags['exitCode'])
 
+def loadData_extern(filepath, errorCode) -> list:
+    try:
+        connector = sqlite3.connect(filepath)
+        cursor = connector.cursor()
+    
+        with connector:
+            cursor.execute(
+                "SELECT * FROM config"
+            )
+            conf_raw = cursor.fetchall()[0]
+
+            cursor.execute(
+                "SELECT * FROM qas"
+            )
+            qas_raw = cursor.fetchall()[0]
+
+        connector.commit()
+        connector.close()
+
+        debug("conf_raw = ", conf_raw, "\nqas_raw = ", qas_raw)
+
+        config = {
+            'customQuizConfig': conf_raw[0],
+            'partOrAll': conf_raw[1],
+            'poa_divF': conf_raw[2],
+            'a_deduc': conf_raw[3],
+            'deduc_amnt': conf_raw[4]
+        }
+
+        try:
+            qas_raw = qas_raw[0]
+            questions = ld_q_fr(qas_raw, errorCode)
+
+        except IndexError:
+            questions = {}
+
+        except:
+            questions = errorCode
+
+        return [config, questions]
+
+    except Exception as e:
+        debug(f"Error whilst reading DB: ", e)
+        return errorCode
+
+def loadData_intern(errorCode) -> list:
+    try:
+
+        def get_conf(flagID: str):
+            return JSON().getFlag(
+                os.path.join(QAInfo.appdataLoc, QAInfo.confFilename).replace('/', '\\').strip(),
+                flagID,
+                return_boolean=False
+            )
+
+        config = {
+            'customQuizConfig': get_conf('acqc'),
+            'partOrAll': get_conf('qpoa'),
+            'poa_divF': get_conf('qsdf'),
+            'a_deduc': get_conf('dma'),
+            'deduc_amnt': get_conf('pdpir')
+        }
+
+        questions = ld_q_fr(
+            IO(
+                os.path.join(QAInfo.appdataLoc, QAInfo.qasFilename).replace('/', '\\').strip()
+            ).autoLoad(),
+            errorCode
+        )
+
+        return [config, questions]
+
+    except Exception as E:
+        debug("Error whilst loading data from internal files: ", E)
+        return errorCode
+
+def ld_q_fr(raw_questions: str, errorCode) -> dict:
+    try:
+        return QAQuestionStandard.convRawToDict(raw_questions.strip())
+
+    except Exception as e:
+        debug("Error whilst loading questions: ", e)
+        return errorCode
 
 def application_exit(code: str = "0") -> None:
     debug(f"Exiting with code '{code}'")
