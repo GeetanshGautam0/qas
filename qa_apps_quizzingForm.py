@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as tkfld
 from tkinter import messagebox as tkmsb
-import os, sys, threading, shutil, time, json, sqlite3
+import os, sys, threading, shutil, time, json, sqlite3, playsound
 
 import qa_appinfo as QAInfo
 import qa_diagnostics as QADiagnostics
@@ -210,18 +210,18 @@ class LoginUI(threading.Thread):
                 },
                 'strs': {
                     'errors': {
-                        'selectDB': 'ERROR: Please select a database',
-                        'notValid': 'ERROR: Invalid DB file selected',
-                        'unknown': 'ERROR: Unknown error (logged)',
-                        'invalidDB': 'ERROR: Invalid Database (logged; ID=0)',
-                        'invalidDB_noQs': 'ERROR: Invalid Database - no questions found (logged; ID=1)'
+                        'selectDB': '\u26a0 ERROR: Please select a database',
+                        'notValid': '\u26a0 ERROR: Invalid DB file selected',
+                        'unknown': '\u26a0 ERROR: Unknown error (logged)',
+                        'invalidDB': '\u26a0 ERROR: Invalid Database (logged; ID=0)',
+                        'invalidDB_noQs': '\u26a0 ERROR: Invalid Database - no questions found (logged; ID=1)'
                     }
                 }
             },
             1: {
                 'strs': {
                     'errors': {
-                        'addInformation': 'ERROR: Please enter the requested information'
+                        'addInformation': '\u26a0 ERROR: Please enter the requested information'
                     }
                 }
             },
@@ -961,24 +961,28 @@ class LoginUI(threading.Thread):
             debug(f"External DB: raw load (debID: 141) : ", ra)
 
             if ra == eCode:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['invalidDB']
                 )
                 return
 
             elif ra[0] == eCode:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['invalidDB']
                 )
                 return
 
             elif ra[1] == eCode:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['invalidDB']
                 )
                 return
 
             elif len(ra[1]) <= 0:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['invalidDB_noQs']
                 )
@@ -989,6 +993,7 @@ class LoginUI(threading.Thread):
 
         except Exception as E:
             debug("Error whilst loading extern_db: ", E)
+            esfx()
             self.dbSel_error_lbl.config(
                 text=self.screen_data[0]['strs']['errors']['unknown']
             )
@@ -1036,24 +1041,28 @@ class LoginUI(threading.Thread):
             debug(f"External DB: raw load (debID: 142) : ", ra)
 
             if ra == eCode:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['invalidDB']
                 )
                 return
 
             elif ra[0] == eCode:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['invalidDB']
                 )
                 return
 
             elif ra[1] == eCode:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['invalidDB']
                 )
                 return
 
             elif len(ra[1]) <= 0:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['invalidDB_noQs']
                 )
@@ -1064,6 +1073,7 @@ class LoginUI(threading.Thread):
 
         except Exception as E:
             debug("Error whilst loading extern_db: ", E)
+            esfx()
             self.dbSel_error_lbl.config(
                 text=self.screen_data[0]['strs']['errors']['unknown']
             )
@@ -1075,6 +1085,7 @@ class LoginUI(threading.Thread):
 
         if ret:
             self.screen_data[0]['flags']['selected'] = False
+            esfx()
             self.dbSel_error_lbl.config(
                 text=self.screen_data[0]['strs']['errors']['notValid']
             )
@@ -1099,9 +1110,11 @@ class LoginUI(threading.Thread):
         # Checks
         if self.screen_index == 0: # DB Select
             if not self.screen_data[0]['flags']['selected']:
+                esfx()
                 self.dbSel_error_lbl.config(
                     text=self.screen_data[0]['strs']['errors']['selectDB']
                 )
+
                 return
 
             if self.screen_data[0]['database_selection'] == 'e':
@@ -1110,18 +1123,21 @@ class LoginUI(threading.Thread):
                     ra = loadData_extern(self.screen_data[0]['external_database']['filename'], eCode)
 
                     if ra[0] == eCode:
+                        esfx()
                         self.dbSel_error_lbl.config(
                             text=self.screen_data[0]['strs']['errors']['invalidDB']
                         )
                         return
 
                     elif ra[1] == eCode:
+                        esfx()
                         self.dbSel_error_lbl.config(
                             text=self.screen_data[0]['strs']['errors']['invalidDB']
                         )
                         return
 
                     elif len(ra[1]) <= 0:
+                        esfx()
                         self.dbSel_error_lbl.config(
                             text=self.screen_data[0]['strs']['errors']['invalidDB_noQs']
                         )
@@ -1129,6 +1145,7 @@ class LoginUI(threading.Thread):
 
                 except Exception as E:
                     debug("Error whilst loading extern_db: ", E)
+                    esfx()
                     self.dbSel_error_lbl.config(
                         text=self.screen_data[0]['strs']['errors']['unknown']
                     )
@@ -1137,6 +1154,7 @@ class LoginUI(threading.Thread):
 
         elif self.screen_index == 1: # Credentials
             if len(self.cred_first.get()) <= 0 or len(self.cred_last.get()) <= 0 or len(self.cred_studentID_field.get()) <= 0:
+                esfx()
                 self.cred_error_lbl.config(
                     text=self.screen_data[1]['strs']['errors']['addInformation']
                 )
@@ -1174,6 +1192,17 @@ class FormUI(threading.Thread):
     def __del__(self):
         self.thread.join(self, 0)
 
+class esfx(threading.Thread): # Threaded to let the sound effect run in the background whilst application function resumes
+    def __init__(self):
+        self.thread = threading.Thread
+        self.thread.__init__(self)
+        self.start()
+
+    def run(self):
+        playsound.playsound(".res/error_sound.mp3")
+
+    def __del__(self):
+        self.thread.join(self, 0)
 
 class JSON:
     def __init__(self):
