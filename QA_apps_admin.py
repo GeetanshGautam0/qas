@@ -1857,8 +1857,13 @@ class UI(threading.Thread):
     
     def io_ie_export(self):
         global apptitle
-        
-        file_dir = tkfldl.askdirectory()
+
+        file_dir = tkfldl.askdirectory()  # file location
+        if type(file_dir) is str:
+            if len(file_dir.strip()) <= 0: return
+        else:
+            return
+
         while True:
             file_name = f"QAExport {random.randint(1000000, 9999999)}"
             concat = file_dir + "\\" + str(file_name) + "." + QAInfo.export_file_extension
@@ -1909,7 +1914,11 @@ class UI(threading.Thread):
             temp += f"{k} {v}\n"
             
         conf = temp
-        
+
+        qas = IO(
+            os.path.join(QAInfo.appdataLoc, QAInfo.qasFilename).replace('/', '\\').strip()
+        ).autoLoad()
+
         __toSave = QAInfo.fileIO_version_info_header.strip() + f" {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))}"
         
         conf__toSave = "\n{}\n{}\n{}\n".format(
@@ -1917,8 +1926,14 @@ class UI(threading.Thread):
             conf,
             self.IO_DIVEND_KEY
         )
-        
-        __toSave = __toSave + conf__toSave
+
+        qas__toSave = "\n{}\n{}\n{}".format(
+            self.IO_QSIMPORT_KEY,
+            qas,
+            self.IO_DIVEND_KEY
+        )
+
+        __toSave = __toSave + conf__toSave + qas__toSave
         
         debug(f"Exporting file with data (see end); fn = {filename}, data = {__toSave}")
         
@@ -1986,6 +2001,7 @@ class UI(threading.Thread):
                     break
 
             __str = __raw[conf_ind[0]:conf_ind[1]]
+            __raw = "\n".join(i for i in __raw).strip().replace("\n".join(i for i in __str).strip(), '').replace(self.IO_DIVEND_KEY, "", 1).split('\n')
 
             # Basic Conf Loading
             conf_raw = {}
@@ -2070,21 +2086,22 @@ class UI(threading.Thread):
             __Inst.saveData(__save)
 
         if S:
-            tkmsb.showinfo(apptitle, f"Unsupported feature; please wait until this feature has been addded.")
+            tkmsb.showinfo(apptitle, f"Unsupported feature; please wait until this feature has been added.")
 
         if Q:
             # Finding the Questions
+            debug(f"__raw in Q; IMPORT::2093: {__raw}")
+
             qs_ind = [None, None]  # Indexes (start > end)
             on = False
-            for i in __raw:
-                if self.IO_QSIMPORT_KEY in i:
-                    on = True
-                    qs_ind[0] = __raw.index(i)
+            try:
+                qs_ind[0] = __raw.index(self.IO_QSIMPORT_KEY)
+                qs_ind[1] = __raw.index(self.IO_DIVEND_KEY)
 
-                if on and self.IO_DIVEND_KEY in i:
-                    on = False
-                    qs_ind[1] = __raw.index(i)
-                    break
+            except Exception as e:
+                debug(f"error whilst importing questions (IMPORT::2099) - {e}")
+
+            debug(f"Indexes loaded (qas-IMPORT::2101) : {qs_ind}")
 
             __str = __raw[qs_ind[0]:qs_ind[1]]
 
@@ -2537,7 +2554,13 @@ def questionsToPDF(filename: str):
                    f"PDF with questions generated!\n\nWarning: This file cannot be imported back into the application.")
 
 def export_quiz_file():
+    global configuration_saved
+
     fl = tkfldl.askdirectory() # file location
+    if type(fl) is str:
+        if len(fl.strip()) <= 0: return
+    else: return
+
     while True:
         db = '{} {}.{}'.format(
             QATime.form('%b %d, %Y %H-%M'),
@@ -2571,14 +2594,22 @@ def export_quiz_file():
             )
 
             c.execute(
-                "INSERT INTO config VALUES ('0', 'part', 1, 1, 1)"
+                "INSERT INTO config VALUES ({}, '{}', {}, {}, {})".format(
+                    configuration_saved['acqc'],
+                    configuration_saved['qpoa'],
+                    configuration_saved['qsdf'],
+                    configuration_saved['dma'],
+                    configuration_saved['pdpir']
+                )
             )
+
+            questionsAndAnswers = IO(f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}").autoLoad()
+            if len(QAQuestionStandard.convRawToDict(questionsAndAnswers)) <= 0:
+                raise Exception("No questions found in database file; cannot make file.")
 
             c.execute(
                 "INSERT INTO qas VALUES (:qas)",
-                {'qas': IO(
-                    f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}"
-                ).autoLoad()}
+                {'qas': questionsAndAnswers}
             )
 
         connector.commit()
@@ -2587,6 +2618,8 @@ def export_quiz_file():
         tkmsb.showinfo(apptitle, "Successfully generated quiz file:\n%s" % "\\".join(i for i in fn.split("\\")[-2::]))
 
     except Exception as e:
+        while os.path.exists(fn): os.remove(fn)
+
         tkmsb.showerror(
             apptitle,
             e

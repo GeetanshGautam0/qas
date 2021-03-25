@@ -225,8 +225,42 @@ class LoginUI(threading.Thread):
                     }
                 }
             },
-            2: {},
-            3: {}
+            2: {
+                'poa_btn_state': {
+                    ''
+                },
+                'defaults': {
+                    'strs': {
+                        'POA_part': "Selected: Part of all Questions",
+                        'POA_all': "Selected: All Questions",
+                        "QDF_enb": "Enabled Point Deductions",
+                        "QDF_dsb": "No Deductions",
+                        "acqc_disabled": "The administrator has disabled custom quiz configuration."
+                    },
+                    'information_strs': {
+                        'POA': "Description:\nShould all questions be included in the quiz, or only a part of the questions; click on the button below to toggle the option. If you choose to only answer a part of the questions, enter the divisor amount (1/n questions will be used, where n is the number you provide)",
+                        'QDF': "Description:\nShould the application deduct points when an incorrect response is given; click on the button below to toggle to option - enter the amount of points that you wish to be deducted for every incorrect option in the field below."
+                    }
+                }
+            },
+            3: {
+                'start_requested': {
+
+                }
+            },
+            'nav': {
+                'next': {
+                    'defaults': {
+                        'str_next': "Next \u2b9e",
+                        'str_start': "Start Quiz \u2713"
+                    }
+                },
+                'prev': {
+                    'defaults': {
+                        'str_prev': '\u2b9c Back'
+                    }
+                }
+            }
         }
 
         # Frame Elements
@@ -260,6 +294,22 @@ class LoginUI(threading.Thread):
         self.cred_studentID_field = tk.Entry(self.cred_studentID_invis_cont)
         self.cred_error_lbl = tk.Label(self.credFrame)
 
+        #    - Frame 3: Configuration
+        self.config_ttl = tk.Label(self.configFrame)
+        self.config_info = tk.Label(self.configFrame)
+        self.config_disallowed_LBL = tk.Label(self.configFrame)
+        self.config_container1 = tk.LabelFrame(self.configFrame)
+        self.config_container2 = tk.LabelFrame(self.configFrame)
+        self.config_poa_button = tk.Button(self.config_container1)
+        self.config_poa_descLbl = tk.Label(self.config_container1)
+        self.config_poa_df_field = tk.Entry(self.config_container1)
+        self.config_qdf_button = tk.Button(self.config_container2)
+        self.config_qdf_descLbl = tk.Label(self.config_container2)
+        self.config_qdf_field = tk.Entry(self.config_container2)
+        self.config_error_label = tk.Label(self.configFrame)
+        self.config_poaField_descLbl = tk.Label(self.config_container1)
+        self.config_qdfField_descLbl = tk.Label(self.config_container2)
+
         # UI Update System
         self.update_element = {
             'lbl': [],
@@ -268,14 +318,23 @@ class LoginUI(threading.Thread):
             'acc_bg': [],
             'font': [],
             'frame': [],
-            'error_lbls': []
+            'error_lbls': [],
+            'enteries': []
         }
+
+        self.configuration = {}
+        self.questions = {}
+        self.canClose = True
 
         # Final calls
         self.start()
         self.root.mainloop()
 
     def close(self):
+        if not self.canClose:
+            tkmsb.showerror(apptitle, "The quiz is now in progress; you cannot exit\n\nPress ok to return to quiz.")
+            return
+
         conf = tkmsb.askyesno(apptitle, "Are you sure you want to exit?")
         if conf: sys.exit(0)
 
@@ -291,6 +350,8 @@ class LoginUI(threading.Thread):
             self.dbSel_ttl,
             self.dbSel_btnContainer,
             self.dbSel_info,
+            self.dbSel_error_lbl,
+
             self.cred_ttl,
             self.cred_info,
             self.cred_container,
@@ -299,20 +360,41 @@ class LoginUI(threading.Thread):
             self.cred_last_lbl,
             self.cred_studentID_lbl,
             self.cred_error_lbl,
-            self.dbSel_error_lbl
+
+            self.config_ttl,
+            self.config_info,
+            self.config_disallowed_LBL,
+            self.config_container1,
+            self.config_container2,
+            self.config_qdf_descLbl,
+            self.config_poa_descLbl,
+            self.config_qdfField_descLbl,
+            self.config_poaField_descLbl
         ])
 
         self.update_element['btn'].extend([
             self.dbSel_btns_external,
-            self.dbSel_btns_internal
+            self.dbSel_btns_internal,
+
+            self.config_poa_button,
+            self.config_qdf_button
         ])
 
         self.update_element['acc_fg'].extend([
             self.dbSel_btnContainer,
             self.dbSel_ttl,
+
             self.cred_ttl,
             self.cred_container,
-            self.cred_name_cont
+            self.cred_name_cont,
+
+            self.config_ttl,
+            self.config_disallowed_LBL,
+            self.config_container1,
+            self.config_container2,
+            self.config_qdf_button,
+            self.config_poa_button,
+            self.config_error_label
         ])
 
         self.update_element['acc_bg'].extend([
@@ -341,7 +423,22 @@ class LoginUI(threading.Thread):
             [self.cred_last_lbl, (self.theme.get('font'), 13)],
             [self.cred_studentID_field, (self.theme.get('font'), 13)],
             [self.cred_studentID_lbl, (self.theme.get('font'), 13)],
-            [self.cred_error_lbl, (self.theme.get('font'), 11)]
+            [self.cred_error_lbl, (self.theme.get('font'), 11)],
+
+            [self.config_ttl, (self.theme.get('font'), 32)],
+            [self.config_info, (self.theme.get('font'), 12)],
+            [self.config_disallowed_LBL, (self.theme.get('font'), 14)],
+            [self.config_container1, (self.theme.get('font'), 10)],
+            [self.config_container2, (self.theme.get('font'), 10)],
+            [self.config_poa_button, (self.theme.get('font'), 14)],
+            [self.config_poa_descLbl, (self.theme.get('font'), 13)],
+            [self.config_poa_df_field, (self.theme.get('font'), 13)],
+            [self.config_qdf_button, (self.theme.get('font'), 14)],
+            [self.config_qdf_descLbl, (self.theme.get('font'), 13)],
+            [self.config_qdf_field, (self.theme.get('font'), 13)],
+            [self.config_error_label, (self.theme.get('font'), 11)],
+            [self.config_qdfField_descLbl, (self.theme.get('font'), 13)],
+            [self.config_poaField_descLbl, (self.theme.get('font'), 13)]
         ])
 
         self.update_element['frame'].extend([
@@ -352,18 +449,29 @@ class LoginUI(threading.Thread):
         ])
 
         self.update_element['error_lbls'].extend([
+            self.dbSel_error_lbl,
             self.cred_error_lbl,
-            self.dbSel_error_lbl
+
+            self.config_error_label
+        ])
+
+        self.update_element['enteries'].extend([
+            self.cred_first,
+            self.cred_last,
+            self.cred_studentID_field,
+
+            self.config_qdf_field,
+            self.config_poa_df_field
         ])
 
         self.next_button.config(
-            text="Next >",
+            text=self.screen_data['nav']['next']['defaults']['str_next'],
             command=self.next_page,
             anchor=tk.E
         )
 
         self.previous_button.config(
-            text="< Previous",
+            text=self.screen_data['nav']['prev']['defaults']['str_prev'],
             command=self.prev_page,
             anchor=tk.W
         )
@@ -385,7 +493,7 @@ class LoginUI(threading.Thread):
 
         self.title()
 
-        debug("Screen data on ui redraw: ", self.screen_data, "; re-draw params: i. scic = ", screenI_counter, "; ii. f_r = ", force_refresh)
+        debug("Screen re-draw params: i. scic = ", screenI_counter, "; ii. f_r = ", force_refresh)
 
         if screenI_counter != 0 or force_refresh:
             self.clear_screen()
@@ -463,7 +571,17 @@ class LoginUI(threading.Thread):
         for i in self.update_element['error_lbls']:
             i.config(
                 fg=self.theme.get('ac'),
+                bg=self.theme.get('bg'),
                 text=""
+            )
+
+        for i in self.update_element['enteries']:
+            i.config(
+                fg=self.theme['fg'],
+                bg=self.theme['bg'],
+                selectforeground=self.theme['hg'],
+                selectbackground=self.theme['ac'],
+                insertbackground=self.theme['ac']
             )
 
         # Exceptions
@@ -490,30 +608,30 @@ class LoginUI(threading.Thread):
         for i in [self.cred_last_invis_cont, self.cred_first_invis_cont, self.cred_studentID_invis_cont]:
             i.config(bd='0', bg=self.theme.get('bg'))
 
-        for i in [self.cred_first, self.cred_last, self.cred_studentID_field]:
-            i.config(
-                fg=self.theme['fg'],
-                bg=self.theme['bg'],
-                selectforeground=self.theme['hg'],
-                selectbackground=self.theme['ac'],
-                insertbackground=self.theme['ac']
-            )
-
         if screenI_counter != 0 or force_refresh:
             self.update_ui_elements()
 
         # --- end ---
 
     def update_ui_elements(self):
-        debug("screen_data[0].get('database_selection'): ", self.screen_data[0].get('database_selection'))
+        if self.screen_data[0]['flags']['selected']:
 
-        if self.screen_data[0].get('database_selection') == 'i':
-            self.dbSel_btns_internal.config(state=tk.DISABLED, bg=self.theme.get('ac'))
-            self.dbSel_btns_external.config(state=tk.NORMAL, bg=self.theme.get('bg'))
+            debug("screen_data[0].get('database_selection'): ", self.screen_data[0].get('database_selection'))
 
-        elif self.screen_data[0].get('database_selection') == 'e':
-            self.dbSel_btns_internal.config(state=tk.NORMAL, bg=self.theme.get('bg'))
-            self.dbSel_btns_external.config(state=tk.DISABLED, bg=self.theme.get('ac'))
+            if self.screen_data[0].get('database_selection') == 'i':
+                self.dbSel_btns_external.config(state=tk.NORMAL, bg=self.theme.get('bg'))
+                self.dbSel_btns_internal.config(
+                    state=tk.DISABLED, bg=self.theme.get('ac'),
+                    text=self.screen_data[0]['defaults']['i'] + ' \u2713'
+                )
+
+            elif self.screen_data[0].get('database_selection') == 'e':
+                self.dbSel_btns_internal.config(state=tk.NORMAL, bg=self.theme.get('bg'))
+                self.dbSel_btns_external.config(
+                    state=tk.DISABLED, bg=self.theme.get('ac'),
+                    text=self.screen_data[0]['defaults']['e'] + ' \u2713\n' +
+                         self.screen_data[0]['external_database']['filename'].split('\\')[-1]
+                )
 
     def all_screen_widgets(self) -> list:
         _db = self.dbSelctFrame.winfo_children()
@@ -650,6 +768,143 @@ class LoginUI(threading.Thread):
 
         self.configFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
 
+        self.config_ttl.config(text="Quizzing Form", anchor=tk.W, justify=tk.LEFT)
+        self.config_ttl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4))
+
+        self.config_info.config(
+            text="Step 3/{}: Configuration;\nConfigure the quiz you're about to take (if allowed by the administrator)".format(
+                len(self.scI_mapping)
+            ),
+            anchor=tk.W,
+            justify=tk.LEFT,
+            wraplength=int(self.ws[0] - self.padX * 2)
+        )
+        self.config_info.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY))
+
+        if not self.configuration['customQuizConfig']:
+            self.config_disallowed_LBL.config(
+                text=self.screen_data[2]['defaults']['strs']['acqc_disabled'],
+                wraplength=int(self.ws[0]-self.padX*2)
+            )
+            self.config_disallowed_LBL.pack(fill=tk.BOTH, expand=True, padx=self.padX, pady=self.padY)
+
+        else:
+
+            self.config_container1.config(
+                text="Question Selection"
+            )
+            self.config_container1.pack(
+                fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/4)
+            )
+
+            self.config_poa_descLbl.config(
+                text=self.screen_data[2]['defaults']['information_strs']['POA'],
+                wraplength=int(self.ws[0] - self.padX * 2),
+                justify=tk.LEFT,
+                anchor=tk.W
+            )
+            self.config_poa_descLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+            self.config_poa_button.config(
+                text=self.screen_data[2]['defaults']['strs']['POA_part' if self.configuration.get('partOrAll') == 'part' else 'POA_all'],
+                command=self.config_poa
+            )
+
+            self.config_poa_button.pack(
+                fill=tk.BOTH,
+                expand=False,
+                padx=self.padX,
+                pady=self.padY,
+                ipadx=self.padX / 4,
+                ipady=self.padY / 4,
+                side=tk.LEFT
+            )
+
+            if self.configuration.get('partOrAll') == 'part':
+
+                self.config_poa_df_field.delete(0, tk.END)
+                self.config_poa_df_field.insert(0, str(self.configuration['poa_divF']))
+
+                self.config_poa_df_field.pack(
+                    fill=tk.X, expand=True,
+                    padx=(self.padX, self.padX / 4), pady=self.padY,
+                    side=tk.RIGHT
+                )
+
+                self.config_poaField_descLbl.config(
+                    text="Divisor: ",
+                    wraplength=int(self.ws[0] - self.padX * 2),
+                    justify=tk.RIGHT,
+                    anchor=tk.E
+                )
+
+                self.config_poaField_descLbl.pack(
+                    fill=tk.X, expand=False,
+                    padx=(self.padX, self.padX/4), pady=self.padY,
+                    side=tk.RIGHT
+                )
+
+            self.config_container2.config(
+                text="Incorrect Response Penalty"
+            )
+            self.config_container2.pack(
+                fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4)
+            )
+
+            self.config_qdf_descLbl.config(
+                text=self.screen_data[2]['defaults']['information_strs']['QDF'],
+                wraplength=int(self.ws[0] - self.padX * 2),
+                justify=tk.LEFT,
+                anchor=tk.W
+            )
+
+            self.config_qdf_descLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+            self.config_qdf_button.config(
+                text=self.screen_data[2]['defaults']['strs']['QDF_enb' if bool(self.configuration.get('a_deduc')) else 'QDF_dsb'],
+                command=self.config_qdf
+            )
+
+            self.config_qdf_button.pack(
+                fill=tk.BOTH,
+                expand=False,
+                padx=self.padX,
+                pady=self.padY,
+                ipadx=self.padX / 4,
+                ipady=self.padY / 4,
+                side=tk.LEFT
+            )
+
+            if bool(self.configuration.get('a_deduc')):
+                self.config_qdf_field.delete(0, tk.END)
+                self.config_qdf_field.insert(0, str(self.configuration['deduc_amnt']))
+
+                self.config_qdf_field.pack(
+                    fill=tk.X, expand=True,
+                    padx=(self.padX, self.padX / 4), pady=self.padY,
+                    side=tk.RIGHT
+                )
+
+                self.config_qdfField_descLbl.config(
+                    text="Penalty: ",
+                    wraplength=int(self.ws[0] - self.padX * 2),
+                    justify=tk.RIGHT,
+                    anchor=tk.E
+                )
+
+                self.config_qdfField_descLbl.pack(
+                    fill=tk.X, expand=False,
+                    padx=(self.padX, self.padX / 4), pady=self.padY,
+                    side=tk.RIGHT
+                )
+
+        self.config_error_label.config(wraplength=int(self.ws[0] - self.padX * 2))
+        self.config_error_label.pack(
+            fill=tk.X, expand=False,
+            padx=self.padX, pady=self.padY,
+            side=tk.BOTTOM
+        )
+
     def screen_4(self): # Final (Wait)
         debug(f"Setting up final page (ind = {self.screen_index})")
 
@@ -658,6 +913,11 @@ class LoginUI(threading.Thread):
     def config_nav_buttons(self, index=None, setTo=None):
         if self.screen_index == 0: self.previous_button.config(state=tk.DISABLED)
         else: self.previous_button.config(state=tk.NORMAL)
+
+        if self.screen_index == len(self.scI_mapping) - 1:
+            self.next_button.config(text=self.screen_data['nav']['next']['defaults']['str_start'])
+        else:
+            self.next_button.config(text=self.screen_data['nav']['next']['defaults']['str_next'])
 
         if type(index) is int and type(setTo) is bool:
             self.sc_navButton_next_states[index] = setTo
@@ -668,6 +928,22 @@ class LoginUI(threading.Thread):
             self.next_button.config(state=tk.DISABLED)
 
     # Button Handlers
+    def config_qdf(self):
+        if bool(self.configuration.get('a_deduc')):
+            self.configuration['a_deduc'] = 0
+        else:
+            self.configuration['a_deduc'] = 1
+
+        self.update_ui(force_refresh=True)
+
+    def config_poa(self):
+        if self.configuration['partOrAll'] == 'part':
+            self.configuration['partOrAll'] = 'all'
+        else:
+            self.configuration['partOrAll'] = 'part'
+
+        self.update_ui(force_refresh=True)
+
     def btns_dbSel_int(self):
         # Reset
         self.dbSel_btns_external.config(
@@ -708,6 +984,9 @@ class LoginUI(threading.Thread):
                 )
                 return
 
+            self.configuration = ra[0]
+            self.questions = ra[1]
+
         except Exception as E:
             debug("Error whilst loading extern_db: ", E)
             self.dbSel_error_lbl.config(
@@ -737,6 +1016,8 @@ class LoginUI(threading.Thread):
             state=tk.NORMAL, bg=self.theme.get('bg'),
             text=self.screen_data[0]['defaults']['i']
         )
+
+        self.screen_data[0]['flags']['selected'] = False
 
         file = tkfld.askopenfilename(
             defaultextension=f".{QAInfo.export_quizFile}",
@@ -777,6 +1058,9 @@ class LoginUI(threading.Thread):
                     text=self.screen_data[0]['strs']['errors']['invalidDB_noQs']
                 )
                 return
+
+            self.configuration = ra[0];
+            self.questions = ra[1]
 
         except Exception as E:
             debug("Error whilst loading extern_db: ", E)
@@ -862,7 +1146,14 @@ class LoginUI(threading.Thread):
             pass
 
         elif self.screen_index == 3: # Final
-            pass
+            self.canClose = False
+            self.previous_button.config(
+                state=tk.DISABLED
+            )
+            self.next_button.config(
+                state=tk.DISABLED
+            )
+            return
 
         self.update_ui(1)
 
@@ -997,13 +1288,14 @@ class JSON:
         )
 
     def boot_check(self):
+        global splObj
         # Step 1: Does the key exist?
         if self.getFlag(QAInfo.global_nv_flags_fn, self.crashID):
 
             # Step 2: Is the error un-resolved?
             check = self.getFlag(QAInfo.global_nv_flags_fn, self.crashID, return_boolean=False)
 
-            if check.get(self.unrID):  # Un-reolved
+            if check.get(self.unrID):  # Un-resolved
 
                 # Step 1: Vars
                 _dData = QADiagnostics.Data()
@@ -1037,8 +1329,10 @@ class JSON:
                     self.crashID
                 )
 
+                QASplash.hide(splObj)
                 tkmsb.showinfo(apptitle,
                                f"The application had detected a boot-error flag and thus ran the appropriate diagnostics.")
+                QASplash.show(splObj)
 
         # True = Test passed
         return True
@@ -1310,6 +1604,8 @@ def application_exit(code: str = "0") -> None:
 # Adjust Splash
 set_boot_progress(4)
 # Boot checks go here
+
+JSON().boot_check()
 
 # Adjust Splash
 set_boot_progress(5)

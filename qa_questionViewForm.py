@@ -144,8 +144,9 @@ class UI(threading.Thread):
         for i in self.questions:
             tempQuestionLbl = tk.Label(
                 self.frame, 
-                text=f"Question #{dict_getIndex(self.questions, i, 1, True)}: {i.strip()}",
+                text=f"Question #{dict_getIndex(self.questions, i, 1, True)}:\n{i.strip()}",
                 anchor=tk.W,
+                justify=tk.LEFT,
                 wraplength=int((int(self.ws[0] - self.ws[0]*0.02)))
             )
             
@@ -158,6 +159,7 @@ class UI(threading.Thread):
                 self.frame,
                 text=f"Answer: {self.questions.get(i).strip()}",
                 anchor=tk.W,
+                justify=tk.LEFT,
                 wraplength=int((int(self.ws[0] - self.ws[0]*0.08)))
             )
             
