@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as tkfld
 from tkinter import messagebox as tkmsb
-import os, sys, threading, shutil, time, json, sqlite3, playsound
+import os, sys, threading, shutil, time, json, sqlite3, playsound, re
 
 import qa_appinfo as QAInfo
 import qa_diagnostics as QADiagnostics
@@ -191,7 +191,7 @@ class LoginUI(threading.Thread):
             0: ["Database Selection", self.dbSelctFrame, self.screen_1],
             1: ["Credentials", self.credFrame, self.screen_2],
             2: ["Configuration", self.configFrame, self.screen_3],
-            3: ["Preparing Quiz", self.finalFrame, self.screen_4]
+            3: ["Summary", self.finalFrame, self.screen_4]
         }
 
         self.sc_navButton_next_states = {
@@ -226,9 +226,6 @@ class LoginUI(threading.Thread):
                 }
             },
             2: {
-                'poa_btn_state': {
-                    ''
-                },
                 'defaults': {
                     'strs': {
                         'POA_part': "Selected: Part of all Questions",
@@ -240,6 +237,10 @@ class LoginUI(threading.Thread):
                     'information_strs': {
                         'POA': "Description:\nShould all questions be included in the quiz, or only a part of the questions; click on the button below to toggle the option. If you choose to only answer a part of the questions, enter the divisor amount (1/n questions will be used, where n is the number you provide)",
                         'QDF': "Description:\nShould the application deduct points when an incorrect response is given; click on the button below to toggle to option - enter the amount of points that you wish to be deducted for every incorrect option in the field below."
+                    },
+                    'errors': {
+                        'POA_unfilled': '\u26a0 ERROR: Please fill out the "Divisor" field (Question Selection; only numbers are accepted)',
+                        'QDF_unfilled': '\u26a0 ERROR: Please fill out the "Penalty" field (Incorrect Response Penalty; only numbers are accepted)'
                     }
                 }
             },
@@ -310,6 +311,31 @@ class LoginUI(threading.Thread):
         self.config_poaField_descLbl = tk.Label(self.config_container1)
         self.config_qdfField_descLbl = tk.Label(self.config_container2)
 
+        #   - Frame 4: Summary
+        self.summary_ttl_lbl = tk.Label(self.finalFrame)
+        self.summary_info_lbl = tk.Label(self.finalFrame)
+        self.summary_DB_information_container = tk.LabelFrame(self.finalFrame)
+        self.summary_DB_lbl = tk.Label(self.summary_DB_information_container)
+        self.summary_student_information_container = tk.LabelFrame(self.finalFrame)
+        self.summary_student_name_lbl = tk.Label(self.summary_student_information_container)
+        self.summary_student_id_lbl = tk.Label(self.summary_student_information_container)
+        self.summary_config_container = tk.LabelFrame(self.finalFrame)
+        self.summary_config_acqc_lbl = tk.Label(self.summary_config_container)
+        self.summary_config_poa_lbl = tk.Label(self.summary_config_container)
+        self.summary_config_qdf_lbl = tk.Label(self.summary_config_container)
+        self.summary_error_lbl = tk.Label(self.finalFrame)
+        self.summary_request_start = tk.Label(self.finalFrame)
+
+        self.summary_vsb_style = ttk.Style()
+        self.summary_vsb_style.theme_use('alt')
+        self.summary_vsb_style.configure(
+            "TScrollbar",
+            background=self.theme.get('bg'),
+            arrowcolor=self.theme.get('fg'),
+            bordercolor=self.theme.get('bg'),
+            troughcolor=self.theme.get('bg')
+        )
+
         # UI Update System
         self.update_element = {
             'lbl': [],
@@ -369,7 +395,21 @@ class LoginUI(threading.Thread):
             self.config_qdf_descLbl,
             self.config_poa_descLbl,
             self.config_qdfField_descLbl,
-            self.config_poaField_descLbl
+            self.config_poaField_descLbl,
+
+            self.summary_ttl_lbl,
+            self.summary_info_lbl,
+            self.summary_DB_information_container,
+            self.summary_DB_lbl,
+            self.summary_student_information_container,
+            self.summary_student_name_lbl,
+            self.summary_student_id_lbl,
+            self.summary_config_container,
+            self.summary_config_poa_lbl,
+            self.summary_config_qdf_lbl,
+            self.summary_error_lbl,
+            self.summary_request_start,
+            self.summary_config_acqc_lbl
         ])
 
         self.update_element['btn'].extend([
@@ -394,7 +434,14 @@ class LoginUI(threading.Thread):
             self.config_container2,
             self.config_qdf_button,
             self.config_poa_button,
-            self.config_error_label
+            self.config_error_label,
+
+            self.summary_ttl_lbl,
+            self.summary_DB_information_container,
+            self.summary_student_information_container,
+            self.summary_config_container,
+            self.summary_request_start,
+            self.summary_config_acqc_lbl
         ])
 
         self.update_element['acc_bg'].extend([
@@ -438,7 +485,21 @@ class LoginUI(threading.Thread):
             [self.config_qdf_field, (self.theme.get('font'), 13)],
             [self.config_error_label, (self.theme.get('font'), 11)],
             [self.config_qdfField_descLbl, (self.theme.get('font'), 13)],
-            [self.config_poaField_descLbl, (self.theme.get('font'), 13)]
+            [self.config_poaField_descLbl, (self.theme.get('font'), 13)],
+
+            [self.summary_ttl_lbl, (self.theme.get('font'), 32)],
+            [self.summary_info_lbl, (self.theme.get('font'), 12)],
+            [self.summary_DB_information_container, (self.theme.get('font'), 10)],
+            [self.summary_DB_lbl, (self.theme.get('font'), 13)],
+            [self.summary_student_information_container, (self.theme.get('font'), 10)],
+            [self.summary_student_name_lbl, (self.theme.get('font'), 13)],
+            [self.summary_student_id_lbl, (self.theme.get('font'), 13)],
+            [self.summary_config_container, (self.theme.get('font'), 10)],
+            [self.summary_config_poa_lbl, (self.theme.get('font'), 13)],
+            [self.summary_config_qdf_lbl, (self.theme.get('font'), 13)],
+            [self.summary_config_acqc_lbl, (self.theme.get('font'), 13)],
+            [self.summary_error_lbl, (self.theme.get('font'), 11)],
+            [self.summary_request_start, (self.theme.get('font'), 14)]
         ])
 
         self.update_element['frame'].extend([
@@ -451,8 +512,8 @@ class LoginUI(threading.Thread):
         self.update_element['error_lbls'].extend([
             self.dbSel_error_lbl,
             self.cred_error_lbl,
-
-            self.config_error_label
+            self.config_error_label,
+            self.summary_error_lbl
         ])
 
         self.update_element['enteries'].extend([
@@ -662,7 +723,7 @@ class LoginUI(threading.Thread):
 
         for i in widgets:
             try: i.pack_forget()
-            except Exception as e: debug(f'exception whilst clearing screen: {e}')
+            except Exception as e: debug(f'Exception whilst clearing screen: {e}')
 
     def title(self):
         global apptitle
@@ -905,10 +966,112 @@ class LoginUI(threading.Thread):
             side=tk.BOTTOM
         )
 
-    def screen_4(self): # Final (Wait)
+    def screen_4(self): # Final (Summary)
         debug(f"Setting up final page (ind = {self.screen_index})")
 
         self.finalFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+
+        self.summary_ttl_lbl.config(text="Quizzing Form", anchor=tk.W, justify=tk.LEFT)
+        self.summary_ttl_lbl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4))
+
+        self.summary_info_lbl.config(
+            text="Step 4/{}: Summary;\nThe quiz is ready! Review the information below and finally click \"{}\" in the bottom right hand corner of the screen.".format(
+                len(self.scI_mapping),
+                self.screen_data['nav']['next']['defaults']['str_start']
+            ),
+            anchor=tk.W,
+            justify=tk.LEFT,
+            wraplength=int(self.ws[0] - self.padX * 2)
+        )
+        self.summary_info_lbl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY))
+
+        self.summary_error_lbl.config(text="", wraplength=int(self.ws[0] - self.padX * 2))
+        self.summary_error_lbl.pack(
+            fill=tk.X,
+            expand=False,
+            side=tk.BOTTOM,
+            padx=self.padX,
+            pady=self.padY
+        )
+
+        self.summary_request_start.config(text="Click \"%s\" to start the quiz" % self.screen_data['nav']['next']['defaults']['str_start'])
+        self.summary_request_start.pack(
+            fill=tk.X,
+            expand=False,
+            side=tk.BOTTOM,
+            padx=self.padX,
+            pady=self.padY
+        )
+
+        # DB Select Summary
+        self.summary_DB_information_container.config(text="Selected Database")
+        self.summary_DB_information_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/2))
+
+        self.summary_DB_lbl.config(
+            text="Selected Database: %s" % ("External Database ({})".format(
+                self.screen_data[0]['external_database']['filename'].split('\\')[-1]
+            ) if self.screen_data[0].get('database_selection') == 'e' else "Local (Internal) Database"),
+            wraplength=self.ws[0] - self.padX*4,
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        self.summary_DB_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+        self.summary_student_information_container.config(text="Student Information")
+        self.summary_student_information_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY/2)
+
+        self.summary_student_name_lbl.config(
+            text="Student Name: %s, %s" % (
+                self.cred_last.get()[0].upper() + self.cred_last.get().lower().replace(self.cred_last.get()[0].lower(), '', 1),
+                self.cred_first.get()[0].upper() + self.cred_first.get().lower().replace(self.cred_first.get()[0].lower(), '', 1)
+            ),
+            wraplength=self.ws[0]-self.padX*2,
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        self.summary_student_name_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/4))
+
+        self.summary_student_id_lbl.config(
+            text="Student ID: %s" % self.cred_studentID_field.get(),
+            wraplength=self.ws[0] - self.padX * 2,
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        self.summary_student_id_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY/4, self.padY))
+
+        self.summary_config_container.config(text="Quiz Configuration")
+        self.summary_config_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY/2, 0))
+
+        self.summary_config_acqc_lbl.config(
+            text="Custom Quiz Configuration %s by Admin" % (
+                "Enabled" if bool(self.configuration.get('customQuizConfig')) else "Disabled"
+            ),
+            wraplength=self.ws[0] - self.padX * 2,
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        self.summary_config_acqc_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/4))
+
+        self.summary_config_poa_lbl.config(
+            text="Question Segmentation:\n    - %s of the questions are to be asked%s" % (
+                "A part" if self.configuration.get('partOrAll') == 'part' else "All",
+                "\n    - 1/{} of all questions will be asked (min = 1)".format(self.configuration['poa_divF']) if self.configuration.get('partOrAll') == 'part' else ""
+            ),
+            wraplength=self.ws[0] - self.padX * 2,
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        self.summary_config_poa_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY / 4)
+
+        self.summary_config_qdf_lbl.config(
+            text="Incorrect Response Penalty:\n    - %s points are to be deducted when an incorrect response is given." % (
+                str(self.configuration['deduc_amnt']) if bool(self.configuration['a_deduc']) else '0'
+            ),
+            wraplength=self.ws[0] - self.padX * 2,
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        self.summary_config_qdf_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY))
 
     def config_nav_buttons(self, index=None, setTo=None):
         if self.screen_index == 0: self.previous_button.config(state=tk.DISABLED)
@@ -1161,7 +1324,26 @@ class LoginUI(threading.Thread):
                 return
 
         elif self.screen_index == 2: # Configuration
-            pass
+            poa_df = "".join(i for i in re.findall("\d", self.config_poa_df_field.get().split('.')[0])) # \d = digits
+            qdf_df = "".join(i for i in re.findall("\d", self.config_qdf_field.get().split('.')[0]))
+
+            if len(poa_df) <= 0 and self.configuration['partOrAll'] == 'part':
+                esfx()
+                self.config_error_label.config(
+                    text=self.screen_data[2]['defaults']['errors']['POA_unfilled']
+                )
+
+                return
+
+            elif len(qdf_df) <= 0 and bool(self.configuration['a_deduc']):
+                esfx()
+                self.config_error_label.config(
+                    text=self.screen_data[2]['defaults']['errors']['QDF_unfilled']
+                )
+                return
+
+            self.configuration['poa_divF'] = int(poa_df if self.configuration['partOrAll'] == 'part' else '0')
+            self.configuration['deduc_amnt'] = int(qdf_df if bool(self.configuration['a_deduc']) else '0')
 
         elif self.screen_index == 3: # Final
             self.canClose = False

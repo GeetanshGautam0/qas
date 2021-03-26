@@ -1422,8 +1422,8 @@ class UI(threading.Thread):
         self.config_acc_dsbButton.config(state=tk.NORMAL)
         
         # Step 3: Enable all other things
-        self.qspa_enbAll() # All / Part Container + Buttons + Sub-Container + Entry (divF)
-        self.qed_enbAll() # QED and all of it's child objects
+        self.qspa_dsbAll() # All / Part Container + Buttons + Sub-Container + Entry (divF)
+        self.qed_dsbAll() # QED and all of it's child objects
         
         # Step 4: Write the changes to the dict
         configuration_begining[
@@ -1444,8 +1444,8 @@ class UI(threading.Thread):
         self.config_acc_enbButton.config(state=tk.NORMAL)
 
         # Step 3: Disable all other things
-        self.qspa_dsbAll() # All / Part Container + Buttons + Sub-Container + Entry (divF)
-        self.qed_dsbAll() # QED and all of it's child objects
+        self.qspa_enbAll() # All / Part Container + Buttons + Sub-Container + Entry (divF)
+        self.qed_enbAll() # QED and all of it's child objects
         
         # Step 4: Write the changes to the dict
         configuration_begining[
@@ -2556,6 +2556,13 @@ def questionsToPDF(filename: str):
 def export_quiz_file():
     global configuration_saved
 
+    questionsAndAnswers = IO(f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}").autoLoad()
+    if len(QAQuestionStandard.convRawToDict(questionsAndAnswers)) <= 0:
+        tkmsb.showerror(
+            apptitle, f"Cannot export *.qaQuiz file(s) as there are no questions available in the database."
+        )
+        return
+
     fl = tkfldl.askdirectory() # file location
     if type(fl) is str:
         if len(fl.strip()) <= 0: return
@@ -2603,10 +2610,6 @@ def export_quiz_file():
                 )
             )
 
-            questionsAndAnswers = IO(f"{QAInfo.appdataLoc}\\{QAInfo.qasFilename}").autoLoad()
-            if len(QAQuestionStandard.convRawToDict(questionsAndAnswers)) <= 0:
-                raise Exception("No questions found in database file; cannot make file.")
-
             c.execute(
                 "INSERT INTO qas VALUES (:qas)",
                 {'qas': questionsAndAnswers}
@@ -2618,12 +2621,21 @@ def export_quiz_file():
         tkmsb.showinfo(apptitle, "Successfully generated quiz file:\n%s" % "\\".join(i for i in fn.split("\\")[-2::]))
 
     except Exception as e:
-        while os.path.exists(fn): os.remove(fn)
-
         tkmsb.showerror(
             apptitle,
             e
         )
+
+        try:
+            while os.path.exists(fn): os.remove(fn)
+        except:
+            try:
+                connector.commit()
+                connector.close()
+                while os.path.exists(fn): os.remove(fn)
+            except:
+                debug(f"Failed to export file (bottom-level)")
+                return
 
 def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=False) -> dict:
     debug(f"Refference ::: {reference}")
