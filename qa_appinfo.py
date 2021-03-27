@@ -124,6 +124,7 @@ theme_presets_foldername = '.defaultThemes'
 
 export_file_extension = "qa_export"
 export_quizFile = 'qaQuiz'
+export_score_dbFile = 'qaScore'
 
 fileIO_version_info_header = "<<QA::COMPATABILITY::FILE_VERSION>> :: "
 
@@ -143,6 +144,8 @@ questions_file_info = {
     'enc': True,
     'encoding': 'utf-16'
 }
+
+icons_regFile = ".installerRes\\reg_icons.bat"
 
 bugReportLink = "https://codingmadefun.wixsite.com/database/qas-bug-report-form"
 version_check_url = "https://raw.githubusercontent.com/GeetanshGautam-CodingMadeFun/cmfvers/master/qas/qas.json"

@@ -351,6 +351,7 @@ class LoginUI(threading.Thread):
         self.configuration = {}
         self.questions = {}
         self.canClose = True
+        self.masterUpdateRoutine_enable = True
 
         # Final calls
         self.start()
@@ -547,6 +548,11 @@ class LoginUI(threading.Thread):
         self.root.deiconify()
 
     def update_ui(self, screenI_counter=0, force_refresh=False):
+        # Check if update_ui is enabled
+        if not self.masterUpdateRoutine_enable:
+            debug("QF::553 - LoginUI.update_ui was called, but the masterUpdateRoutine_enable flag is set to DISABLED (bool:False)")
+            return
+
         # Config.
         self.screen_index += screenI_counter
         if self.screen_index < 0: self.screen_index = 0
@@ -1327,7 +1333,7 @@ class LoginUI(threading.Thread):
             poa_df = "".join(i for i in re.findall("\d", self.config_poa_df_field.get().split('.')[0])) # \d = digits
             qdf_df = "".join(i for i in re.findall("\d", self.config_qdf_field.get().split('.')[0]))
 
-            if len(poa_df) <= 0 and self.configuration['partOrAll'] == 'part':
+            if len(poa_df) <= 0 and self.configuration['partOrAll'] == 'part' or poa_df == "0":
                 esfx()
                 self.config_error_label.config(
                     text=self.screen_data[2]['defaults']['errors']['POA_unfilled']
@@ -1335,7 +1341,7 @@ class LoginUI(threading.Thread):
 
                 return
 
-            elif len(qdf_df) <= 0 and bool(self.configuration['a_deduc']):
+            elif len(qdf_df) <= 0 and bool(self.configuration['a_deduc']) or qdf_df == "0":
                 esfx()
                 self.config_error_label.config(
                     text=self.screen_data[2]['defaults']['errors']['QDF_unfilled']
@@ -1346,19 +1352,181 @@ class LoginUI(threading.Thread):
             self.configuration['deduc_amnt'] = int(qdf_df if bool(self.configuration['a_deduc']) else '0')
 
         elif self.screen_index == 3: # Final
-            self.canClose = False
             self.previous_button.config(
                 state=tk.DISABLED
             )
             self.next_button.config(
                 state=tk.DISABLED
             )
+
+            self.start_quiz()
+
             return
 
         self.update_ui(1)
 
     def prev_page(self):
         self.update_ui(-1)
+
+    def qpsu_ui(self, __instance, __type, arg=None, *args, **kwargs):
+        """
+        :param __instance: Instance
+        :param __type: Type (lbl, btn, ac_fg, ac_bg, or font)
+        :param arg: argument (used in 'font', )
+        :param args: *args
+        :param kwargs: **kwargs (see flags)
+        :return: None
+
+        Flags:
+            * useAsTuple: if set to 'True,' 'font' will use the 'arg' argument as a tuple (font = arg, instead of font=(self.theme.get('font'), arg))
+
+        """
+
+        try:
+            if __type == 'lbl':
+                __instance.config(
+                    bg=self.theme.get('bg'),
+                    fg=self.theme.get('fg')
+                )
+
+            elif __type == 'btn':
+                __instance.config(
+                    bg=self.theme.get('bg'),
+                    fg=self.theme.get('ac'),
+                    activebackground=self.theme.get('ac'),
+                    activeforeground=self.theme.get('hg')
+                )
+
+            elif __type == "ac_fg":
+                __instance.config(
+                    fg=self.theme.get('ac')
+                )
+
+            elif __type == "ac_bg":
+                __instance.config(
+                    fg=self.theme.get('hg'),
+                    bg=self.theme.get('ac')
+                )
+
+            elif __type == "font":
+                __instance.config(
+                    font=((self.theme.get("font"), arg) if not kwargs.get('useAsTuple') == True else arg)
+                )
+
+            else: raise NameError(f"Invalid __type argument \"{__type}\"")
+
+        except Exception as E:
+            debug(f"Exception whilst theming quiz_prep item {__instance}: {E}")
+            return E
+
+    def start_quiz(self):
+        global apptitle
+
+        self.clear_screen() # Clear the screen
+        self.canClose = False
+        self.masterUpdateRoutine_enable = False
+        self.root.config(bg=self.theme.get('bg'))
+        self.root.title("%s - Preparing Quiz" % apptitle)
+
+        ttlLbl = tk.Label(
+            self.root,
+            text="Quizzing Form",
+            anchor=tk.W,
+            justify=tk.LEFT
+        ); ttlLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/2))
+
+        self.qpsu_ui(ttlLbl, "lbl"); self.qpsu_ui(ttlLbl, "font", 32); self.qpsu_ui(ttlLbl, "ac_fg")
+
+        infoLbl_base = "Preparing Quiz"
+        infoLbl = tk.Label(
+            self.root,
+            text=infoLbl_base,
+            anchor=tk.W,
+            justify=tk.LEFT,
+            wraplength=int(self.ws[0] - self.padX*2)
+        ); infoLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY/2, self.padY))
+
+        self.qpsu_ui(infoLbl, "lbl"); self.qpsu_ui(infoLbl, "font", 12)
+
+        cred_lbl = tk.Label(
+            self.root,
+            text="Coding Made Fun, %s" % QATime.form("%Y"),
+            anchor=tk.E,
+            justify=tk.RIGHT,
+            wraplength=self.ws[0]-self.padX*2
+        )
+        cred_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, side=tk.BOTTOM)
+
+        self.qpsu_ui(cred_lbl, "lbl"); self.qpsu_ui(cred_lbl, "font", 8); self.qpsu_ui(cred_lbl, "ac_fg")
+
+        errorLabel = tk.Label(
+            self.root,
+            text="",
+            wraplength=self.ws[0] - self.padX*2
+        ); errorLabel.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY, side=tk.BOTTOM)
+
+        self.qpsu_ui(errorLabel, "lbl"); self.qpsu_ui(errorLabel, "font", 11); self.qpsu_ui(errorLabel, "ac_fg")
+
+        progBarStyle = ttk.Style()
+        progBarStyle.theme_use("alt")
+        progBarStyle.configure(
+            "Horizontal.TProgressbar",
+            background=self.theme.get('ac'),
+            foreground=self.theme.get('ac'),
+            troughcolor=self.theme.get('bg')
+        )
+
+        progBar = ttk.Progressbar(self.root)
+        progBar.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY/4, self.padY), side=tk.BOTTOM)
+
+        progBar_desc_base = "Progress: "
+        progBar_desc = tk.Label(
+            self.root,
+            text=progBar_desc_base,
+            justify=tk.LEFT,
+            anchor=tk.W,
+            wraplength=self.ws[0]-self.padX*2
+        ); progBar_desc.pack(fill=tk.BOTH, expand=False, padx=self.padX, side=tk.BOTTOM)
+
+        self.qpsu_ui(progBar_desc, "lbl"); self.qpsu_ui(progBar_desc, "font", 10)
+
+        reSpl = "<<QAS::ForUser!::>>"
+        try:
+            infoLbl.config(
+                text=infoLbl_base + ": Loading Configuration and Question Database"
+            )
+
+            # Step 1: Load Data
+            eCode = "<!QAS::612367686^*&*567sdf7&^&*%^&7f776s987nf67^&N*F^sd7f6&^&^N^8*hgasdhfkhl7O*&s6df7dn86n8p7df6gn9fd7yh6no9Y&5t7nn77d"
+            if self.screen_data[0]['database_selection'] == 'e':
+                filename = self.screen_data[0]['external_database']['filename']
+                ra = loadData_extern(filename, eCode)
+                if ra == eCode:
+                    raise Exception(f"{reSpl} Failed to read external database (Logged)")
+
+                elif ra[0] == eCode or ra[1] == eCode:
+                    raise Exception(f"{reSpl} Failed to read external database (Logged)")
+
+            elif self.screen_data[0]['database_selection'] == 'i':
+                ra = loadData_intern(eCode)
+                if ra == eCode:
+                    raise Exception(f"{reSpl} Failed to read local database (Logged)")
+
+                elif ra[0] == eCode or ra[1] == eCode:
+                    raise Exception(f"{reSpl} Failed to read local database (Logged)")
+
+            qas = ra[1]
+            config = self.configuration
+
+            debug("QAS::1521_PRP_QUIZ : Loaded qas database and configuration: ", config, qas)
+
+        except Exception as E:
+            self.canClose = True
+            debug("Failed to read DB (QAS::1487_PRP_QUIZ) :: ", str(E))
+            esfx()
+            errorLabel.config(
+                text="\u26a0: ERROR: %s" % ("An Unknown error occurred whilst preparing the quiz (Logged)" if not reSpl in str(E) else str(E).split(reSpl)[-1])
+            )
 
     def __del__(self):
         self.thread.join(self, 0)

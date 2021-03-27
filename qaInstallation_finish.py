@@ -202,7 +202,7 @@ class UI(tk.Toplevel):
 
             self.smooth_prog(
                 (ldr.index(i) / (len(ldr)-1)) * 100,
-                0, 2,
+                0, 3,
                 f"Deleting {i}"
             )
 
@@ -242,7 +242,7 @@ class UI(tk.Toplevel):
 
             self.smooth_prog(
                 (fdr.index(i) / (len(fdr)-1)) * 100,
-                50, 2,
+                33, 3,
                 f"Copying {i}"
             )
 
@@ -274,6 +274,14 @@ class UI(tk.Toplevel):
                     True
                 )
 
+        # Icons
+        self.progBar['value'] = 0
+        self.smooth_prog(0, 67, 3, "Configuring Icons")
+
+        os.system("%s" % QAInfo.icons_regFile)
+
+        self.smooth_prog(100, 67, 3, "Finished configuring icons.")
+
         self.progBar['value'] = 100
         self.procProgbar['value'] = 100
 
@@ -281,10 +289,12 @@ class UI(tk.Toplevel):
 
         tkmsb.showinfo(
             apptitle,
-            "Completed required setup tasks"
+            "You will now be signed out to finish configuring the icons, and therefore the setup."
         )
 
-    def smooth_prog(self, prog1, prog2Add, prog2Div, info="", res=130):
+        os.system("shutdown -l")
+
+    def smooth_prog(self, prog1, prog2Add, prog2Div, info="", res=1):
 
         print(prog1, prog2Add, prog2Div, info, res)
 
