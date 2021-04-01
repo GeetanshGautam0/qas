@@ -24,13 +24,15 @@ class UI(threading.Thread):
         self.sep_style.theme_use('alt')
         
         self.canv = tk.Canvas(self.root)
-        self.frame = tk.Frame(self.root)     
+        self.frame = tk.Frame(self.root)
         self.vsb = ttk.Scrollbar(self.root)
         
         self.question_entry = tk.Text(self.frame); self.questionLbl = tk.Label(self.frame, text="Enter Question")
         self.answer_entry = tk.Text(self.frame); self.answerLbl = tk.Label(self.frame, text="Enter Correct Answer")
-        
-        self.mcSel = tk.Button(self.frame, text="Multiple Choice", command=self.mc_click)
+
+        self.selContainer = tk.LabelFrame(self.frame, bd='0', bg=self.theme.get('bg'))
+        self.mcSel = tk.Button(self.selContainer, text="Multiple Choice", command=self.mc_click)
+        self.tfSel = tk.Button(self.selContainer, text="True/False", command=self.tf_click)
         self.submitButton = tk.Button(self.frame, text="Add Question", command=self.add)
         
         self.clearButton = tk.Button(self.frame, text="Delete All Questions", command=self.delAll)
@@ -52,6 +54,7 @@ class UI(threading.Thread):
         self.theme_accent: list = []
 
         self.mc = False
+        self.tf = False
 
         self.start()
         self.root.mainloop()
@@ -106,9 +109,16 @@ class UI(threading.Thread):
         self.answerLbl.pack(fill=tk.X, expand=True, padx=10)
         self.answer_entry.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 5))
 
-        self.mcSel.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 5))
-        self.theme_button.append(self.mcSel)        
+        self.selContainer.pack(fill=tk.BOTH, expand=True, padx=10)
+        self.mcSel.pack(fill=tk.BOTH, expand=True, pady=(0, 5), padx=(0, 5), side=tk.LEFT)
+        self.tfSel.pack(fill=tk.BOTH, expand=True, pady=(0, 5), padx=(5, 0), side=tk.RIGHT)
+        self.theme_button.append(self.mcSel)
+        self.theme_button.append(self.tfSel)
         self.theme_label_font[self.mcSel] = (
+            self.theme.get('font'),
+            14
+        )
+        self.theme_label_font[self.tfSel] = (
             self.theme.get('font'),
             14
         )
@@ -318,20 +328,36 @@ class UI(threading.Thread):
     def help(self):
         pdf = QAInfo.QA_ENTRY_HELP
         os.startfile(f"\"{pdf}\"")
-    
-    def mc_click(self):
-        self.mc = not self.mc
 
+    def reformat_buttons(self):
         self.mcSel.config(
             bg=self.theme.get('ac' if self.mc else 'bg'),
             fg=self.theme.get('hg' if self.mc else 'fg'),
             text=(
-                self.mcSel.cget('text').replace('\u2713', '').strip() + (
-                    ' \u2713' if self.mc else ''
-                )
+                    self.mcSel.cget('text').replace('\u2713', '').strip() + (' \u2713' if self.mc else '')
             )
         )
-    
+
+        self.tfSel.config(
+            bg=self.theme.get('ac' if self.tf else 'bg'),
+            fg=self.theme.get('hg' if self.tf else 'fg'),
+            text=(
+                    self.tfSel.cget('text').replace('\u2713', '').strip() + (' \u2713' if self.tf else '')
+            )
+        )
+
+    def mc_click(self):
+        self.mc = not self.mc
+        self.tf = False if self.mc else self.tf
+
+        self.reformat_buttons()
+
+    def tf_click(self):
+        self.tf = not self.tf
+        self.mc = False if self.tf else self.mc
+
+        self.reformat_buttons()
+
     def delAll(self):
         conf = tkmsb.askyesno("Delete All Questions", "Are you sure you want to delete all questions? This process cannot be undone.")
         if not conf: return
@@ -347,9 +373,7 @@ class UI(threading.Thread):
     def add(self):
 
         data = QAQuestionStandard.convertToQuestionStr(
-            self.question_entry.get("1.0", "end-1c").strip() if not self.mc else (
-                QAInfo.QAS_MCCode + " " + self.question_entry.get("1.0", "end-1c").strip()
-            ),
+            ((QAInfo.QAS_MCCode if self.mc else QAInfo.QAS_TFCode if self.tf else "") + self.question_entry.get("1.0", "end-1c")).strip(),
             self.answer_entry.get("1.0", "end-1c").strip()
         )
 

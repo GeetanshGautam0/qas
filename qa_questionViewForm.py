@@ -1,3 +1,4 @@
+import random
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
@@ -102,7 +103,9 @@ class UI(threading.Thread):
         self.update_lbl: list = []
         self.update_accent_foreground: list = []
         self.update_text_font: dict = {}
-        
+
+        self.id_assign = {}
+
         self.start()
         self.root.mainloop()
     
@@ -164,8 +167,8 @@ class UI(threading.Thread):
             )
             
             tempAnswerLbl.pack(fill=tk.BOTH, expand=False, padx=10, pady=(1, 1))
-            
-            tk.Button(
+
+            remButton = tk.Button(
                 self.frame,
                 text="Remove Question",
                 fg=self.theme.get('fg'),
@@ -173,15 +176,17 @@ class UI(threading.Thread):
                 activebackground="red",
                 activeforeground="white",
                 bd=0,
-                anchor=tk.SW,
-                command=lambda: self.rm_q(i.strip())
-            ).pack(
+                anchor=tk.SW
+            )
+            remButton.pack(
                 fill=tk.BOTH,
                 expand=False,
                 padx=10,
                 pady=(0, 10)
             )
-            
+
+            self.config_rm_button(remButton, i)
+
             self.update_lbl.append(tempAnswerLbl)
             self.update_text_font[tempAnswerLbl] = (self.theme.get('font'), 14)
             self.update_accent_foreground.append(tempAnswerLbl)
@@ -213,7 +218,23 @@ class UI(threading.Thread):
         self.frame.bind_all("<MouseWheel>", self._on_mousewheel)
         # Final things
         self.update()
-    
+
+    def config_rm_button(self, tkButton, question):
+        qId = (random.randint(0, 9999999999999999) + random.random()) * random.randint(1, 99)
+
+        counter = 0
+        while qId in self.id_assign:
+            counter += 1
+            qId = (random.randint(0, 9999999999999999) + random.random()) * random.randint(1, 99)
+            if counter > 10000000:
+                break
+
+        self.id_assign[qId] = question.strip()
+
+        tkButton.config(
+            command=lambda: self.rm_q(qId)
+        )
+
     def _on_mousewheel(self, event):
         """
         Straight out of stackoverflow
@@ -233,12 +254,12 @@ class UI(threading.Thread):
             self.root.winfo_height()
         ]
     
-    def rm_q(self, question) -> None:        
-        conf = tkmsb.askyesno("Confirm Removal", "Are you sure you want to remove the following question:\n\n'{}'".format(question))
+    def rm_q(self, ID) -> None:
+        question = self.id_assign[ID]
 
+        conf = tkmsb.askyesno("Confirm Removal", "Are you sure you want to remove the following question:\n\n'{}'".format(question))
         if not conf: return
-        
-        questions = self.questions
+
         self.questions.pop(question)
         
         # Save

@@ -1633,7 +1633,7 @@ class FormUI(threading.Thread):
         self.title_lbl = tk.Label(self.root)
         self.stu_information = tk.Label(self.root)
         self.questions_frame_container = tk.Frame(self.root)
-        self.questions_canvas = tk.Canvas(self.questions_frame_container, borderwidth=0)
+        self.questions_canvas = tk.Canvas(self.questions_frame_container, borderwidth=0, highlightcolor=self.theme['bg'])
         self.questions_frame = tk.Frame(self.questions_canvas)
         self.questions_vsb = ttk.Scrollbar(self.questions_frame_container, orient=tk.VERTICAL)
         self.error_frame = tk.Frame(self.root)
@@ -1951,6 +1951,16 @@ class FormUI(threading.Thread):
 
         try:
             for i in self.qas:
+                # Step 0: Checks
+                val = True
+                valCode = "000"
+                if QAInfo.QAS_MCCode in i and not QAInfo.QAS_MC_OPTION_CODE in i:
+                    toPop.append(i)
+                    val = False; valCode = "001"
+                elif QAInfo.QAS_MC_OPTION_CODE in i and not QAInfo.QAS_MCCode in i:
+                    toPop.append(i)
+                    val = False; valCode = "002"
+
                 # Step 1: Create (no longer) invis container
                 temp_q_container = tk.LabelFrame(self.questions_frame, text="Question %s" % str(list(self.qas.keys()).index(i) + 1))
                 self.update_element['lbl'].append(temp_q_container)
@@ -1979,7 +1989,6 @@ class FormUI(threading.Thread):
                                 "[%s]" % ii[found_1:found_2].replace("[", '').replace("]", ""),
                                 "\u2022 %s: " % ii[found_1:found_2].replace("[", '').replace("]", "")
                             )
-
                     question_string += "\n\nAccepted answers: %s" % ", ".join(j for j in options).strip().strip(",").strip()
 
                     if len(options) <= 0:
@@ -1988,18 +1997,21 @@ class FormUI(threading.Thread):
 
                         temp_q_container.config(text=temp_q_container.cget("text") + ": Invalid Question")
 
-                        plH = tk.Label(
-                            temp_q_container,
-                            text="Error: The form was unable to comprehend this question's data (Error Code: QAS_QF_Q:001)",
-                            wraplength=int((self.root.winfo_screenwidth() - self.padX * 6))
-                        )
-                        plH.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+                        val = False; valCode = "003"
 
-                        self.update_element['lbl'].append(plH)
-                        self.update_element['acc_fg'].append(plH)
-                        self.update_element['font'].append([plH, (self.fontFam, self.inputF_size)])
+                if not val:
+                    plH = tk.Label(
+                        temp_q_container,
+                        text="Error: The form was unable to comprehend this question's data (Error Code: QAS_QF_Q:%s)" % valCode,
+                        wraplength=int((self.root.winfo_screenwidth() - self.padX * 6))
+                    )
+                    plH.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
 
-                        continue
+                    self.update_element['lbl'].append(plH)
+                    self.update_element['acc_fg'].append(plH)
+                    self.update_element['font'].append([plH, (self.fontFam, self.inputF_size)])
+
+                    continue
 
                 temp_q_lbl = tk.Label(temp_q_container)
                 self.update_element['lbl'].append(temp_q_lbl)
@@ -2025,7 +2037,15 @@ class FormUI(threading.Thread):
                         self.update_element['lbl'].append(container)
 
                     elif QAInfo.QAS_TFCode in i:
-                        pass
+                        container = tk.LabelFrame(temp_q_container, bd='0')
+
+                        for op in ['True', 'False']:
+                            temp_rb = tk.Radiobutton(container)
+                            self.setup_radio_button(i, op, temp_rb)
+                            temp_rb.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+                        container.pack(fill=tk.BOTH, expand=False, side=tk.RIGHT)
+                        self.update_element['lbl'].append(container)
 
                     else:
                         t_a_entry = tk.Text(temp_q_container)
@@ -2085,7 +2105,9 @@ class FormUI(threading.Thread):
 
         tkRadiobutton.config(
             text=option,
-            command=lambda: self.onMcClick(radio_button_refference_id, question)
+            command=lambda: self.onMcClick(radio_button_refference_id, question),
+            indicatoron='0',
+            relief=tk.RAISED
         )
 
         self.format_rButton(tkRadiobutton, False)
