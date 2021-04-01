@@ -1073,7 +1073,7 @@ class LoginUI(threading.Thread):
         self.summary_config_poa_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY / 4)
 
         self.summary_config_qdf_lbl.config(
-            text="Incorrect Response Penalty:\n    - %s points are to be deducted when an incorrect response is given." % (
+            text="Incorrect Response Penalty:\n    - %s point(s) are to be deducted when an incorrect response is given." % (
                 str(self.configuration['deduc_amnt']) if bool(self.configuration['a_deduc']) else '0'
             ),
             wraplength=self.ws[0] - self.padX * 2,
@@ -1333,26 +1333,28 @@ class LoginUI(threading.Thread):
                 return
 
         elif self.screen_index == 2: # Configuration
-            poa_df = "".join(i for i in re.findall("\d", self.config_poa_df_field.get().split('.')[0])) # \d = digits
-            qdf_df = "".join(i for i in re.findall("\d", self.config_qdf_field.get().split('.')[0]))
 
-            if len(poa_df) <= 0 and self.configuration['partOrAll'] == 'part' or poa_df == "0":
-                esfx()
-                self.config_error_label.config(
-                    text=self.screen_data[2]['defaults']['errors']['POA_unfilled']
-                )
+            if self.configuration['customQuizConfig']:
+                poa_df = "".join(i for i in re.findall("\d", self.config_poa_df_field.get().split('.')[0])) # \d = digits
+                qdf_df = "".join(i for i in re.findall("\d", self.config_qdf_field.get().split('.')[0]))
 
-                return
+                if len(poa_df) <= 0 and self.configuration['partOrAll'] == 'part' or poa_df == "0":
+                    esfx()
+                    self.config_error_label.config(
+                        text=self.screen_data[2]['defaults']['errors']['POA_unfilled']
+                    )
 
-            elif len(qdf_df) <= 0 and bool(self.configuration['a_deduc']) or qdf_df == "0":
-                esfx()
-                self.config_error_label.config(
-                    text=self.screen_data[2]['defaults']['errors']['QDF_unfilled']
-                )
-                return
+                    return
 
-            self.configuration['poa_divF'] = int(poa_df if self.configuration['partOrAll'] == 'part' else '0')
-            self.configuration['deduc_amnt'] = int(qdf_df if bool(self.configuration['a_deduc']) else '0')
+                elif len(qdf_df) <= 0 and bool(self.configuration['a_deduc']) or qdf_df == "0":
+                    esfx()
+                    self.config_error_label.config(
+                        text=self.screen_data[2]['defaults']['errors']['QDF_unfilled']
+                    )
+                    return
+
+                self.configuration['poa_divF'] = int(poa_df if self.configuration['partOrAll'] == 'part' else '0')
+                self.configuration['deduc_amnt'] = int(qdf_df if bool(self.configuration['a_deduc']) else '0')
 
         elif self.screen_index == 3: # Final
             self.previous_button.config(
@@ -1631,8 +1633,9 @@ class FormUI(threading.Thread):
         self.title_lbl = tk.Label(self.root)
         self.stu_information = tk.Label(self.root)
         self.questions_frame_container = tk.Frame(self.root)
-        self.questions_frame = tk.Canvas(self.questions_frame_container)
-        self.questions_vsb = ttk.Scrollbar(self.questions_frame_container)
+        self.questions_canvas = tk.Canvas(self.questions_frame_container, borderwidth=0)
+        self.questions_frame = tk.Frame(self.questions_canvas)
+        self.questions_vsb = ttk.Scrollbar(self.questions_frame_container, orient=tk.VERTICAL)
         self.error_frame = tk.Frame(self.root)
         self.creditLbl = tk.Label(self.root)
 
@@ -1644,19 +1647,6 @@ class FormUI(threading.Thread):
             arrowcolor=self.theme.get('fg'),
             bordercolor=self.theme.get('bg'),
             troughcolor=self.theme.get('bg')
-        )
-
-        self.radio_button_style = ttk.Style()
-        self.radio_button_style.theme_use('alt')
-        self.radio_button_style.configure(
-            "TRadiobutton",
-            background=self.theme.get('bg'),
-            foreground=self.theme.get('bg'),
-            indicatorcolor=self.theme.get('ac')
-        )
-        self.radio_button_style.map(
-            "TRadiobutton",
-            indicatorcolor=[('selected', self.theme.get('ac')), ('pressed', self.theme.get('ac'))]
         )
 
         # Update Vars
@@ -1743,8 +1733,9 @@ class FormUI(threading.Thread):
 
         self.update_element['frame'].extend([
             self.questions_frame_container,
-            self.questions_frame,
-            self.error_frame
+            self.questions_canvas,
+            self.error_frame,
+            self.questions_frame
         ])
 
         self.title_lbl.config(
@@ -1773,23 +1764,22 @@ class FormUI(threading.Thread):
         )
 
         # Final Things
-        self.update_ui()
+        self.questions_vsb.configure(command=self.questions_canvas.yview)
 
-        self.questions_vsb.configure(command=self.questions_frame.yview)
-
-        self.questions_frame.configure(
+        self.questions_canvas.configure(
             yscrollcommand=self.questions_vsb.set
         )
 
-        # self.questions_frame.create_window(
-        #     (0, self.questions_frame_container.winfo_y()),
-        #     window=self.questions_frame_container,
-        #     anchor="nw",
-        #     tags="self.questions_frame_container"
-        # )
+        self.questions_canvas.create_window(
+            (0, 0),
+            window=self.questions_frame,
+            anchor="nw",
+            tags="self.questions_frame"
+        )
 
-        self.questions_frame_container.bind("<Configure>", self.onFrameConfig)
-        self.onFrameConfig()
+        self.questions_frame.bind("<Configure>", self.onFrameConfig)
+
+        self.update_ui()
 
         self.loginUI_master.root.after(0, self.loginUI_master.root.destroy)
         self.root.deiconify()
@@ -1954,7 +1944,7 @@ class FormUI(threading.Thread):
         )
 
         self.questions_frame_container.pack(fill=tk.BOTH, expand=True)
-        self.questions_frame.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        self.questions_canvas.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         self.questions_vsb.pack(fill=tk.Y, expand=False, side=tk.RIGHT)
 
         toPop = []
@@ -1965,7 +1955,7 @@ class FormUI(threading.Thread):
                 temp_q_container = tk.LabelFrame(self.questions_frame, text="Question %s" % str(list(self.qas.keys()).index(i) + 1))
                 self.update_element['lbl'].append(temp_q_container)
                 self.update_element['acc_fg'].append(temp_q_container)
-                temp_q_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY*2)
+                temp_q_container.pack(fill=tk.X, expand=False, padx=self.padX, pady=self.padY*2)
 
                 # Step 2: Add Contents
                 # S2.1: Questions
@@ -2039,7 +2029,11 @@ class FormUI(threading.Thread):
 
                     else:
                         t_a_entry = tk.Text(temp_q_container)
-                        t_a_entry.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+                        t_a_entry.pack(fill=tk.X, expand=True, padx=self.padX, pady=self.padY)
+
+                        self.update_element['lbl'].append(t_a_entry)
+                        self.update_element['font'].append([t_a_entry, (self.fontFam, self.inputF_size)])
+                        self.update_element['enteries'].append(t_a_entry)
 
                 except Exception as e:
                     self.__errorScreen(e, True, "QAS:PRP_FORM:E__2028-CCAF")
@@ -2138,8 +2132,8 @@ class FormUI(threading.Thread):
             _inst.deselect()
 
     def onFrameConfig(self, event=None): # for scbar
-        self.questions_frame.configure(
-            scrollregion=self.questions_frame.bbox("all")
+        self.questions_canvas.configure(
+            scrollregion=self.questions_canvas.bbox("all")
         )
 
     def __del__(self):

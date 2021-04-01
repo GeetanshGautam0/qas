@@ -18,10 +18,10 @@ class UI(threading.Thread):
         self.root = tk.Toplevel()
         
         self.vsb_style = ttk.Style()
-        self.vsb_style.theme_use('default')
+        self.vsb_style.theme_use('alt')
         
         self.sep_style = ttk.Style()
-        self.sep_style.theme_use('default')
+        self.sep_style.theme_use('alt')
         
         self.canv = tk.Canvas(self.root)
         self.frame = tk.Frame(self.root)     

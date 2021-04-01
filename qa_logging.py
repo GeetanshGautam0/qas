@@ -42,7 +42,7 @@ def filter_path(path: str, index: int, *replace):
 
 class Variables():
     def genDebugFilename(self): # Create a filename and return
-        f = [f"{self.folderName()}", f"{qa_time.forLog()}.log"]
+        f = [f"{self.folderName()}", f"{qa_time.forLog()}.qaLog"]
         return f
 
     def genDebugFile(self): return gen # Return gen (bool; is the debug file generated)
