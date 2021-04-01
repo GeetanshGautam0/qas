@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as tkfld
 from tkinter import messagebox as tkmsb
-import os, sys, threading, shutil, time, json, sqlite3, playsound, re
+import os, sys, threading, shutil, time, json, sqlite3, playsound, re, random, traceback
 
 import qa_appinfo as QAInfo
 import qa_diagnostics as QADiagnostics
@@ -547,7 +547,10 @@ class LoginUI(threading.Thread):
         self.update_ui(0, True)
         self.root.deiconify()
 
-    def update_ui(self, screenI_counter=0, force_refresh=False):
+    def update_ui(self, screenI_counter=0, force_refresh=False, mqprpf=False):
+        if mqprpf:
+            self.start_quiz_mf()
+
         # Check if update_ui is enabled
         if not self.masterUpdateRoutine_enable:
             debug("QF::553 - LoginUI.update_ui was called, but the masterUpdateRoutine_enable flag is set to DISABLED (bool:False)")
@@ -1368,6 +1371,191 @@ class LoginUI(threading.Thread):
     def prev_page(self):
         self.update_ui(-1)
 
+    def start_quiz(self):
+        self.clear_screen()  # Clear the screen
+        self.canClose = False
+        self.masterUpdateRoutine_enable = False
+        self.root.config(bg=self.theme.get('bg'))
+        self.root.title("%s - Preparing Quiz" % apptitle)
+
+        self.update_ui(0, False, True)
+
+    def start_quiz_mf(self):
+        global apptitle
+
+        threaded_start_quiz_mf(self)
+
+    def __del__(self):
+        self.thread.join(self, 0)
+
+class threaded_start_quiz_mf(threading.Thread):
+    def __init__(self, Obj):
+        self.master= Obj
+        self.thread = threading.Thread
+        self.thread.__init__(self)
+        self.start()
+
+    def run(self):
+        ttlLbl = tk.Label(
+            self.master.root,
+            text="Quizzing Form",
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        ttlLbl.pack(fill=tk.BOTH, expand=False, padx=self.master.padX, pady=(self.master.padY, self.master.padY / 2))
+
+        self.qpsu_ui(ttlLbl, "lbl")
+        self.qpsu_ui(ttlLbl, "font", 32)
+        self.qpsu_ui(ttlLbl, "ac_fg")
+
+        infoLbl_base = "Preparing Quiz"
+        infoLbl = tk.Label(
+            self.master.root,
+            text=infoLbl_base,
+            anchor=tk.W,
+            justify=tk.LEFT,
+            wraplength=int(self.master.ws[0] - self.master.padX * 2)
+        )
+        infoLbl.pack(fill=tk.BOTH, expand=False, padx=self.master.padX, pady=(self.master.padY / 2, self.master.padY))
+
+        self.qpsu_ui(infoLbl, "lbl")
+        self.qpsu_ui(infoLbl, "font", 12)
+
+        cred_lbl = tk.Label(
+            self.master.root,
+            text="Coding Made Fun, %s" % QATime.form("%Y"),
+            anchor=tk.E,
+            justify=tk.RIGHT,
+            wraplength=self.master.ws[0] - self.master.padX * 2
+        )
+        cred_lbl.pack(fill=tk.BOTH, expand=False, padx=self.master.padX, side=tk.BOTTOM)
+
+        self.qpsu_ui(cred_lbl, "lbl")
+        self.qpsu_ui(cred_lbl, "font", 8)
+        self.qpsu_ui(cred_lbl, "ac_fg")
+
+        errorLabel = tk.Label(
+            self.master.root,
+            text="",
+            wraplength=self.master.ws[0] - self.master.padX * 2
+        )
+        errorLabel.pack(fill=tk.BOTH, expand=False, padx=self.master.padX, pady=self.master.padY, side=tk.BOTTOM)
+
+        self.qpsu_ui(errorLabel, "lbl")
+        self.qpsu_ui(errorLabel, "font", 11)
+        self.qpsu_ui(errorLabel, "ac_fg")
+
+        progBarStyle = ttk.Style()
+        progBarStyle.theme_use("alt")
+        progBarStyle.configure(
+            "Horizontal.TProgressbar",
+            background=self.master.theme.get('ac'),
+            foreground=self.master.theme.get('ac'),
+            troughcolor=self.master.theme.get('bg')
+        )
+
+        progBar = ttk.Progressbar(self.master.root)
+        progBar.pack(fill=tk.X, expand=False, padx=self.master.padX, pady=(self.master.padY / 4, self.master.padY), side=tk.BOTTOM)
+
+        progBar_desc_base = "Progress: "
+        progBar_desc = tk.Label(
+            self.master.root,
+            text=progBar_desc_base,
+            justify=tk.LEFT,
+            anchor=tk.W,
+            wraplength=self.master.ws[0] - self.master.padX * 2
+        )
+        progBar_desc.pack(fill=tk.BOTH, expand=False, padx=self.master.padX, side=tk.BOTTOM)
+
+        self.qpsu_ui(progBar_desc, "lbl")
+        self.qpsu_ui(progBar_desc, "font", 10)
+
+        reSpl = "<<QAS::ForUser!::>>"
+        try:
+            infoLbl.config(
+                text=infoLbl_base + ": Loading Configuration and Question Database"
+            )
+
+            progBar_desc.config(
+                text=progBar_desc_base + "> 0%; Loading Questions Database"
+            )
+
+            # Step 1: Load Data
+            eCode = "<!QAS::612367686^*&*567sdf7&^&*%^&7f776s987nf67^&N*F^sd7f6&^&^N^8*hgasdhfkhl7O*&s6df7dn86n8p7df6gn9fd7yh6no9Y&5t7nn77d"
+            if self.master.screen_data[0]['database_selection'] == 'e':
+                filename = self.master.screen_data[0]['external_database']['filename']
+                ra = loadData_extern(filename, eCode)
+                if ra == eCode:
+                    raise Exception(f"{reSpl} Failed to read external database (Logged)")
+
+                elif ra[0] == eCode or ra[1] == eCode:
+                    raise Exception(f"{reSpl} Failed to read external database (Logged)")
+
+            elif self.master.screen_data[0]['database_selection'] == 'i':
+                ra = loadData_intern(eCode)
+                if ra == eCode:
+                    raise Exception(f"{reSpl} Failed to read local database (Logged)")
+
+                elif ra[0] == eCode or ra[1] == eCode:
+                    raise Exception(f"{reSpl} Failed to read local database (Logged)")
+
+            self.spbar(progBar, 50)
+
+            qas = ra[1]
+            config = self.master.configuration
+
+            debug("QAS::1521_PRP_QUIZ : Loaded qas database and configuration: ", config, qas)
+
+            # Step 2: Randomize Questions + Select Length
+            infoLbl.config(text=infoLbl_base + ": Randomizing Questions Database")
+            progBar_desc.config(text=progBar_desc_base + "50%; Randomizing Questions Database")
+
+            qas_qs = [i for i in qas.keys()]
+            Len = int(
+                len(qas_qs) * 1 / (self.master.configuration['poa_divF'] if self.master.configuration['partOrAll'] == 'part' else 1))
+            Len = 1 if Len <= 0 else (len(qas_qs) if Len > len(qas_qs) else Len)
+
+            debug(f"Selecting %x questions from qas database" % Len)
+
+            toUse = {}
+            inds = []
+            for i in range(Len):
+                index = random.randint(0, len(qas_qs) - 1)
+                while index in inds:
+                    index = random.randint(0, len(qas_qs) - 1)
+
+                self.spbar(progBar, int(50+((i/Len)*50)))
+                progBar_desc.config(
+                    text=progBar_desc_base + "%s; Randomizing Questions Database" % (("{}".format(50+((i/Len)*50)) + "000")[:4] + "%")
+                )
+
+                inds.append(index)
+                toUse[qas_qs[index]] = qas[qas_qs[index]]  # Q:A
+
+            debug(f"Selected Questions: ", toUse)
+
+            self.spbar(progBar, 100)
+            infoLbl.config(text=infoLbl_base + ": Finishing Up")
+            progBar_desc.config(text=progBar_desc_base + "~100%; Finishing up")
+
+            FormUI(self.master, toUse)
+
+        except Exception as E:
+            self.master.canClose = True
+            debug("Failed to read DB (QAS::1487_PRP_QUIZ) :: ", str(E), "\n", traceback.format_exc())
+            esfx()
+            errorLabel.config(
+                text="\u26a0: ERROR: %s" % (
+                    "An Unknown error occurred whilst preparing the quiz (Logged)" if not reSpl in str(E) else
+                    str(E).split(reSpl)[-1])
+            )
+
+    def spbar(self, __instance, val, res=100):
+
+        for i in range(int(__instance['value'] * res), val * res):
+            for timeOut in range(20): pass
+            __instance['value'] = i / res
+
     def qpsu_ui(self, __instance, __type, arg=None, *args, **kwargs):
         """
         :param __instance: Instance
@@ -1385,32 +1573,32 @@ class LoginUI(threading.Thread):
         try:
             if __type == 'lbl':
                 __instance.config(
-                    bg=self.theme.get('bg'),
-                    fg=self.theme.get('fg')
+                    bg=self.master.theme.get('bg'),
+                    fg=self.master.theme.get('fg')
                 )
 
             elif __type == 'btn':
                 __instance.config(
-                    bg=self.theme.get('bg'),
-                    fg=self.theme.get('ac'),
-                    activebackground=self.theme.get('ac'),
-                    activeforeground=self.theme.get('hg')
+                    bg=self.master.theme.get('bg'),
+                    fg=self.master.theme.get('ac'),
+                    activebackground=self.master.theme.get('ac'),
+                    activeforeground=self.master.theme.get('hg')
                 )
 
             elif __type == "ac_fg":
                 __instance.config(
-                    fg=self.theme.get('ac')
+                    fg=self.master.theme.get('ac')
                 )
 
             elif __type == "ac_bg":
                 __instance.config(
-                    fg=self.theme.get('hg'),
-                    bg=self.theme.get('ac')
+                    fg=self.master.theme.get('hg'),
+                    bg=self.master.theme.get('ac')
                 )
 
             elif __type == "font":
                 __instance.config(
-                    font=((self.theme.get("font"), arg) if not kwargs.get('useAsTuple') == True else arg)
+                    font=((self.master.theme.get("font"), arg) if not kwargs.get('useAsTuple') == True else arg)
                 )
 
             else: raise NameError(f"Invalid __type argument \"{__type}\"")
@@ -1419,125 +1607,540 @@ class LoginUI(threading.Thread):
             debug(f"Exception whilst theming quiz_prep item {__instance}: {E}")
             return E
 
-    def start_quiz(self):
-        global apptitle
-
-        self.clear_screen() # Clear the screen
-        self.canClose = False
-        self.masterUpdateRoutine_enable = False
-        self.root.config(bg=self.theme.get('bg'))
-        self.root.title("%s - Preparing Quiz" % apptitle)
-
-        ttlLbl = tk.Label(
-            self.root,
-            text="Quizzing Form",
-            anchor=tk.W,
-            justify=tk.LEFT
-        ); ttlLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/2))
-
-        self.qpsu_ui(ttlLbl, "lbl"); self.qpsu_ui(ttlLbl, "font", 32); self.qpsu_ui(ttlLbl, "ac_fg")
-
-        infoLbl_base = "Preparing Quiz"
-        infoLbl = tk.Label(
-            self.root,
-            text=infoLbl_base,
-            anchor=tk.W,
-            justify=tk.LEFT,
-            wraplength=int(self.ws[0] - self.padX*2)
-        ); infoLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY/2, self.padY))
-
-        self.qpsu_ui(infoLbl, "lbl"); self.qpsu_ui(infoLbl, "font", 12)
-
-        cred_lbl = tk.Label(
-            self.root,
-            text="Coding Made Fun, %s" % QATime.form("%Y"),
-            anchor=tk.E,
-            justify=tk.RIGHT,
-            wraplength=self.ws[0]-self.padX*2
-        )
-        cred_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, side=tk.BOTTOM)
-
-        self.qpsu_ui(cred_lbl, "lbl"); self.qpsu_ui(cred_lbl, "font", 8); self.qpsu_ui(cred_lbl, "ac_fg")
-
-        errorLabel = tk.Label(
-            self.root,
-            text="",
-            wraplength=self.ws[0] - self.padX*2
-        ); errorLabel.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY, side=tk.BOTTOM)
-
-        self.qpsu_ui(errorLabel, "lbl"); self.qpsu_ui(errorLabel, "font", 11); self.qpsu_ui(errorLabel, "ac_fg")
-
-        progBarStyle = ttk.Style()
-        progBarStyle.theme_use("alt")
-        progBarStyle.configure(
-            "Horizontal.TProgressbar",
-            background=self.theme.get('ac'),
-            foreground=self.theme.get('ac'),
-            troughcolor=self.theme.get('bg')
-        )
-
-        progBar = ttk.Progressbar(self.root)
-        progBar.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY/4, self.padY), side=tk.BOTTOM)
-
-        progBar_desc_base = "Progress: "
-        progBar_desc = tk.Label(
-            self.root,
-            text=progBar_desc_base,
-            justify=tk.LEFT,
-            anchor=tk.W,
-            wraplength=self.ws[0]-self.padX*2
-        ); progBar_desc.pack(fill=tk.BOTH, expand=False, padx=self.padX, side=tk.BOTTOM)
-
-        self.qpsu_ui(progBar_desc, "lbl"); self.qpsu_ui(progBar_desc, "font", 10)
-
-        reSpl = "<<QAS::ForUser!::>>"
-        try:
-            infoLbl.config(
-                text=infoLbl_base + ": Loading Configuration and Question Database"
-            )
-
-            # Step 1: Load Data
-            eCode = "<!QAS::612367686^*&*567sdf7&^&*%^&7f776s987nf67^&N*F^sd7f6&^&^N^8*hgasdhfkhl7O*&s6df7dn86n8p7df6gn9fd7yh6no9Y&5t7nn77d"
-            if self.screen_data[0]['database_selection'] == 'e':
-                filename = self.screen_data[0]['external_database']['filename']
-                ra = loadData_extern(filename, eCode)
-                if ra == eCode:
-                    raise Exception(f"{reSpl} Failed to read external database (Logged)")
-
-                elif ra[0] == eCode or ra[1] == eCode:
-                    raise Exception(f"{reSpl} Failed to read external database (Logged)")
-
-            elif self.screen_data[0]['database_selection'] == 'i':
-                ra = loadData_intern(eCode)
-                if ra == eCode:
-                    raise Exception(f"{reSpl} Failed to read local database (Logged)")
-
-                elif ra[0] == eCode or ra[1] == eCode:
-                    raise Exception(f"{reSpl} Failed to read local database (Logged)")
-
-            qas = ra[1]
-            config = self.configuration
-
-            debug("QAS::1521_PRP_QUIZ : Loaded qas database and configuration: ", config, qas)
-
-        except Exception as E:
-            self.canClose = True
-            debug("Failed to read DB (QAS::1487_PRP_QUIZ) :: ", str(E))
-            esfx()
-            errorLabel.config(
-                text="\u26a0: ERROR: %s" % ("An Unknown error occurred whilst preparing the quiz (Logged)" if not reSpl in str(E) else str(E).split(reSpl)[-1])
-            )
-
     def __del__(self):
         self.thread.join(self, 0)
 
 class FormUI(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, master, qasDict):
+        self.loginUI_master = master
+        self.qas = qasDict
+        
         self.thread = threading.Thread
         self.thread.__init__(self)
 
+        # Misc. Vars
+        self.theme = self.loginUI_master.theme
+        self.padX = self.loginUI_master.padX
+        self.padY = self.loginUI_master.padY
+
+        # UI Vars
+        self.root = tk.Tk()
+        self.root.withdraw()
+
+        self.title_lbl = tk.Label(self.root)
+        self.stu_information = tk.Label(self.root)
+        self.questions_frame_container = tk.Frame(self.root)
+        self.questions_frame = tk.Canvas(self.questions_frame_container)
+        self.questions_vsb = ttk.Scrollbar(self.questions_frame_container)
+        self.error_frame = tk.Frame(self.root)
+        self.creditLbl = tk.Label(self.root)
+
+        self.questions_vsb_style = ttk.Style()
+        self.questions_vsb_style.theme_use('alt')
+        self.questions_vsb_style.configure(
+            "TScrollbar",
+            background=self.theme.get('bg'),
+            arrowcolor=self.theme.get('fg'),
+            bordercolor=self.theme.get('bg'),
+            troughcolor=self.theme.get('bg')
+        )
+
+        self.radio_button_style = ttk.Style()
+        self.radio_button_style.theme_use('alt')
+        self.radio_button_style.configure(
+            "TRadiobutton",
+            background=self.theme.get('bg'),
+            foreground=self.theme.get('bg'),
+            indicatorcolor=self.theme.get('ac')
+        )
+        self.radio_button_style.map(
+            "TRadiobutton",
+            indicatorcolor=[('selected', self.theme.get('ac')), ('pressed', self.theme.get('ac'))]
+        )
+
+        # Update Vars
+        self.update_element = {
+            'lbl': [],
+            'btn': [],
+            'acc_fg': [],
+            'acc_bg': [],
+            'font': [],
+            'frame': [],
+            'error_lbls': [],
+            'enteries': []
+        }
+
+        # Misc. Vars
+        self.canClose = False
+        self.question_data = {}
+        self.close_index = 1
+        self.mc_rb_id_ref = {}
+        self.mc_rb_qs_ref = {}
+
+        # Final Things
         self.start()
+        self.root.mainloop()
+
+    def _config_on_backendErr_(self):
+        self.canClose = True
+        self.root.wm_attributes("-topmost", False)
+        self.root.overrideredirect(False)
+        self.root.geometry("%sx%s+%s+%s" % (
+                                self.loginUI_master.ws[0],
+                                self.loginUI_master.ws[1],
+                                self.loginUI_master.sp[0],
+                                self.loginUI_master.sp[1])
+                           )
+
+    def _close_app(self):
+        if self.loginUI_master.canClose or self.canClose:
+            try:
+                self.root.after(0, self.root.quit)
+                self.loginUI_master.root.after(0, self.loginUI_master.root.quit)
+
+            except:
+                try: sys.exit(0)
+                except: pass
+
+        else:
+            esfx()
+
+    def run(self):
+        global self_icon
+
+        # Root Frame Configuration
+        self.root.title("Quizzing Application Quizzing Form; BTW, you're no supposed to see this so hi! - Geetansh G, own. and dev. of Coding Made Fun; did I just add this bit of code for no reason? yes, yes I did. This is what coding does to you; don't code kids.")
+        self.root.geometry("{}x{}+0+0".format(self.root.winfo_screenwidth(),self.root.winfo_screenheight()))
+        self.root.iconbitmap(self_icon)
+        self.root.protocol("WM_DELETE_WINDOW", self._close_app)
+        self.root.overrideredirect(True)
+        self.root.wm_attributes("-topmost", True)
+
+        self.fontFam = self.theme.get('font')
+        self.ttlFont_size = 32
+        self.cred_size = 8
+        self.lblf_size = 10
+        self.pF_size = 11
+        self.inputF_size = 13
+
+        self.update_element['lbl'].extend([
+            self.title_lbl,
+            self.creditLbl,
+            self.stu_information
+        ])
+
+        self.update_element['acc_fg'].extend([
+            self.title_lbl,
+            self.creditLbl
+        ])
+
+        self.update_element['font'].extend([
+            [self.title_lbl, (self.fontFam, self.ttlFont_size)],
+            [self.creditLbl, (self.fontFam, self.cred_size)],
+            [self.stu_information, (self.fontFam, self.pF_size)]
+        ])
+
+        self.update_element['frame'].extend([
+            self.questions_frame_container,
+            self.questions_frame,
+            self.error_frame
+        ])
+
+        self.title_lbl.config(
+            text="Quizzing Form",
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        self.title_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4))
+
+        self.creditLbl.config(
+            text="Coding Made Fun, %s" % QATime.form("%Y"),
+            anchor=tk.E,
+            justify=tk.RIGHT
+        )
+        self.creditLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, side=tk.BOTTOM)
+
+        self.stu_information.config(
+            text="Student Information:\n    - Name: %s, %s\n    - Student ID: %s" % (
+                self.loginUI_master.cred_last.get()[0].upper() + self.loginUI_master.cred_last.get().lower().replace(self.loginUI_master.cred_last.get()[0].lower(), '', 1),
+                self.loginUI_master.cred_first.get()[0].upper() + self.loginUI_master.cred_first.get().lower().replace(self.loginUI_master.cred_first.get()[0].lower(), '', 1),
+                self.loginUI_master.cred_studentID_field.get()
+            ),
+            wraplength=self.root.winfo_screenwidth() - 2*self.padX,
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+
+        # Final Things
+        self.update_ui()
+
+        self.questions_vsb.configure(command=self.questions_frame.yview)
+
+        self.questions_frame.configure(
+            yscrollcommand=self.questions_vsb.set
+        )
+
+        # self.questions_frame.create_window(
+        #     (0, self.questions_frame_container.winfo_y()),
+        #     window=self.questions_frame_container,
+        #     anchor="nw",
+        #     tags="self.questions_frame_container"
+        # )
+
+        self.questions_frame_container.bind("<Configure>", self.onFrameConfig)
+        self.onFrameConfig()
+
+        self.loginUI_master.root.after(0, self.loginUI_master.root.destroy)
+        self.root.deiconify()
+
+    def update_ui(self, error=False, refresh=True):
+        try:
+            if error and refresh:
+                self.__errorScreen()
+
+            elif refresh:
+                self.__questionsScreen()
+
+        except Exception as E:
+            esfx()
+            try: debug("Exception whilst creating form: ", E, traceback.format_exc())
+            except: pass
+            self.loginUI_master.canClose = True
+            self.canClose = True
+
+        # Theme
+        self.root.config(bg=self.theme.get('bg'))
+
+        for i in self.update_element['lbl']:
+            try:
+                i.config(
+                    bg=self.theme.get('bg'),
+                    fg=self.theme.get('fg')
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst theming lbl {i}: {e}")
+
+        for i in self.update_element['btn']:
+            try:
+                i.config(
+                    bg=self.theme.get('bg'),
+                    fg=self.theme.get('fg'),
+                    activebackground=self.theme.get('ac'),
+                    activeforeground=self.theme.get('hg'),
+                    bd='0'
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst theming btn {i}: {e}")
+
+        for i in self.update_element['acc_fg']:
+            try:
+                i.config(
+                    fg=self.theme.get('ac')
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst applying the accent color as fg to {i}: {e}")
+
+        for i in self.update_element['acc_bg']:
+            try:
+                i.config(
+                    bg=self.theme.get('ac')
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst applying the accent color as bg to {i}: {e}")
+
+        for i in self.update_element['font']:
+            try:
+                i[0].config(
+                    font=i[1]
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst applying font {i[1]} to {i[0]}: {e}")
+
+        for i in self.update_element['frame']:
+            try:
+                i.config(
+                    bg=self.theme.get('bg')
+                )
+            except Exception as e:
+                debug(f"An exception occurred whilst theming frame {i}: {e}")
+
+        for i in self.update_element['error_lbls']:
+            i.config(
+                fg=self.theme.get('ac'),
+                bg=self.theme.get('bg'),
+                text=""
+            )
+
+        for i in self.update_element['enteries']:
+            i.config(
+                fg=self.theme['fg'],
+                bg=self.theme['bg'],
+                selectforeground=self.theme['hg'],
+                selectbackground=self.theme['ac'],
+                insertbackground=self.theme['ac']
+            )
+
+        # Exceptions
+
+        self.creditLbl.config(
+            bg=self.theme.get('bg'),
+            fg=self.theme.get('ac')
+        )
+
+        for i in []: # Any btns
+            i.config(
+                disabledforeground=self.theme.get('hg')
+            )
+
+        for i in []: # Invis. LBLFs
+            i.config(bd='0', bg=self.theme.get('bg'))
+
+        # --- end ---
+
+    def __errorScreen(self, error_information=None, __backendErr=False, eCode="Unknown"):
+        try:
+            self.questions_frame_container.pack_forget()
+            self.stu_information.pack_forget()
+        except:
+            pass
+
+        try: debug("QF:__ES: E_I, __BE, EC", error_information, __backendErr, eCode)
+        except: pass
+
+        esfx()
+
+        self.title_lbl.config(
+            text="\u26a0 %s Error" % "Fatal" if __backendErr else "Non-Fatal"
+        )
+
+        self.root.title("Quizzing Form - %s Error" % str(eCode))
+
+        self.error_frame.pack(fill=tk.BOTH, expand=True)
+        err_lbl = tk.Label(self.error_frame)
+
+        err_txt = error_information if type(error_information) is str else "An unknown error occurred"
+        err_txt += "; more information:\n\n    - Logged: True,\n    - User Induced Error: %s\n    - Error Code: '%s'\n    - User can exit: %s" % (
+            str(not(__backendErr)),
+            str(eCode),
+            str(__backendErr)
+        )
+
+        err_lbl.config(
+            text=err_txt,
+            wraplength=self.loginUI_master.ws[0]-self.padX*2,
+            anchor=tk.W,
+            justify=tk.LEFT,
+            bg=self.theme.get('bg'),
+            fg=self.theme.get('fg'),
+            font=(self.fontFam, 11)
+        )
+
+        err_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+        if __backendErr:
+            self._config_on_backendErr_()
+
+    def __questionsScreen(self):
+        try:
+            self.error_frame.pack_forget()
+        except:
+            pass
+
+        self.title_lbl.config(text="Quizzing Applcation")
+
+        self.stu_information.pack(
+            fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY)
+        )
+
+        self.questions_frame_container.pack(fill=tk.BOTH, expand=True)
+        self.questions_frame.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        self.questions_vsb.pack(fill=tk.Y, expand=False, side=tk.RIGHT)
+
+        toPop = []
+
+        try:
+            for i in self.qas:
+                # Step 1: Create (no longer) invis container
+                temp_q_container = tk.LabelFrame(self.questions_frame, text="Question %s" % str(list(self.qas.keys()).index(i) + 1))
+                self.update_element['lbl'].append(temp_q_container)
+                self.update_element['acc_fg'].append(temp_q_container)
+                temp_q_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY*2)
+
+                # Step 2: Add Contents
+                # S2.1: Questions
+                question_string = i.replace(QAInfo.QAS_MCCode, '').replace(QAInfo.QAS_TFCode, '')
+                options = []
+                if QAInfo.QAS_MC_OPTION_CODE in question_string:
+                    for ii in question_string.split(QAInfo.QAS_MC_OPTION_CODE)[1::]:
+                        question_string = question_string.replace(QAInfo.QAS_MC_OPTION_CODE, '')
+                        found_1 = None; found_2 = None
+
+                        for iii in range(len(ii)):
+                            if ii[iii] == "[" and found_1 is None and found_2 is None:
+                                found_1 = iii
+                            elif ii[iii] == "]" and found_2 is None and found_1 is not None:
+                                found_2 = iii
+
+                        if found_1 is not None and found_2 is not None:
+                            options.append(ii[found_1:found_2].replace("[", '').replace("]", ""))
+
+                            question_string = question_string.replace(
+                                "[%s]" % ii[found_1:found_2].replace("[", '').replace("]", ""),
+                                "\u2022 %s: " % ii[found_1:found_2].replace("[", '').replace("]", "")
+                            )
+
+                    question_string += "\n\nAccepted answers: %s" % ", ".join(j for j in options).strip().strip(",").strip()
+
+                    if len(options) <= 0:
+                        debug(f"Question not asked because no options were found even though it was marked as a MC question; ")
+                        toPop.append(i)
+
+                        temp_q_container.config(text=temp_q_container.cget("text") + ": Invalid Question")
+
+                        plH = tk.Label(
+                            temp_q_container,
+                            text="Error: The form was unable to comprehend this question's data (Error Code: QAS_QF_Q:001)",
+                            wraplength=int((self.root.winfo_screenwidth() - self.padX * 6))
+                        )
+                        plH.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+                        self.update_element['lbl'].append(plH)
+                        self.update_element['acc_fg'].append(plH)
+                        self.update_element['font'].append([plH, (self.fontFam, self.inputF_size)])
+
+                        continue
+
+                temp_q_lbl = tk.Label(temp_q_container)
+                self.update_element['lbl'].append(temp_q_lbl)
+                self.update_element['font'].append([temp_q_lbl, (self.fontFam, self.inputF_size)])
+                temp_q_lbl.config(
+                    text="Question %s:\n%s" % (str(list(self.qas.keys()).index(i) + 1) + "/" + str(len(self.qas)), question_string.strip()),
+                    wraplength=int((self.root.winfo_screenwidth() - self.padX * 6) / 2),
+                    justify=tk.LEFT
+                )
+                temp_q_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY, side=tk.LEFT)
+
+                # S2.2: Answers
+                try:
+                    if QAInfo.QAS_MCCode in i:
+                        container = tk.LabelFrame(temp_q_container, bd='0')
+
+                        for op in options:
+                            temp_rb = tk.Radiobutton(container)
+                            self.setup_radio_button(i, op,  temp_rb)
+                            temp_rb.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+                        container.pack(fill=tk.BOTH, expand=False, side=tk.RIGHT)
+                        self.update_element['lbl'].append(container)
+
+                    elif QAInfo.QAS_TFCode in i:
+                        pass
+
+                    else:
+                        t_a_entry = tk.Text(temp_q_container)
+                        t_a_entry.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
+
+                except Exception as e:
+                    self.__errorScreen(e, True, "QAS:PRP_FORM:E__2028-CCAF")
+
+        except Exception as E:
+            self.__errorScreen(E, True, "QAS:PRP_FORM:E__2032-CCQF")
+
+        for i in toPop:
+            try: self.qas.pop(i)
+            except Exception as E: debug("Error whilst popping key %s from self.qas; more info: " % str(i), E, "; ", traceback.format_exc())
+
+    def setup_radio_button(self, question, option, tkRadiobutton):
+
+        radio_button_refference_id = random.randint(100000000000, 999999999999) + random.random() # ID (float)
+
+        counter = 0
+        while radio_button_refference_id in self.mc_rb_id_ref: # A whole lotta possible numbers = a whole lotta capacity
+            radio_button_refference_id = random.randint(0, 999999999999999999999999) + random.random()
+
+            if counter > 10000000: # 10mil tries granted
+                self.__errorScreen("Cannot assign MC_UID tag to element (QAS_QF:MC_RadButton)", True, "QAS:RecDepthError-MC_UID-011")
+
+            counter += 1
+
+        radio_button_refference_id = "QAS_QF_AF_MC_REF_" + str(radio_button_refference_id)
+
+        self.mc_rb_id_ref[radio_button_refference_id] = tkRadiobutton
+
+        if self.mc_rb_qs_ref.get(question) is None:
+            print(question, '1', self.mc_rb_qs_ref.get(question))
+            self.mc_rb_qs_ref[question] = [radio_button_refference_id]
+        else:
+            print(question, '2')
+            self.mc_rb_qs_ref[question].append(radio_button_refference_id)
+
+        try:
+            self.question_data[question]['mc_id'].append(radio_button_refference_id)
+
+        except:
+            if not question in self.question_data:
+                self.question_data[question] = {}
+
+            if not 'mc_id' in self.question_data[question]:
+                self.question_data[question]['mc_id'] = []
+
+            self.question_data[question]['mc_id'].append(radio_button_refference_id)
+
+        debug("setup_radio_button: q, option, id, mrqr, mrir", question, option, radio_button_refference_id, self.mc_rb_qs_ref, self.mc_rb_id_ref)
+
+        tkRadiobutton.config(
+            text=option,
+            command=lambda: self.onMcClick(radio_button_refference_id, question)
+        )
+
+        self.format_rButton(tkRadiobutton, False)
+
+        return
+
+    def onMcClick(self, id, question):
+        debug("onMcClick: id, q", id, question)
+
+        try:
+            # Clear all formatting
+            for i in self.mc_rb_qs_ref[question]:
+                self.format_rButton(self.mc_rb_id_ref[i], False)
+
+            self.format_rButton(self.mc_rb_id_ref[id], True)
+
+        except Exception as E:
+            try: debug(str(E))
+            except: pass
+
+            self.__errorScreen("Cannot format mc_question options with MC Option ID (ibi) '{}'\n\n    - Error: {}".format(id, str(E.__class__) + ": " + str(E)), True, "QAS:2077:CFMC_ID_CORR")
+
+        return
+
+    def format_rButton(self, _inst, _act):
+        if _act:
+            _inst.config(
+                bg=self.theme.get('ac'),
+                fg=self.theme.get('hg'),
+                selectcolor=self.theme.get('ac'),
+                activeforeground=self.theme.get('bg'),
+                activebackground=self.theme.get('fg')
+            )
+            _inst.select()
+
+        else:
+            _inst.config(
+                bg=self.theme.get('bg'),
+                fg=self.theme.get('fg'),
+                selectcolor=self.theme.get('bg'),
+                activeforeground=self.theme.get('ac'),
+                activebackground=self.theme.get('hg')
+            )
+            _inst.deselect()
+
+    def onFrameConfig(self, event=None): # for scbar
+        self.questions_frame.configure(
+            scrollregion=self.questions_frame.bbox("all")
+        )
 
     def __del__(self):
         self.thread.join(self, 0)
@@ -1742,6 +2345,14 @@ def debug(debugData: str, *args):
     # Log
     Log.log(data=debugData, from_=scname)
 
+def replace_string_index(string: str, index: list, new: str) -> str:
+    if len(index) != 2: return string
+    elif index[0] > index[1]: return string
+    elif index[0] < 0 or index[1] > len(string): return string
+
+    new = string[0:index[0]] + new + ( string[index[1]::] if index[1] <= len(string) else "")
+
+    return new
 
 def loadConfiguration(configruationFilename: str) -> dict:
 

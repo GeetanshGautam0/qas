@@ -15,4 +15,8 @@ echo ""
 echo "Configuring icon for *.qaScore files; please wait..."
 reg add "HKCR\.qaScore\DefaultIcon" /t REG_SZ /ve /d "%cd%\qaScore.ico" /f /reg:64
 
+echo ""
+echo "Configuring icon for *.qaFile files; please wait..."
+reg add "HKCR\.qaFile\DefaultIcon" /t REG_SZ /ve /d "%cd%\qaFile.ico" /f /reg:64
+
 exit

@@ -16,6 +16,7 @@ import qa_onlineVersCheck as QA_OVC
 import qa_questionEntryForm as QAQEF
 import qa_questionViewForm as QAQVF
 import qa_questions as QAQuestionStandard
+import qa_clearLogs as QAClearLogs
 
 # Misc. Imports
 import threading, sys, os, shutil, traceback, json, time, random, subprocess, sqlite3
@@ -389,6 +390,7 @@ class UI(threading.Thread):
         self.misc_refreshTheme = tk.Button(self.runScreen)
         self.misc_forceReloadThemes = tk.Button(self.runScreen)
         self.themeSel_sumb = tk.Button(self.quickTheme_cont)
+        self.clear_logs_btn = tk.Button(self.runScreen)
 
         # Questions Screen
         self.questions_editLblF = tk.LabelFrame(self.questionsScreen)
@@ -584,7 +586,8 @@ class UI(threading.Thread):
             self.misc_runBugReport,
             self.themeSel_sumb,
             self.misc_refreshTheme,
-            self.misc_forceReloadThemes
+            self.misc_forceReloadThemes,
+            self.clear_logs_btn
         ]
         MISC_LBLs = [
             self.quickTheme_cont,
@@ -1111,6 +1114,16 @@ class UI(threading.Thread):
             expand=False,
             padx=int(self.padX / 2),
             pady=(int(self.padY / 4), int(self.padY / 4))
+        )
+
+        # Clear logs btn
+        self.clear_logs_btn.config(
+            text="Clear application logs",
+            command=clearAppLogs
+        )
+
+        self.clear_logs_btn.pack(
+            fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY/4
         )
 
         # Bug Report
@@ -2001,7 +2014,6 @@ class UI(threading.Thread):
                     break
 
             __str = __raw[conf_ind[0]:conf_ind[1]]
-            __raw = "\n".join(i for i in __raw).strip().replace("\n".join(i for i in __str).strip(), '').replace(self.IO_DIVEND_KEY, "", 1).split('\n')
 
             # Basic Conf Loading
             conf_raw = {}
@@ -2097,6 +2109,15 @@ class UI(threading.Thread):
             try:
                 qs_ind[0] = __raw.index(self.IO_QSIMPORT_KEY)
                 qs_ind[1] = __raw.index(self.IO_DIVEND_KEY)
+
+                tries = 0
+                while qs_ind[1] < qs_ind[0]:
+                    if tries >= 10: raise IndexError(f"Failed to find question database's end.")
+
+                    __raw.pop(qs_ind[1])
+                    qs_ind[1] = __raw.index(self.IO_DIVEND_KEY)
+
+                    tries += 1
 
             except Exception as e:
                 debug(f"error whilst importing questions (IMPORT::2099) - {e}")
@@ -2676,6 +2697,9 @@ def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=Fals
 
     debug(f"Returning edited kwargs {out}")
     return out
+
+def clearAppLogs() -> None:
+    QAClearLogs.rm()
 
 # Adjust Splash
 set_boot_progress(3)

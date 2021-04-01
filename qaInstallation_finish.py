@@ -1,4 +1,4 @@
-import os, sys, shutil, time
+import os, sys, shutil, time, ctypes
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
@@ -433,4 +433,3 @@ if os.path.exists(logFn):
 theme = load_theme(def_theme_file)
 root = tk.Toplevel()
 a = UI(root)
-
