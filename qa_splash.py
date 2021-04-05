@@ -53,7 +53,7 @@ class Splash(Toplevel):
         self.titleLbl = Label(self.frame)
         self.imgLbl = Button(self.frame, anchor=NE)
         self.pbar = ttk.Progressbar(self.frame,length=100, mode='determinate', orient=HORIZONTAL)
-        self.infoLbl = Label(self.frame)
+        self.infoLbl = Label(self.frame, justify=LEFT)
         
         self.title = "Quizzing Application"
         self.information = "Loading...\n\nCoding Made Fun"

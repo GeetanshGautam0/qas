@@ -18,10 +18,10 @@ class UI(threading.Thread):
         self.root = tk.Toplevel()
         
         self.vsb_style = ttk.Style()
-        self.vsb_style.theme_use('alt')
+        self.vsb_style.theme_use('default')
         
         self.sep_style = ttk.Style()
-        self.sep_style.theme_use('alt')
+        self.sep_style.theme_use('default')
         
         self.canv = tk.Canvas(self.root)
         self.frame = tk.Frame(self.root)
@@ -252,7 +252,7 @@ class UI(threading.Thread):
                     fg=self.theme.get('fg')
                 )
             
-            except: pass
+            except: print('sdfsjhfhsdf', i)
             
         for i in self.theme_label_font:
             try:
@@ -261,17 +261,20 @@ class UI(threading.Thread):
                 )
 
             except:
-                pass
+                print('sdfsasdjhfhsdf', i)
             
         for i in self.theme_button:
-            i.config(
-                bg=self.theme.get('bg'),
-                fg=self.theme.get('fg'),
-                activebackground=self.theme.get('ac'),
-                activeforeground=self.theme.get('hg'),
-                bd=0
-            )
-        
+            try:
+                i.config(
+                    bg=self.theme.get('bg'),
+                    fg=self.theme.get('fg'),
+                    activebackground=self.theme.get('ac'),
+                    activeforeground=self.theme.get('hg'),
+                    bd=0
+                )
+
+            except: print('sdfsassdfdjhfhsdf', i)
+
         for i in self.theme_accent:
             try:
                 if type(i) is tuple or type(i) is list:
@@ -287,7 +290,7 @@ class UI(threading.Thread):
                         fg=self.theme.get('ac')
                     )
 
-            except: pass
+            except: print('sdfsjhsdffhsdf', i)
         
         # Exceptions
         self.clearButton.config(

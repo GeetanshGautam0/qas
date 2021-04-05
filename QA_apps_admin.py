@@ -288,7 +288,7 @@ class UI(threading.Thread):
         # Elements (Widgets)
         
         self.notebook_style = ttk.Style()
-        self.notebook_style.theme_use('default')
+        self.notebook_style.theme_use('alt')
         self.notebook_style.configure(
             "TNotebook",
             background=self.theme.get('bg'),
@@ -1269,7 +1269,8 @@ class UI(threading.Thread):
         tkmsb.showinfo(apptitle, f"Deleted all questions.")
 
     def addQ(self):
-        QAQEF.UI()
+        try: QAQEF.UI()
+        except Exception as e: tkmsb.showerror(apptitle, str(e.__class__) + str(e))
 
     def viewQs(self):
         QAQVF.UI()

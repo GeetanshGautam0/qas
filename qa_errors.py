@@ -63,7 +63,16 @@ class QAQuizDatabase_UnknownException(Exception):
 
     def __str__(self):
         global stem
-        global stem
         err = f"{stem} QAQuizDatabase_UnknownException :: Fatal: An error occurred whilst decompiling the quiz file"
         err += f": {self.info}" if type(self.info) is str else '.'
+        return err
+
+class QACannotDetermineQuestionType(Exception):
+    def __init__(self, info=None):
+        self.info = info
+
+    def __str__(self):
+        global stem
+        err = f"{stem} QACannotDetermineQuestionType :: Fatal: Cannot determine question type"
+        err += f": {self.info}" if type(self.info) is str else ''
         return err

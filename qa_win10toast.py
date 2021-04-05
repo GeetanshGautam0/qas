@@ -10,6 +10,9 @@ class T(threading.Thread):
         
         toaster.show_toast(tt, te, icon_path = ico, duration = d)    
 
+    def __del__(self):
+        self.thread.join(self, 0)
+
 def Toast(Title, Text, Icon = None, Duration = 5):
     if not type(Title) is str or not type(Text) is str:
         raise TypeError("Inavlid datatype")

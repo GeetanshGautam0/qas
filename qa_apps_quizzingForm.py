@@ -11,7 +11,7 @@ import qa_typeConvertor as QAConvertor
 import qa_logging as QALogging
 import qa_fileIOHandler as QAFileIO
 import qa_onlineVersCheck as QA_OVC
-import qa_win10toast as Win10Toast
+import qa_win10toast as QAWin10Toast
 import qa_time as QATime
 import qa_globalFlags as QAJSONHandler
 import qa_errors as QAErrors
@@ -23,7 +23,7 @@ boot_steps = {
     2: 'Loading Classes',
     3: 'Loading Functions',
     4: 'Running Boot Checks',
-    5: 'Fetching Version Information (Online)'
+    5: 'Fetching Version Information (Online)\n(This process will timeout automatically if needed)'
 }; boot_steps_amnt = len(boot_steps)
 
 if not QAInfo.doNotUseSplash:
@@ -1637,7 +1637,12 @@ class FormUI(threading.Thread):
         self.questions_frame = tk.Frame(self.questions_canvas)
         self.questions_vsb = ttk.Scrollbar(self.questions_frame_container, orient=tk.VERTICAL)
         self.error_frame = tk.Frame(self.root)
+        self.error_canvas = tk.Canvas(self.error_frame)
+        self.error_main_container = tk.Frame(self.error_canvas)
+        self.error_vsb = ttk.Scrollbar(self.error_frame)
         self.creditLbl = tk.Label(self.root)
+        self.submit_answers_button = tk.Button(self.questions_frame)
+        self.global_err_label = tk.Label(self.root)
 
         self.questions_vsb_style = ttk.Style()
         self.questions_vsb_style.theme_use('alt')
@@ -1667,6 +1672,14 @@ class FormUI(threading.Thread):
         self.close_index = 1
         self.mc_rb_id_ref = {}
         self.mc_rb_qs_ref = {}
+        self.error_questions = {}
+        self.norm_answer_fields_ref = {}
+        self.mc_o_tf_configured_iVars = {}
+
+        self.NORMAL_QUESTION = 'nmrq'
+        self.MC_QUESTION = 'mcq'
+        self.TF_QUESTION = "tfq"
+        self.CORR_QUESTION = "corrupted_question"
 
         # Final Things
         self.start()
@@ -1728,14 +1741,26 @@ class FormUI(threading.Thread):
         self.update_element['font'].extend([
             [self.title_lbl, (self.fontFam, self.ttlFont_size)],
             [self.creditLbl, (self.fontFam, self.cred_size)],
-            [self.stu_information, (self.fontFam, self.pF_size)]
+            [self.stu_information, (self.fontFam, self.pF_size)],
+            [self.submit_answers_button, (self.fontFam, self.inputF_size)],
+            [self.global_err_label, (self.fontFam, self.pF_size)]
         ])
 
         self.update_element['frame'].extend([
             self.questions_frame_container,
             self.questions_canvas,
             self.error_frame,
-            self.questions_frame
+            self.questions_frame,
+            self.error_canvas,
+            self.error_main_container
+        ])
+
+        self.update_element['btn'].extend([
+            self.submit_answers_button
+        ])
+
+        self.update_element['error_lbls'].extend([
+            self.global_err_label
         ])
 
         self.title_lbl.config(
@@ -1752,11 +1777,17 @@ class FormUI(threading.Thread):
         )
         self.creditLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, side=tk.BOTTOM)
 
+        self.global_err_label.pack(fill=tk.BOTH, expand=False, padx=self.padX, side=tk.BOTTOM)
+
+        self.user_last = self.loginUI_master.cred_last.get()[0].upper() + self.loginUI_master.cred_last.get().lower().replace(self.loginUI_master.cred_last.get()[0].lower(), '', 1).strip()
+        self.user_first = self.loginUI_master.cred_first.get()[0].upper() + self.loginUI_master.cred_first.get().lower().replace(self.loginUI_master.cred_first.get()[0].lower(), '', 1).strip()
+        self.user_id = self.loginUI_master.cred_studentID_field.get().strip()
+
         self.stu_information.config(
             text="Student Information:\n    - Name: %s, %s\n    - Student ID: %s" % (
-                self.loginUI_master.cred_last.get()[0].upper() + self.loginUI_master.cred_last.get().lower().replace(self.loginUI_master.cred_last.get()[0].lower(), '', 1),
-                self.loginUI_master.cred_first.get()[0].upper() + self.loginUI_master.cred_first.get().lower().replace(self.loginUI_master.cred_first.get()[0].lower(), '', 1),
-                self.loginUI_master.cred_studentID_field.get()
+                self.user_last,
+                self.user_first,
+                self.user_id
             ),
             wraplength=self.root.winfo_screenwidth() - 2*self.padX,
             anchor=tk.W,
@@ -1778,6 +1809,19 @@ class FormUI(threading.Thread):
         )
 
         self.questions_frame.bind("<Configure>", self.onFrameConfig)
+
+        self.error_vsb.configure(command=self.error_canvas.yview)
+        self.error_canvas.configure(
+            yscrollcommand=self.error_vsb.set
+        )
+        self.error_canvas.create_window(
+            (0, 0),
+            window=self.error_main_container,
+            anchor=tk.NW,
+            tags="self.error_main_container"
+        )
+
+        self.error_main_container.bind("<Configure>", self.onFrameConfig)
 
         self.update_ui()
 
@@ -1888,17 +1932,10 @@ class FormUI(threading.Thread):
 
         # --- end ---
 
-    def __errorScreen(self, error_information=None, __backendErr=False, eCode="Unknown"):
-        try:
-            self.questions_frame_container.pack_forget()
-            self.stu_information.pack_forget()
-        except:
-            pass
-
-        try: debug("QF:__ES: E_I, __BE, EC", error_information, __backendErr, eCode)
-        except: pass
-
+    def __errorScreen(self, error_information=None, __backendErr=False, eCode="Unknown", tBack=None):
         esfx()
+        if __backendErr:
+            self._config_on_backendErr_()
 
         self.title_lbl.config(
             text="\u26a0 %s Error" % "Fatal" if __backendErr else "Non-Fatal"
@@ -1906,19 +1943,35 @@ class FormUI(threading.Thread):
 
         self.root.title("Quizzing Form - %s Error" % str(eCode))
 
-        self.error_frame.pack(fill=tk.BOTH, expand=True)
-        err_lbl = tk.Label(self.error_frame)
+        try: debug("QF:__ES: E_I, __BE, EC, TBack", error_information, __backendErr, eCode, tBack)
+        except: pass
+
+        try:
+            self.questions_frame_container.pack_forget()
+            self.stu_information.pack_forget()
+        except:
+            pass
+
+        try:
+            self.error_frame.pack(fill=tk.BOTH, expand=True)
+            self.error_canvas.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+            self.error_vsb.pack(fill=tk.Y, expand=False, side=tk.RIGHT)
+
+        except: pass
+
+        err_lbl = tk.Label(self.error_main_container)
 
         err_txt = error_information if type(error_information) is str else "An unknown error occurred"
-        err_txt += "; more information:\n\n    - Logged: True,\n    - User Induced Error: %s\n    - Error Code: '%s'\n    - User can exit: %s" % (
+        err_txt += "; more information:\n\n    - Logged: True,\n    - User Induced Error: %s\n    - Error Code: '%s'\n    - User can exit: %s%s" % (
             str(not(__backendErr)),
             str(eCode),
-            str(__backendErr)
+            str(__backendErr),
+            ("\n\n\nTechnical Information: {}".format(tBack)) if tBack is not None else ""
         )
 
         err_lbl.config(
             text=err_txt,
-            wraplength=self.loginUI_master.ws[0]-self.padX*2,
+            wraplength=self.loginUI_master.ws[0]-self.padX*3,
             anchor=tk.W,
             justify=tk.LEFT,
             bg=self.theme.get('bg'),
@@ -1928,16 +1981,15 @@ class FormUI(threading.Thread):
 
         err_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
 
-        if __backendErr:
-            self._config_on_backendErr_()
-
     def __questionsScreen(self):
         try:
             self.error_frame.pack_forget()
         except:
             pass
 
-        self.title_lbl.config(text="Quizzing Applcation")
+        self.global_err_label.config(text="")
+
+        self.title_lbl.config(text="Quizzing Form")
 
         self.stu_information.pack(
             fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY)
@@ -1951,15 +2003,20 @@ class FormUI(threading.Thread):
 
         try:
             for i in self.qas:
+                self.question_data[i] = {}
+
                 # Step 0: Checks
                 val = True
                 valCode = "000"
                 if QAInfo.QAS_MCCode in i and not QAInfo.QAS_MC_OPTION_CODE in i:
-                    toPop.append(i)
-                    val = False; valCode = "001"
+                    val = False; valCode = "001 - No options in question"
+
                 elif QAInfo.QAS_MC_OPTION_CODE in i and not QAInfo.QAS_MCCode in i:
-                    toPop.append(i)
-                    val = False; valCode = "002"
+                    val = False; valCode = "002 - MC Option code available but not MC Question code"
+
+                elif QAInfo.QAS_TFCode in i:
+                    if not (('t' in self.qas[i].lower()) ^ ('f' in self.qas[i].lower())):
+                        val = False; valCode = "003 - Invalid answer expected (True/False)"
 
                 # Step 1: Create (no longer) invis container
                 temp_q_container = tk.LabelFrame(self.questions_frame, text="Question %s" % str(list(self.qas.keys()).index(i) + 1))
@@ -1993,13 +2050,16 @@ class FormUI(threading.Thread):
 
                     if len(options) <= 0:
                         debug(f"Question not asked because no options were found even though it was marked as a MC question; ")
-                        toPop.append(i)
 
                         temp_q_container.config(text=temp_q_container.cget("text") + ": Invalid Question")
 
-                        val = False; valCode = "003"
+                        val = False; valCode = "010 - No options extracted"
 
                 if not val:
+                    self.question_data[i] = self.CORR_QUESTION
+
+                    toPop.append([i, valCode])
+
                     plH = tk.Label(
                         temp_q_container,
                         text="Error: The form was unable to comprehend this question's data (Error Code: QAS_QF_Q:%s)" % valCode,
@@ -2027,6 +2087,7 @@ class FormUI(threading.Thread):
                 try:
                     if QAInfo.QAS_MCCode in i:
                         container = tk.LabelFrame(temp_q_container, bd='0')
+                        self.question_data[i]['type'] = self.MC_QUESTION
 
                         for op in options:
                             temp_rb = tk.Radiobutton(container)
@@ -2038,6 +2099,7 @@ class FormUI(threading.Thread):
 
                     elif QAInfo.QAS_TFCode in i:
                         container = tk.LabelFrame(temp_q_container, bd='0')
+                        self.question_data[i]['type'] = self.TF_QUESTION
 
                         for op in ['True', 'False']:
                             temp_rb = tk.Radiobutton(container)
@@ -2048,22 +2110,50 @@ class FormUI(threading.Thread):
                         self.update_element['lbl'].append(container)
 
                     else:
+                        uid = (random.randint(0, 99999999999999999) + random.random()) * random.randint(0, 99)
+
+                        counter = 0
+                        while uid in self.norm_answer_fields_ref and counter <= 10000000:
+                            counter += 1
+                            uid = (random.randint(0, 99999999999999999) + random.random()) * random.randint(0, 99)
+
+                        if counter > 10000000:
+                            self.__errorScreen("Failed to assign UID to answer field", True, "UID_COUNTER>10000000")
+
+                        self.question_data[i]['type'] = self.NORMAL_QUESTION
+
                         t_a_entry = tk.Text(temp_q_container)
                         t_a_entry.pack(fill=tk.X, expand=True, padx=self.padX, pady=self.padY)
+
+                        self.norm_answer_fields_ref[uid] = t_a_entry
+                        self.question_data[i]['UID'] = uid
 
                         self.update_element['lbl'].append(t_a_entry)
                         self.update_element['font'].append([t_a_entry, (self.fontFam, self.inputF_size)])
                         self.update_element['enteries'].append(t_a_entry)
 
                 except Exception as e:
-                    self.__errorScreen(e, True, "QAS:PRP_FORM:E__2028-CCAF")
+                    self.__errorScreen(e, True, "QAS:PRP_FORM:E__2028-CCAF", traceback.format_exc())
+
+            self.submit_answers_button.config(
+                text="Submit Answers",
+                command=self.submit
+            )
+
+            self.submit_answers_button.pack(
+                fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY, ipadx=self.padX/2, ipady=self.padY/2
+            )
+
+            for i in toPop:
+                q = i[0]
+                r = i[1]
+                self.error_questions[q] = r
+
+                self.question_data[q] = {'type': self.CORR_QUESTION}
 
         except Exception as E:
-            self.__errorScreen(E, True, "QAS:PRP_FORM:E__2032-CCQF")
-
-        for i in toPop:
-            try: self.qas.pop(i)
-            except Exception as E: debug("Error whilst popping key %s from self.qas; more info: " % str(i), E, "; ", traceback.format_exc())
+            debug(f"QAS:PRP_FORM:E__2032-CCQF", E, traceback.format_exc())
+            self.__errorScreen(E, True, "QAS:PRP_FORM:E__2032-CCQF", traceback.format_exc())
 
     def setup_radio_button(self, question, option, tkRadiobutton):
 
@@ -2077,6 +2167,31 @@ class FormUI(threading.Thread):
                 self.__errorScreen("Cannot assign MC_UID tag to element (QAS_QF:MC_RadButton)", True, "QAS:RecDepthError-MC_UID-011")
 
             counter += 1
+
+        if type(self.question_data[question].get('iVar_UID')) is not float:
+            self.question_data[question]['iVar_UID'] = 0.00
+            self.question_data[question]['iVar_uid_map'] = {}
+
+            iVar = tk.IntVar()
+            iVar.set(-1) # Invalid (non-whole number); no option selected yet
+
+            iVar_uid = (random.randint(0, 999999999999999999999999) + random.random()) * random.randint(1, 1000)
+
+            counter_2 = 0
+
+            while iVar_uid in self.mc_o_tf_configured_iVars and counter_2 <= 10000000:
+                iVar_uid = (random.randint(0, 999999999999999999999999) + random.random()) * random.randint(1, 1000)
+                counter_2 += 1
+
+            if counter_2 > 10000000:
+                raise RecursionError("could not generate iVar_uid for question")
+
+            self.question_data[question]['iVar_UID'] = float(iVar_uid)
+            self.mc_o_tf_configured_iVars[iVar_uid] = iVar
+
+        else:
+            iVar = self.mc_o_tf_configured_iVars[self.question_data[question]['iVar_UID']]
+            iVar_uid = self.question_data[question]['iVar_UID']
 
         radio_button_refference_id = "QAS_QF_AF_MC_REF_" + str(radio_button_refference_id)
 
@@ -2105,19 +2220,29 @@ class FormUI(threading.Thread):
 
         tkRadiobutton.config(
             text=option,
-            command=lambda: self.onMcClick(radio_button_refference_id, question),
+            command=lambda: self.onMcClick(radio_button_refference_id, question, iVar_uid),
             indicatoron='0',
-            relief=tk.RAISED
+            relief=tk.RAISED,
+            variable=iVar,
+            value=len(self.question_data[question]['mc_id'])
         )
+
+        self.question_data[question]['iVar_uid_map'][len(self.question_data[question]['mc_id'])] = option
+
+        debug("SETUP_RADIO_BUTTON_FINAL_DEBUG: question, s.qd, rbrid, s.mcotfciV, s.mc_rb_id_ref, s.mc_rb_qs_ref", question, self.question_data, radio_button_refference_id, self.mc_o_tf_configured_iVars, self.mc_rb_id_ref, self.mc_rb_qs_ref)
 
         self.format_rButton(tkRadiobutton, False)
 
         return
 
-    def onMcClick(self, id, question):
+    def onMcClick(self, id, question, iVar_uid):
         debug("onMcClick: id, q", id, question)
 
         try:
+            iVar_val = self.mc_rb_id_ref[id].cget('value')
+            self.mc_o_tf_configured_iVars[iVar_uid].set(iVar_val)
+            debug("onMcClick: set iVar_uid (float, 1) to iVar_val (int, 2)", iVar_uid, iVar_val)
+
             # Clear all formatting
             for i in self.mc_rb_qs_ref[question]:
                 self.format_rButton(self.mc_rb_id_ref[i], False)
@@ -2128,11 +2253,24 @@ class FormUI(threading.Thread):
             try: debug(str(E))
             except: pass
 
-            self.__errorScreen("Cannot format mc_question options with MC Option ID (ibi) '{}'\n\n    - Error: {}".format(id, str(E.__class__) + ": " + str(E)), True, "QAS:2077:CFMC_ID_CORR")
+            self.__errorScreen("Cannot format mc_question options with MC Option ID (ibi) '{}'\n\n    - Error: {}".format(id, str(E.__class__) + ": " + str(E)), True, "QAS:2077:CFMC_ID_CORR", traceback.format_exc())
 
         return
 
-    def format_rButton(self, _inst, _act):
+    def format_rButton(self, _inst, _act, _err=False):
+        if _err:
+            _inst.config(
+                bg="#990000",
+                fg="#ffffff",
+                selectcolor="#ffffff",
+                activeforeground="#ffffff",
+                activebackground="#990000"
+            )
+
+            _inst.deselect()
+
+            return
+
         if _act:
             _inst.config(
                 bg=self.theme.get('ac'),
@@ -2153,10 +2291,314 @@ class FormUI(threading.Thread):
             )
             _inst.deselect()
 
-    def onFrameConfig(self, event=None): # for scbar
-        self.questions_canvas.configure(
-            scrollregion=self.questions_canvas.bbox("all")
+    def submit(self):
+        self.global_err_label.config(text="")
+
+        try:
+
+            err = False
+
+            for i in self.qas:
+                
+                if i in self.error_questions:
+                    continue # Skip
+
+                elif self.question_data[i]['type'] == self.NORMAL_QUESTION:
+                    answer = self.norm_answer_fields_ref[self.question_data[i]['UID']].get("1.0", "end-1c").strip()
+
+                    if not len(answer) > 0:
+                        self.norm_answer_fields_ref[self.question_data[i]['UID']].config(
+                            bg="#990000",
+                            fg="#ffffff",
+                            selectbackground="#ffffff",
+                            selectforeground="#990000"
+                        )
+
+                        err = True
+
+                    else:
+                        self.norm_answer_fields_ref[self.question_data[i]['UID']].config(
+                            bg=self.theme.get('bg'),
+                            fg=self.theme.get('fg'),
+                            selectbackground=self.theme.get('ac'),
+                            selectforeground=self.theme.get('hg')
+                        )
+
+                elif self.question_data[i]['type'] == self.TF_QUESTION or self.question_data[i]['type'] == self.MC_QUESTION:
+                    # Non-iterative
+                    rb_uid = self.question_data[i]['iVar_UID']
+                    iVar = self.mc_o_tf_configured_iVars[rb_uid]
+                    val = iVar.get()
+
+                    if not val > -1:
+                        # Error
+                        err = True
+
+                        for uid in self.question_data[i]['mc_id']:
+                            tkRButton = self.mc_rb_id_ref[uid]
+                            self.format_rButton(tkRButton, False, True)
+
+                    else:
+                        for uid in self.question_data[i]['mc_id']:
+                            tkRButton = self.mc_rb_id_ref[uid]
+
+                            if not tkRButton.cget('text') == self.question_data[i]['iVar_uid_map'][val]:
+                                self.format_rButton(tkRButton, False, False)
+
+                            else:
+                                self.format_rButton(tkRButton, True, False)
+
+                else:
+                    self.__errorScreen("Failed to match question to any NMQ, MCQ, or TFQ, and was not marked as an errenous question.", True, "QAS:EC-FMQ_[NMQ,MCQ,TFQ]")
+
+            if err:
+                esfx()
+
+                self.global_err_label.config(
+                    text="\u26a0 ERROR: You must answer all questions before submitting your answers."
+                )
+
+                return
+
+            else:
+                self.mark()
+
+        except Exception as E:
+            self.__errorScreen(
+                "An error occurred whilst processing the answers given",
+                True,
+                str(E.__class__) + " " + str(E),
+                traceback.format_exc()
+            )
+
+    def __marking_screen(self):
+        try:
+            self.questions_frame_container.pack_forget()
+            self.error_frame.pack_forget()
+        except: pass
+
+        self.title_lbl.config(
+            text=self.title_lbl.cget('text') + " - Evaluating Responses"
         )
+
+        info_lbl = tk.Label(self.root)
+
+        info_lbl_base = "Evaluating your responses; this may take a while. You may let this process continue in the background and continue to do other tasks. Do not shutdown your computer or set it to sleep."
+
+        info_lbl.config(
+            text=info_lbl_base,
+            bg=self.theme.get('bg'),
+            fg=self.theme.get('fg'),
+            font=(self.fontFam, self.inputF_size),
+            wraplength=self.loginUI_master.ws[0] - self.padX*2,
+            justify=tk.LEFT,
+            anchor=tk.W
+        )
+
+        info_lbl.pack(fill=tk.BOTH, expand=True, padx=self.padX, pady=self.padY)
+
+        self.root.title("Quzzing Form - Evaluating Responses")
+        self.root.geometry("%sx%s+%s+%s"% (self.loginUI_master.ws[0], self.loginUI_master.ws[0], self.loginUI_master.sp[0], self.loginUI_master.sp[1]))
+        self.root.overrideredirect(False)
+        self.root.wm_attributes('-topmost', False)
+
+        return [info_lbl, info_lbl_base]
+
+    def mark(self):
+        # at this point, everything should be good; yet it is still a good idea to try-except the entire question checking logic
+
+        try:
+
+            ILbl_raw = self.__marking_screen()
+            ILbl = ILbl_raw[0]
+            ILbl_base = ILbl_raw[1]
+
+            ILbl.config(text=ILbl_base + "\n\nProgress: Getting Ready")
+
+            self.root.update()
+
+            errors = {}
+            correct = {}
+            incorrect = {}
+
+            for question, answer in self.qas.items():
+
+                ILbl.config(text=ILbl_base + "\nProgress: %s/%s\n\nQuestion:\n%s\n\nAnswer Given:\n" % (str(list(self.qas.keys()).index(question)+1), str(len(self.qas)), question.strip()))
+
+                answer_expected = answer.lower().strip()
+
+                try: question_data = self.question_data[question]
+                except KeyError: question_data = self.question_data[question.strip()]
+                except: self.__errorScreen(
+                    "Could not fetch question data", True, "QAS:FORM_mark:2379-F2FQD", traceback.format_exc()
+                )
+
+                if question_data['type'] == self.CORR_QUESTION or question in self.error_questions:
+                    errors[question.strip()] = self.error_questions[question]
+                    answer_r = "<<From Quizzing Form: This Question was an invalid question and will not be counted>>"
+
+                elif question_data['type'] == self.TF_QUESTION or question_data['type'] == self.MC_QUESTION:
+                    VUID = self.question_data[question]['iVar_UID']
+                    V = self.mc_o_tf_configured_iVars[VUID].get()
+                    answer_r = self.question_data[question]['iVar_uid_map'][V]
+
+                elif question_data['type'] == self.NORMAL_QUESTION:
+                    answer_r = self.norm_answer_fields_ref[self.question_data[question]['UID']].get("1.0", "end-1c").strip()
+
+                else:
+                    raise QAErrors.QACannotDetermineQuestionType
+
+                ILbl.config(text=ILbl.cget('text') + answer_r.strip())
+                self.root.update()
+
+                # Best chance to get it right
+                answer_r_for_check = "".join(re.findall("[^\ \t\n\b]", answer_r.lower()))
+                answer_k_for_check = "".join(re.findall("[^\ \t\n\b]", answer_expected.lower()))
+
+                if question_data['type'] == self.NORMAL_QUESTION:
+                    if answer_r_for_check == answer_k_for_check:
+                        correct[question.strip()] = answer_r.strip()
+
+                    else:
+                        incorrect[question.strip()] = [answer.strip(), answer_r.strip()]
+
+                elif question_data['type'] == self.TF_QUESTION:
+                    # ^ operand = XOR: If both or none: error, else, good
+
+                    if ('t' in answer_k_for_check.lower()) ^ ('f' in answer_k_for_check.lower()):
+
+                        if ('t' in answer_k_for_check.lower() and 't' in answer_r_for_check.lower()) and not ('f' in answer_r_for_check.lower()):
+                            correct[question.strip()] = answer_r.strip()
+
+                        elif ('f' in answer_k_for_check.lower() and 'f' in answer_r_for_check.lower()) and not ('t' in answer_r_for_check.lower()):
+                            correct[question.strip()] = answer_r.strip()
+
+                        else:
+                            incorrect[question.strip()] = [answer.strip(), answer_r.strip()]
+
+                    else:
+                        errors[question.strip()] = "404: No appropriate answer provided by administrator (QType: True/False, expected answer: %s, received: %s" % (answer.strip(), answer_r.strip())
+
+                elif question_data['type'] == self.MC_QUESTION:
+                    if answer_r_for_check.lower() == answer_k_for_check.lower():
+                        correct[question.strip()] = answer_r.strip()
+
+                    else:
+                        incorrect[question.strip()] = [answer.strip(), answer_r.strip()]
+
+            debug("QAS:MARKED: CORRECT (Q, A_given), INCORRECT (Q, A_expected, A_given), ERROR (Q, error)", correct, incorrect, errors)
+
+            ILbl.config(text=ILbl_base + "\n\nProgress: Compiling Scores File")
+            self.root.update()
+
+            self.compile_sFile(correct, incorrect, errors)
+            
+            tkmsb.showinfo(apptitle, "Finished evaluating your responses; you may close the app now!")
+
+            ILbl.config(text="Finished evaluating your responses; You may close this window now!\n\n\nThank you for using this application\n    - Geetansh G, Developer of QAS and Coding Made Fun")
+
+            self.title_lbl.config(text="Quizzing Form - Done")
+            self.root.title("Quizzing Form - Done")
+            self.canClose = True
+
+        except Exception as E:
+            self.__errorScreen("Error whilst evaluating question answers", True, str(E.__class__) + str(E), traceback.format_exc())
+
+    def compile_sFile(self, correct: dict, incorrect: dict, errors: dict):
+        # First, create a file in the appdata folder
+        # JSON file with the following dicts:
+
+        # 1) User Info
+        # 2) Config
+        # 3) Errors
+        # 4) Incorrect
+        # 5) Correct
+        
+        def create(filename, instance):
+            config = {
+               'acqc': instance.loginUI_master.configuration['customQuizConfig'],
+                'qpoa': instance.loginUI_master.configuration['partOrAll'],
+                'qsdf': instance.loginUI_master.configuration['poa_divF'],
+                'dma': instance.loginUI_master.configuration['a_deduc'],
+                'pdpir': instance.loginUI_master.configuration['deduc_amnt']
+            }
+
+            first = instance.user_first
+            last = instance.user_last
+            id = instance.user_id
+
+            __jInst = JSON()
+
+            __jInst.setFlag(
+                filename=filename,
+                data_key="userID",
+                data_val={
+                    "first": first,
+                    "last": last,
+                    "id": id
+                }
+            )
+
+            __jInst.setFlag(filename, "configuration", config)
+
+            __jInst.setFlag(filename, "errors", errors)
+            __jInst.setFlag(filename, "incorrect", incorrect)
+            __jInst.setFlag(filename, "correct", correct)
+
+            IO(filename, encrypt=True).encrypt() # Encrypt the file
+
+        fn = "%s - %s %s - %s, %s %s - %s-%s.%s" % (
+            self.user_id,
+            self.user_first,
+            self.user_last,
+            QATime.form("%Y"),
+            QATime.form("%b"),
+            QATime.form("%d"),
+            QATime.form("%H"),
+            QATime.form("%M"),
+            QAInfo.export_score_dbFile
+        )
+
+        apFile = QAInfo.appdataLoc + "\\" + QAInfo.scoresFolderName + "\\" + fn
+
+        try:
+            debug("apFile name ", apFile)
+            create(apFile, self)
+
+            while True:
+                extern = tkfld.askdirectory()
+
+                if type(extern) is not str:
+                    esfx()
+                    continue
+
+                extern = extern.replace("/", "\\")
+
+                if len(extern.strip()) <= 0:
+                    esfx()
+                    continue
+
+                elif not os.path.exists(extern.strip()):
+                    esfx()
+                    continue
+
+                exFile = extern + "\\" + fn
+                break
+
+            debug("exFile name ", exFile)
+            create(exFile, self)
+
+        except Exception as e:
+            while os.path.exists(apFile): os.remove(apFile)
+            raise e.__class__(str(e))
+
+    def onFrameConfig(self, event=None): # for scbar
+
+        try: self.questions_canvas.configure(scrollregion=self.questions_canvas.bbox("all"))
+        except: pass
+
+        try: self.error_canvas.configure(scrollregion=self.error_canvas.bbox("all"))
+        except: pass
 
     def __del__(self):
         self.thread.join(self, 0)
@@ -2168,7 +2610,8 @@ class esfx(threading.Thread): # Threaded to let the sound effect run in the back
         self.start()
 
     def run(self):
-        playsound.playsound(".res/error_sound.mp3")
+        try: playsound.playsound(".res/error_sound.mp3")
+        except Exception as e: debug(f"Failed to play error sound: ", e.__class__, e, traceback.format_exc())
 
     def __del__(self):
         self.thread.join(self, 0)
