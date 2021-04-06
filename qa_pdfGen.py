@@ -1,8 +1,8 @@
 from fpdf import FPDF
 
-pdf = FPDF()
-
 def createPDF(_d: list, _PdfN: str):
+    pdf = FPDF()
+
     if not type(_d) is list: raise TypeError(f"Required type {list} for arg _d")
     if not type(_PdfN) is str: raise TypeError(f"Required type {str} for arg _PdfN")
     # Setup
@@ -15,6 +15,8 @@ def createPDF(_d: list, _PdfN: str):
     pdf.output(_PdfN)
 
 def createStrPDF(_d: str, _fn: str):
+    pdf = FPDF()
+
     pdf.add_page()
     pdf.set_font("Courier", size=12)
 

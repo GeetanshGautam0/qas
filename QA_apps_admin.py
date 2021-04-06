@@ -1,25 +1,9 @@
 # QA Python Files
-import qa_time as QATime
-import qa_theme as QATheme
 import qa_appinfo as QAInfo
-import qa_logging as QALog
-import qa_globalFlags as QAJSONHandler
-import qa_diagnostics as QADiagnostics
-import qa_fileIOHandler as QAFileIO
-import qa_pdfGen as QAPDFGen
-import qa_win10toast as QAWinToast
-import qa_quizConfig as QAConfig
-import qa_typeConvertor as QATypeConv
-import qa_errors as QAErrors
 import qa_splash as QASplash
-import qa_onlineVersCheck as QA_OVC
-import qa_questionEntryForm as QAQEF
-import qa_questionViewForm as QAQVF
-import qa_questions as QAQuestionStandard
-import qa_clearLogs as QAClearLogs
 
 # Misc. Imports
-import threading, sys, os, shutil, traceback, json, time, random, subprocess, sqlite3
+import sys, os
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
@@ -94,6 +78,28 @@ def show_splash_completion(resolution=100):
     
 # Adjust Splash
 set_boot_progress(1)
+
+try:
+    import threading, shutil, traceback, json, time, random, subprocess, sqlite3
+
+    import qa_onlineVersCheck as QA_OVC
+    import qa_questionEntryForm as QAQEF
+    import qa_questionViewForm as QAQVF
+    import qa_questions as QAQuestionStandard
+    import qa_clearLogs as QAClearLogs
+    import qa_logging as QALog
+    import qa_globalFlags as QAJSONHandler
+    import qa_diagnostics as QADiagnostics
+    import qa_fileIOHandler as QAFileIO
+    import qa_pdfGen as QAPDFGen
+    import qa_win10toast as QAWinToast
+    import qa_quizConfig as QAConfig
+    import qa_typeConvertor as QATypeConv
+    import qa_errors as QAErrors
+    import qa_time as QATime
+    import qa_theme as QATheme
+
+except: sys.exit(-1)
 
 # Globals
 QAS_encoding = 'utf-8'
@@ -367,7 +373,11 @@ class UI(threading.Thread):
         self.io_valFile_q = False
         
         self.io_import_fn = None
-        
+
+        # Scores Screen
+        self.scores_external = tk.Button(self.scoresScreen)
+        self.scores_internal = tk.Button(self.scoresScreen)
+
         # Misc. Screen
         self.quickTheme_cont = tk.LabelFrame(self.runScreen)
 
@@ -609,14 +619,17 @@ class UI(threading.Thread):
         self.update_accent_fg.append(self.quickTheme_cont)
         addFontInst(self, self.themeSel_lbl, (self.theme.get('font'), self.theme.get('sttl_base_fsize')))
 
-        # Questions Screen
+        # Questions Screen + Scores screen
         QsLbls = [
             self.questions_editLblF
         ]; QsBtns = [
             self.questions_edit_add,
             self.questions_edit_view,
             self.questions_delAll,
-            self.questions_pdf
+            self.questions_pdf,
+
+            self.scores_external,
+            self.scores_internal
         ]
 
         for i in QsBtns:
@@ -894,17 +907,17 @@ class UI(threading.Thread):
             fill=tk.BOTH, expand=True, padx=(self.padX / 4, self.padX / 2), pady=self.padY / 2, side=tk.RIGHT
         )
 
-        lbl = tk.Label(
-            self.questionsScreen,
-            text="Note: Recent changes may not show up in the PDF until the application is restarted",
-            wraplength=(self.questionsScreen.winfo_width() - 30)
-        )
-
-        lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX / 2, pady=self.padY / 4)
-
-        self.update_lbl.append(lbl)
-        self.update_fonts[lbl] = (self.theme.get('font'), 10)
-        self.update_accent_fg.append(lbl)
+        # lbl = tk.Label(
+        #     self.questionsScreen,
+        #     text="Note: Recent changes may not show up in the PDF until the application is restarted",
+        #     wraplength=(self.questionsScreen.winfo_width() - 30)
+        # )
+        #
+        # lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX / 2, pady=self.padY / 4)
+        #
+        # self.update_lbl.append(lbl)
+        # self.update_fonts[lbl] = (self.theme.get('font'), 10)
+        # self.update_accent_fg.append(lbl)
 
         self.questions_pdf.config(
             text="Output Questions (PDF)",
@@ -1229,13 +1242,29 @@ class UI(threading.Thread):
         )
         self.io_ie_importCommitButton.pack(fill=tk.BOTH, expand=True, padx=(int(self.padX/4), int(self.padX/2)), pady=int(self.padY/2))
     
-    def setup_scores_screen(self): # TODO: Make the screen code
-        pass
-        
+    def setup_scores_screen(self):
         # The actual setup
         # Theming has been taken care of already
         # Simply commit to the structure
-    
+
+        self.scores_external.config(
+            text="Convert .qaScore to PDF\n(EXTERNAL)",
+            command=conv_qaScore_extern
+        )
+
+        self.scores_external.pack(
+            fill=tk.BOTH, expand=True, padx=(self.padX, self.padX/2), pady=self.padY, side=tk.LEFT
+        )
+
+        self.scores_internal.config(
+            text="Convert .qaScore to PDF\n(INTERNAL)",
+            command=conv_qaScore_intern
+        )
+
+        self.scores_internal.pack(
+            fill=tk.BOTH, expand=True, padx=(self.padX, self.padX / 2), pady=self.padY, side=tk.RIGHT
+        )
+
     def __del__(self):
         self.thread.join(self, 0)
 
@@ -2401,11 +2430,9 @@ def application_exit(code: str = "0") -> None:
     debug(f"Exiting with code '{code}'")
     sys.exit(code)
 
-
 def editKWARGS(Object: object, **kwargs):
     Object.kwargs = kwargs
     Object.reload_kwargs()
-
 
 def dc_lst(Dict: dict, index) -> dict:
     out: dict = {}
@@ -2701,6 +2728,127 @@ def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=Fals
 
 def clearAppLogs() -> None:
     QAClearLogs.rm()
+
+def qaScoreToPDF(fl):
+    try:
+        __rawStr = IO(fl).autoLoad()
+        __rawJSON = json.loads(__rawStr)
+
+        debug(f"2733: Raw JSON: {__rawJSON}; raw str: {__rawStr}")
+
+        config = __rawJSON['configuration']
+        user_id = __rawJSON['userID']
+        errors = __rawJSON['errors']
+        inc = __rawJSON['incorrect']
+        c = __rawJSON['correct']
+        score = __rawJSON['score']
+
+        error_questions_string = ""
+        for i in errors:
+            error_questions_string += f"\t- Question: {i}\n\t- Error: {errors[i]}\n\n"
+
+        incorrect_responses_string = ""
+        for i in inc:
+            incorrect_responses_string += f"\t- Question: {i}\n\t- Response Given: {inc[i][-1]}\n\t- Response Expected: {inc[i][0]}\n\n"
+
+        correct_responses_string = ""
+        for i in c:
+            correct_responses_string += f"\t- Question: {i}\n\t- Response Given: {c[i]}\n\n"
+
+        PDF_CONTENT = f"""
+Quizzing Application
+Coding Made Fun, %s
+
+The following document consists of information from a quiz presented to {user_id['last']}, {user_id['first']} (ID: {user_id['id']})
+
+The following is the layout that this document will follow:
+    1. Configuration (The settings applied to the quiz)
+    2. Any errors that occurred during the quiz
+    3. All incorrect responses
+    4. The correct answers
+
+GENERAL INFORMATION:
+
+Time of conversion: %s
+Score Evaluated: {score}/{len(c)+len(inc)} (%s)
+
+-------------------------------------
+1. Configuration
+
+    The user was {"NOT" if not bool(config['acqc']) else ""} allowed to make changes to the following settings, which were set by the admin.
+
+        - %s questions were to be presented%s
+        - %s points were to be deducted for every wrong answer
+
+-------------------------------------
+2. Errors
+%s questions reported errors%s
+
+-------------------------------------
+3. Incorrect Responses
+The user answered %s questions incorrectly%s
+
+-------------------------------------
+4. Correct Responses
+The user answered %s questions correctly%s
+
+        """ % (
+            str(QATime.form("%Y")),
+            str(QATime.form("%b %d, %Y %H:%M:%S")),
+            str((score / (len(c) + len(inc)))*100)[:4] + "%",
+
+            # Config
+            "All" if config['qpoa'] == 'all' else "A part of the",
+            str(config['qsdf']) if config['qpoa'] == 'part' else "",
+            str(config['pdpir']) if config['dma'] else "No",
+
+            # Errors
+            str(len(errors)),
+            ("They are as follows:\n" + error_questions_string.strip("\n")) if len(errors) > 0 else "",
+
+            # Incorrect Responses
+            str(len(inc)),
+            ("They are as follows:\n" + incorrect_responses_string.strip("\n")) if len(inc) > 0 else "",
+
+            # Correct
+            str(len(c)),
+            ("They are as follows:\n" + correct_responses_string.strip("\n")) if len(c) > 0 else ""
+        )
+
+        output = fl.replace(QAInfo.export_score_dbFile, "pdf")
+        if os.path.exists(output): os.remove(output)
+        QAPDFGen.createPDF(PDF_CONTENT.split("\n"), output)
+
+        tkmsb.showinfo(apptitle, "Created PDF {}".format(output.split("\\")[-1]))
+
+    except:
+        debug(f"ADMT:2732-FLTCQS2P: {traceback.format_exc()}")
+        tkmsb.showerror(apptitle, "Failed to convert file.\n\nError Code: ADMT:2732-FLTCQS2P")
+
+def conv_qaScore_extern():
+    defaultextension = f".{QAInfo.export_score_dbFile}",
+    filetypes = ((f"QA Score (*.{QAInfo.export_score_dbFile})", f"*.{QAInfo.export_score_dbFile}"),)
+
+    fl = tkfldl.askopenfilename(defaultextension=defaultextension, filetypes=filetypes)
+
+    if type(fl) is not str: return
+    elif not os.path.exists(fl): return
+
+    qaScoreToPDF(fl)
+
+def conv_qaScore_intern():
+    defaultextension = f".{QAInfo.export_score_dbFile}",
+    filetypes = ((f"QA Score (*.{QAInfo.export_score_dbFile})", f"*.{QAInfo.export_score_dbFile}"),)
+    initd = QAInfo.appdataLoc + "\\" + QAInfo.scoresFolderName
+
+    fl = tkfldl.askopenfilename(initialdir=initd, defaultextension=defaultextension, filetypes=filetypes)
+
+    if type(fl) is not str:
+        return
+    elif not os.path.exists(fl):
+        return
+
+    qaScoreToPDF(fl)
 
 # Adjust Splash
 set_boot_progress(3)

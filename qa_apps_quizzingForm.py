@@ -2,21 +2,11 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as tkfld
 from tkinter import messagebox as tkmsb
-import os, sys, threading, shutil, time, json, sqlite3, playsound, re, random, traceback
+import os, sys
 
 import qa_appinfo as QAInfo
-import qa_diagnostics as QADiagnostics
 import qa_splash as QASplash
-import qa_typeConvertor as QAConvertor
-import qa_logging as QALogging
-import qa_fileIOHandler as QAFileIO
-import qa_onlineVersCheck as QA_OVC
-import qa_win10toast as QAWin10Toast
-import qa_time as QATime
-import qa_globalFlags as QAJSONHandler
-import qa_errors as QAErrors
-import qa_questions as QAQuestionStandard
-import qa_theme as QATheme
+
 
 boot_steps = {
     1: 'Loading Variables',
@@ -77,6 +67,23 @@ def show_splash_completion(resolution=100):
 
 # Adjust Splash
 set_boot_progress(1)
+
+try:
+    import qa_typeConvertor as QAConvertor
+    import qa_logging as QALogging
+    import qa_fileIOHandler as QAFileIO
+    import qa_onlineVersCheck as QA_OVC
+    import qa_win10toast as QAWin10Toast
+    import qa_time as QATime
+    import qa_globalFlags as QAJSONHandler
+    import qa_errors as QAErrors
+    import qa_questions as QAQuestionStandard
+    import qa_theme as QATheme
+    import qa_diagnostics as QADiagnostics
+
+    import threading, shutil, time, json, sqlite3, playsound, re, random, traceback
+
+except: sys.exit(-1)
 
 # Globals
 apptitle = f"Quizzing Form v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
@@ -2488,14 +2495,14 @@ class FormUI(threading.Thread):
 
             debug("QAS:MARKED: CORRECT (Q, A_given), INCORRECT (Q, A_expected, A_given), ERROR (Q, error)", correct, incorrect, errors)
 
-            ILbl.config(text=ILbl_base + "\n\nProgress: Compiling Scores File")
+            ILbl.config(text=ILbl_base + "\n\nProgress: Compiling Scores File\n\nPlease select a location to save the scores file.")
             self.root.update()
 
             self.compile_sFile(correct, incorrect, errors)
             
-            tkmsb.showinfo(apptitle, "Finished evaluating your responses; you may close the app now!")
+            tkmsb.showinfo(apptitle, "Finished evaluating your responses")
 
-            ILbl.config(text="Finished evaluating your responses; You may close this window now!\n\n\nThank you for using this application\n    - Geetansh G, Developer of QAS and Coding Made Fun")
+            ILbl.config(text="Finished evaluating your responses; You may close this window now!\nTo ensure the privacy of the user, and to allow the admin to check all responses manually, the score cannot be viewed right now.\n\n\nThank you for using this application\n    - Geetansh G, Developer of QAS and Coding Made Fun")
 
             self.title_lbl.config(text="Quizzing Form - Done")
             self.root.title("Quizzing Form - Done")
@@ -2514,7 +2521,7 @@ class FormUI(threading.Thread):
         # 4) Incorrect
         # 5) Correct
         
-        def create(filename, instance):
+        def create(filename, _score, instance):
             config = {
                'acqc': instance.loginUI_master.configuration['customQuizConfig'],
                 'qpoa': instance.loginUI_master.configuration['partOrAll'],
@@ -2545,6 +2552,8 @@ class FormUI(threading.Thread):
             __jInst.setFlag(filename, "incorrect", incorrect)
             __jInst.setFlag(filename, "correct", correct)
 
+            __jInst.setFlag(filename, "score", _score)
+
             IO(filename, encrypt=True).encrypt() # Encrypt the file
 
         fn = "%s - %s %s - %s, %s %s - %s-%s.%s" % (
@@ -2561,9 +2570,11 @@ class FormUI(threading.Thread):
 
         apFile = QAInfo.appdataLoc + "\\" + QAInfo.scoresFolderName + "\\" + fn
 
+        score = len(correct) - len(incorrect) * (int(self.loginUI_master.configuration['deduc_amnt']) if bool(self.loginUI_master.configuration['a_deduc']) else 0)
+
         try:
             debug("apFile name ", apFile)
-            create(apFile, self)
+            create(apFile, score, self)
 
             while True:
                 extern = tkfld.askdirectory()
@@ -2586,7 +2597,7 @@ class FormUI(threading.Thread):
                 break
 
             debug("exFile name ", exFile)
-            create(exFile, self)
+            create(exFile, score, self)
 
         except Exception as e:
             while os.path.exists(apFile): os.remove(apFile)
