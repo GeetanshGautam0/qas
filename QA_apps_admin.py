@@ -2729,7 +2729,10 @@ def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=Fals
 def clearAppLogs() -> None:
     QAClearLogs.rm()
 
-def qaScoreToPDF(fl):
+def qaScoreToPDF(fl, output=None):
+    fl = fl.replace("/", "\\")
+    if type(output) is str: output = output.replace("/", "\\")
+
     try:
         __rawStr = IO(fl).autoLoad()
         __rawJSON = json.loads(__rawStr)
@@ -2804,26 +2807,35 @@ The user answered %s questions correctly%s
 
             # Errors
             str(len(errors)),
-            ("They are as follows:\n" + error_questions_string.strip("\n")) if len(errors) > 0 else "",
+            ("; they are as follows:\n" + error_questions_string.strip("\n")) if len(errors) > 0 else "",
 
             # Incorrect Responses
             str(len(inc)),
-            ("They are as follows:\n" + incorrect_responses_string.strip("\n")) if len(inc) > 0 else "",
+            ("; they are as follows:\n" + incorrect_responses_string.strip("\n")) if len(inc) > 0 else "",
 
             # Correct
             str(len(c)),
-            ("They are as follows:\n" + correct_responses_string.strip("\n")) if len(c) > 0 else ""
+            ("; they are as follows:\n" + correct_responses_string.strip("\n")) if len(c) > 0 else ""
         )
 
-        output = fl.replace(QAInfo.export_score_dbFile, "pdf")
+        if output is None:
+            print('a')
+            output = fl.replace(QAInfo.export_score_dbFile, "pdf")
+
+        else:
+            print('b')
+            output += "\\" + (fl.split("\\")[-1].replace(QAInfo.export_score_dbFile, "pdf"))
+
         if os.path.exists(output): os.remove(output)
         QAPDFGen.createPDF(PDF_CONTENT.split("\n"), output)
 
-        tkmsb.showinfo(apptitle, "Created PDF {}".format(output.split("\\")[-1]))
+        print(output)
+
+        tkmsb.showinfo(apptitle, "Created PDF {}".format(output))
 
     except:
         debug(f"ADMT:2732-FLTCQS2P: {traceback.format_exc()}")
-        tkmsb.showerror(apptitle, "Failed to convert file.\n\nError Code: ADMT:2732-FLTCQS2P")
+        tkmsb.showerror(apptitle, "Failed to create file.\n\nError Code: ADMT:2732-FLTCQS2P")
 
 def conv_qaScore_extern():
     defaultextension = f".{QAInfo.export_score_dbFile}",
@@ -2843,12 +2855,15 @@ def conv_qaScore_intern():
 
     fl = tkfldl.askopenfilename(initialdir=initd, defaultextension=defaultextension, filetypes=filetypes)
 
-    if type(fl) is not str:
+    tkmsb.showinfo(apptitle, "Now, select where you would like to have the PDF file stored.")
+    output = tkfldl.askdirectory(initialdir="")
+    
+    if type(fl) is not str or type(output) is not str:
         return
-    elif not os.path.exists(fl):
+    elif not os.path.exists(fl) or not os.path.exists(output):
         return
 
-    qaScoreToPDF(fl)
+    qaScoreToPDF(fl, output)
 
 # Adjust Splash
 set_boot_progress(3)
