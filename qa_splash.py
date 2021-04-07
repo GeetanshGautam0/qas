@@ -1,10 +1,10 @@
-import threading, sys, os
+import os
 from PIL import Image as PILImage, ImageTk as PILImageTk
 from tkinter import *
 import tkinter.ttk as ttk
-import qa_theme as QATheme
+
 import qa_appinfo as QAInfo
-import qa_colors as QAColors
+
 
 # theme = QATheme.Get().get('theme')
 
@@ -61,7 +61,8 @@ class Splash(Toplevel):
 
         self.ac_start = "#000000"
         self.ac_end = "#00aeae"
-        self.grad = QAColors.monoFade(self.ac_start, self.ac_end, 0, 4, 4)
+        self.loadGrad = True
+        self.grad = ["#000000"]
         self.complete = False
 
         self.pbarStyle.configure(
@@ -109,6 +110,7 @@ class Splash(Toplevel):
         self.infoLbl.pack(fill=X, expand=True, padx=5)
     
     def completeColor(self) -> None:
+        import qa_theme as QATheme
         compTheme = QATheme.Get().get('theme')
         self.complete = True
 
@@ -148,6 +150,11 @@ class Splash(Toplevel):
         self.root.update()
     
     def changePbar(self, per: float) -> None:
+        if self.loadGrad:
+            import qa_colors as QAColors
+            self.grad = QAColors.monoFade(self.ac_start, self.ac_end, 0, 4, 4)
+            self.loadGrad = False
+
         self.pbar['value'] = per
 
         if not self.complete:

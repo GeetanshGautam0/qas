@@ -157,7 +157,8 @@ background.withdraw()
 # Function Declarations
 
 def err(code=""):
-    messagebox.showerror("Master Theme Handler", code)
+    jsr_debug(code)
+    # messagebox.showerror("Master Theme Handler", code)
 
 
 def appdataLoc():
@@ -294,7 +295,9 @@ def conv_to_types(theme: dict) -> dict:
             err = True
             output[i] = default[i]
 
-    if err: messagebox.showerror("Theme Convertor", f'Theme file was corrupted; some anomalies in the theme may be visible.')
+    if err:
+        jsr_debug("Theme file was corrupted; some anomalies in the theme may be visible.")
+        # messagebox.showerror("Theme Convertor", f'Theme file was corrupted; some anomalies in the theme may be visible.')
 
     jsr_debug(f"Returning the following, converted theme dictionary: {output}")
     return output

@@ -36,8 +36,6 @@ boot_steps = {
 if not QAInfo.doNotUseSplash:
     splRoot = tk.Toplevel()
     splObj = QASplash.Splash(splRoot)
-
-    splObj.setImg(QAInfo.icons_png.get('admt'))
     splObj.setTitle("Administrator Tools")
 
 def set_boot_progress(ind, resolution=100):
@@ -2774,14 +2772,19 @@ GENERAL INFORMATION:
 
 Time of conversion: %s
 Score Evaluated: {score}/{len(c)+len(inc)} (%s)
+Number of questions asked (excluding errors): %s
+
+Number of questions answered correctly: %s
+Number of questions answered incorrectly: %s
+Number of points deduced (#Incorrect * Penalty): %s
 
 -------------------------------------
 1. Configuration
 
     The user was {"NOT" if not bool(config['acqc']) else ""} allowed to make changes to the following settings, which were set by the admin.
 
-        - %s questions were to be presented%s
-        - %s points were to be deducted for every wrong answer
+        - %s questions %s to be presented%s
+        - %s point(s) were to be deducted for every wrong answer
 
 -------------------------------------
 2. Errors
@@ -2799,10 +2802,18 @@ The user answered %s questions correctly%s
             str(QATime.form("%Y")),
             str(QATime.form("%b %d, %Y %H:%M:%S")),
             str((score / (len(c) + len(inc)))*100)[:4] + "%",
+            str(len(c) + len(inc)),
+
+            str(len(c)),
+            str(len(inc)),
+            str(
+                (len(inc) * config['pdpir']) if config['dma'] else 0
+            ),
 
             # Config
             "All" if config['qpoa'] == 'all' else "A part of the",
-            str(config['qsdf']) if config['qpoa'] == 'part' else "",
+            "was" if config['qpoa'] == 'part' else "were",
+            ("\n            - 1/" + str(config['qsdf']) + " of all questions were to be asked (-1 if there was an odd number of questions)") if config['qpoa'] == 'part' else "",
             str(config['pdpir']) if config['dma'] else "No",
 
             # Errors

@@ -36,7 +36,7 @@ class UI(threading.Thread):
         self.submitButton = tk.Button(self.frame, text="Add Question", command=self.add)
         
         self.clearButton = tk.Button(self.frame, text="Delete All Questions", command=self.delAll)
-        self.helpButton = tk.Button(self.frame, text="Instructions", command=self.help)
+        self.helpButton = tk.Button(self.frame, text="Click here to\n view instructions", command=self.help)
         
         self.sep = ttk.Separator(self.frame)
         

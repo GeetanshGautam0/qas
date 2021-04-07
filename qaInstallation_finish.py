@@ -1,4 +1,4 @@
-import os, sys, shutil, time, ctypes
+import os, sys, shutil, time
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as tkmsb
@@ -6,7 +6,6 @@ import qa_appinfo as QAInfo
 import qa_errors as QAErrors
 import qa_time as QATime
 import installer_options as IOptions
-from ttkthemes import ThemedStyle
 
 # Globals
 apptitle = f"Quizzing Application {QAInfo.versionData[QAInfo.VFKeys['v']]} - Setup"
@@ -404,7 +403,6 @@ def boot_check():
         )
     ):
         error(apptitle, f"Installation detected; cannot proceed with the setup routine.", True)
-
 
 def error(title, message, exit):
     tkmsb.showerror(title, message)
