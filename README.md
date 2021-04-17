@@ -20,7 +20,7 @@ The Quizzing Application Suite is a collection of python modules that come toget
 
 <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaFile_64.png?raw=true", alt=".qaFile"/>
 
-<img src="", alt=""/>
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaLog.png?raw=true", alt=".qaLog"/>
 
 <img src="", alt=""/>
 
