@@ -7,14 +7,14 @@ import os, sys
 import qa_appinfo as QAInfo
 import qa_splash as QASplash
 
-
 boot_steps = {
     1: 'Loading Variables',
     2: 'Loading Classes',
     3: 'Loading Functions',
     4: 'Running Boot Checks',
     5: 'Fetching Version Information (Online)\n(This process will timeout automatically if needed)'
-}; boot_steps_amnt = len(boot_steps)
+};
+boot_steps_amnt = len(boot_steps)
 
 if not QAInfo.doNotUseSplash:
     splRoot = tk.Toplevel()
@@ -83,7 +83,8 @@ try:
 
     import threading, shutil, time, json, sqlite3, playsound, re, random, traceback
 
-except: sys.exit(-1)
+except:
+    sys.exit(-1)
 
 # Globals
 apptitle = f"Quizzing Form v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
@@ -94,16 +95,17 @@ defs_configruationFilename = '{}\\{}'.format(QAInfo.appdataLoc.strip('\\').strip
 # Adjust Splash
 set_boot_progress(2)
 
+
 class IO:  # Object Oriented like FileIOHandler
     def __init__(self, fn: str, **kwargs):
         self.filename = fn
         self.object = QAFileIO.create_fileIO_object(self.filename)
         self.flags = {
-            'append': [False, (bool, )],
+            'append': [False, (bool,)],
             'append_sep': ["\n", (str, bytes)],
             'suppressError': [False, (bool,)],
-            'encoding': ['utf-8', (str, )],
-            'encrypt': [False, (bool, )]
+            'encoding': ['utf-8', (str,)],
+            'encrypt': [False, (bool,)]
         }
         self.kwargs = kwargs
 
@@ -139,12 +141,14 @@ class IO:  # Object Oriented like FileIOHandler
     def reload_kwargs(self) -> None:
         self.flags = flags_handler(self.flags, self.kwargs)
 
+
 def dc_lst(Dict: dict, index) -> dict:
     out: dict = {}
     for i in Dict:
         out[i] = (Dict[i][index])
 
     return out
+
 
 class LoginUI(threading.Thread):
 
@@ -206,7 +210,8 @@ class LoginUI(threading.Thread):
             1: True,
             2: True,
             3: True
-        }; self.screen_data = {
+        };
+        self.screen_data = {
             0: {
                 'defaults': {
                     'i': 'Internal Database',
@@ -560,13 +565,16 @@ class LoginUI(threading.Thread):
 
         # Check if update_ui is enabled
         if not self.masterUpdateRoutine_enable:
-            debug("QF::553 - LoginUI.update_ui was called, but the masterUpdateRoutine_enable flag is set to DISABLED (bool:False)")
+            debug(
+                "QF::553 - LoginUI.update_ui was called, but the masterUpdateRoutine_enable flag is set to DISABLED (bool:False)")
             return
 
         # Config.
         self.screen_index += screenI_counter
-        if self.screen_index < 0: self.screen_index = 0
-        elif self.screen_index >= len(self.scI_mapping): self.screen_index = len(self.scI_mapping) - 1
+        if self.screen_index < 0:
+            self.screen_index = 0
+        elif self.screen_index >= len(self.scI_mapping):
+            self.screen_index = len(self.scI_mapping) - 1
 
         self.title()
 
@@ -575,7 +583,7 @@ class LoginUI(threading.Thread):
         if screenI_counter != 0 or force_refresh:
             self.clear_screen()
 
-            self.scI_mapping.get(self.screen_index)[-1]() # Call the screen setup function
+            self.scI_mapping.get(self.screen_index)[-1]()  # Call the screen setup function
 
             # if self.screen_index > 0: self.previous_button.pack(fill=tk.X, expand=True, side=tk.LEFT)
             # if self.screen_index < len(self.scI_mapping) - 1: self.next_button.pack(fill=tk.X, expand=True, side=tk.RIGHT)
@@ -738,20 +746,22 @@ class LoginUI(threading.Thread):
         widgets = self.all_screen_widgets()[0]
 
         for i in widgets:
-            try: i.pack_forget()
-            except Exception as e: debug(f'Exception whilst clearing screen: {e}')
+            try:
+                i.pack_forget()
+            except Exception as e:
+                debug(f'Exception whilst clearing screen: {e}')
 
     def title(self):
         global apptitle
         self.root.title(f"{apptitle} - {self.scI_mapping.get(self.screen_index)[0]}")
 
-    def screen_1(self): # DB Selection
+    def screen_1(self):  # DB Selection
         debug(f"Setting up DB Select Page (ind = {self.screen_index})")
 
         self.dbSelctFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
 
         self.dbSel_ttl.config(text="Quizzing Form", anchor=tk.W)
-        self.dbSel_ttl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY, self.padY/4))
+        self.dbSel_ttl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4))
 
         self.dbSel_info.config(
             text="Step 1/{}: Question Database Selection;\nSelect a database from an external file, or the internal database by selecting the appropriate buttons below.".format(
@@ -759,16 +769,16 @@ class LoginUI(threading.Thread):
             ),
             anchor=tk.W,
             justify=tk.LEFT,
-            wraplength=int(self.ws[0] - self.padX*2)
+            wraplength=int(self.ws[0] - self.padX * 2)
         )
-        self.dbSel_info.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY/4, self.padY))
+        self.dbSel_info.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY))
 
         self.dbSel_btnContainer.config(text="Options")
         self.dbSel_btnContainer.pack(
             fill=tk.BOTH,
             expand=True,
             padx=self.padX,
-            pady=self.padY*3
+            pady=self.padY * 3
         )
 
         self.dbSel_btns_internal.config(text=self.screen_data[0]['defaults']['i'], command=self.btns_dbSel_int)
@@ -776,7 +786,8 @@ class LoginUI(threading.Thread):
                                       side=tk.LEFT)
 
         self.dbSel_btns_external.config(text=self.screen_data[0]['defaults']['e'], command=self.btns_dbSel_ext)
-        self.dbSel_btns_external.pack(fill=tk.BOTH, expand=True, padx=(self.padX, self.padX/2), pady=self.padY, side=tk.LEFT)
+        self.dbSel_btns_external.pack(fill=tk.BOTH, expand=True, padx=(self.padX, self.padX / 2), pady=self.padY,
+                                      side=tk.LEFT)
 
         self.dbSel_error_lbl.config(
             wraplength=(self.ws[0] - self.padX * 2)
@@ -787,13 +798,13 @@ class LoginUI(threading.Thread):
             side=tk.BOTTOM
         )
 
-    def screen_2(self): # Credentials
+    def screen_2(self):  # Credentials
         debug(f"Setting up Credentials Page (ind = {self.screen_index})")
 
         self.credFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
 
         self.cred_ttl.config(text="Quizzing Form", anchor=tk.W, justify=tk.LEFT)
-        self.cred_ttl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY, self.padY/4))
+        self.cred_ttl.pack(fill=tk.X, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4))
 
         self.cred_info.config(
             text="Step 2/{}: Credentials;\nEnter the information requested in the form below.".format(
@@ -839,8 +850,8 @@ class LoginUI(threading.Thread):
             expand=False,
             side=tk.BOTTOM
         )
-        
-    def screen_3(self): # Configuration
+
+    def screen_3(self):  # Configuration
         debug(f"Setting up Configuration Page (ind = {self.screen_index})")
 
         self.configFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
@@ -861,7 +872,7 @@ class LoginUI(threading.Thread):
         if not self.configuration['customQuizConfig']:
             self.config_disallowed_LBL.config(
                 text=self.screen_data[2]['defaults']['strs']['acqc_disabled'],
-                wraplength=int(self.ws[0]-self.padX*2)
+                wraplength=int(self.ws[0] - self.padX * 2)
             )
             self.config_disallowed_LBL.pack(fill=tk.BOTH, expand=True, padx=self.padX, pady=self.padY)
 
@@ -871,7 +882,7 @@ class LoginUI(threading.Thread):
                 text="Question Selection"
             )
             self.config_container1.pack(
-                fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/4)
+                fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4)
             )
 
             self.config_poa_descLbl.config(
@@ -883,7 +894,8 @@ class LoginUI(threading.Thread):
             self.config_poa_descLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
 
             self.config_poa_button.config(
-                text=self.screen_data[2]['defaults']['strs']['POA_part' if self.configuration.get('partOrAll') == 'part' else 'POA_all'],
+                text=self.screen_data[2]['defaults']['strs'][
+                    'POA_part' if self.configuration.get('partOrAll') == 'part' else 'POA_all'],
                 command=self.config_poa
             )
 
@@ -898,7 +910,6 @@ class LoginUI(threading.Thread):
             )
 
             if self.configuration.get('partOrAll') == 'part':
-
                 self.config_poa_df_field.delete(0, tk.END)
                 self.config_poa_df_field.insert(0, str(self.configuration['poa_divF']))
 
@@ -917,7 +928,7 @@ class LoginUI(threading.Thread):
 
                 self.config_poaField_descLbl.pack(
                     fill=tk.X, expand=False,
-                    padx=(self.padX, self.padX/4), pady=self.padY,
+                    padx=(self.padX, self.padX / 4), pady=self.padY,
                     side=tk.RIGHT
                 )
 
@@ -938,7 +949,8 @@ class LoginUI(threading.Thread):
             self.config_qdf_descLbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
 
             self.config_qdf_button.config(
-                text=self.screen_data[2]['defaults']['strs']['QDF_enb' if bool(self.configuration.get('a_deduc')) else 'QDF_dsb'],
+                text=self.screen_data[2]['defaults']['strs'][
+                    'QDF_enb' if bool(self.configuration.get('a_deduc')) else 'QDF_dsb'],
                 command=self.config_qdf
             )
 
@@ -982,7 +994,7 @@ class LoginUI(threading.Thread):
             side=tk.BOTTOM
         )
 
-    def screen_4(self): # Final (Summary)
+    def screen_4(self):  # Final (Summary)
         debug(f"Setting up final page (ind = {self.screen_index})")
 
         self.finalFrame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
@@ -1010,7 +1022,8 @@ class LoginUI(threading.Thread):
             pady=self.padY
         )
 
-        self.summary_request_start.config(text="Click \"%s\" to start the quiz" % self.screen_data['nav']['next']['defaults']['str_start'])
+        self.summary_request_start.config(
+            text="Click \"%s\" to start the quiz" % self.screen_data['nav']['next']['defaults']['str_start'])
         self.summary_request_start.pack(
             fill=tk.X,
             expand=False,
@@ -1021,31 +1034,34 @@ class LoginUI(threading.Thread):
 
         # DB Select Summary
         self.summary_DB_information_container.config(text="Selected Database")
-        self.summary_DB_information_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/2))
+        self.summary_DB_information_container.pack(fill=tk.BOTH, expand=False, padx=self.padX,
+                                                   pady=(self.padY, self.padY / 2))
 
         self.summary_DB_lbl.config(
             text="Selected Database: %s" % ("External Database ({})".format(
                 self.screen_data[0]['external_database']['filename'].split('\\')[-1]
             ) if self.screen_data[0].get('database_selection') == 'e' else "Local (Internal) Database"),
-            wraplength=self.ws[0] - self.padX*4,
+            wraplength=self.ws[0] - self.padX * 4,
             anchor=tk.W,
             justify=tk.LEFT
         )
         self.summary_DB_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
 
         self.summary_student_information_container.config(text="Student Information")
-        self.summary_student_information_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY/2)
+        self.summary_student_information_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY / 2)
 
         self.summary_student_name_lbl.config(
             text="Student Name: %s, %s" % (
-                self.cred_last.get()[0].upper() + self.cred_last.get().lower().replace(self.cred_last.get()[0].lower(), '', 1),
-                self.cred_first.get()[0].upper() + self.cred_first.get().lower().replace(self.cred_first.get()[0].lower(), '', 1)
+                self.cred_last.get()[0].upper() + self.cred_last.get().lower().replace(self.cred_last.get()[0].lower(),
+                                                                                       '', 1),
+                self.cred_first.get()[0].upper() + self.cred_first.get().lower().replace(
+                    self.cred_first.get()[0].lower(), '', 1)
             ),
-            wraplength=self.ws[0]-self.padX*2,
+            wraplength=self.ws[0] - self.padX * 2,
             anchor=tk.W,
             justify=tk.LEFT
         )
-        self.summary_student_name_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/4))
+        self.summary_student_name_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4))
 
         self.summary_student_id_lbl.config(
             text="Student ID: %s" % self.cred_studentID_field.get(),
@@ -1053,10 +1069,10 @@ class LoginUI(threading.Thread):
             anchor=tk.W,
             justify=tk.LEFT
         )
-        self.summary_student_id_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY/4, self.padY))
+        self.summary_student_id_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY))
 
         self.summary_config_container.config(text="Quiz Configuration")
-        self.summary_config_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY/2, 0))
+        self.summary_config_container.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY / 2, 0))
 
         self.summary_config_acqc_lbl.config(
             text="Custom Quiz Configuration %s by Admin" % (
@@ -1066,12 +1082,13 @@ class LoginUI(threading.Thread):
             anchor=tk.W,
             justify=tk.LEFT
         )
-        self.summary_config_acqc_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY/4))
+        self.summary_config_acqc_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY, self.padY / 4))
 
         self.summary_config_poa_lbl.config(
             text="Question Segmentation:\n    - %s of the questions are to be asked%s" % (
                 "A part" if self.configuration.get('partOrAll') == 'part' else "All",
-                "\n    - 1/{} of all questions will be asked (min = 1)".format(self.configuration['poa_divF']) if self.configuration.get('partOrAll') == 'part' else ""
+                "\n    - 1/{} of all questions will be asked (min = 1)".format(
+                    self.configuration['poa_divF']) if self.configuration.get('partOrAll') == 'part' else ""
             ),
             wraplength=self.ws[0] - self.padX * 2,
             anchor=tk.W,
@@ -1090,8 +1107,10 @@ class LoginUI(threading.Thread):
         self.summary_config_qdf_lbl.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=(self.padY / 4, self.padY))
 
     def config_nav_buttons(self, index=None, setTo=None):
-        if self.screen_index == 0: self.previous_button.config(state=tk.DISABLED)
-        else: self.previous_button.config(state=tk.NORMAL)
+        if self.screen_index == 0:
+            self.previous_button.config(state=tk.DISABLED)
+        else:
+            self.previous_button.config(state=tk.NORMAL)
 
         if self.screen_index == len(self.scI_mapping) - 1:
             self.next_button.config(text=self.screen_data['nav']['next']['defaults']['str_start'])
@@ -1205,13 +1224,13 @@ class LoginUI(threading.Thread):
 
         file = tkfld.askopenfilename(
             defaultextension=f".{QAInfo.export_quizFile}",
-            filetypes=((f"QA Quiz Database (*.{QAInfo.export_quizFile})", f"*.{QAInfo.export_quizFile}"), )
+            filetypes=((f"QA Quiz Database (*.{QAInfo.export_quizFile})", f"*.{QAInfo.export_quizFile}"),)
         )
 
         ret = type(file) is not str
         if not ret:
             file = file.replace('/', '\\')
-            ret = ret or not((file.strip() != "") and os.path.exists(file))
+            ret = ret or not ((file.strip() != "") and os.path.exists(file))
 
         try:
             eCode = "<!ERROR:QAS_173462374&*^^783845783845*&^*&67df7**&63569^^87>%"
@@ -1281,13 +1300,14 @@ class LoginUI(threading.Thread):
         )
 
         self.screen_data[0]['database_selection'] = 'e'
-        self.screen_data[0]['external_database'] = {}; self.screen_data[0]['external_database']['filename'] = file
+        self.screen_data[0]['external_database'] = {};
+        self.screen_data[0]['external_database']['filename'] = file
         self.config_nav_buttons(0, True)
 
     def next_page(self):
 
         # Checks
-        if self.screen_index == 0: # DB Select
+        if self.screen_index == 0:  # DB Select
             if not self.screen_data[0]['flags']['selected']:
                 esfx()
                 self.dbSel_error_lbl.config(
@@ -1331,18 +1351,20 @@ class LoginUI(threading.Thread):
 
                     return
 
-        elif self.screen_index == 1: # Credentials
-            if len(self.cred_first.get()) <= 0 or len(self.cred_last.get()) <= 0 or len(self.cred_studentID_field.get()) <= 0:
+        elif self.screen_index == 1:  # Credentials
+            if len(self.cred_first.get()) <= 0 or len(self.cred_last.get()) <= 0 or len(
+                    self.cred_studentID_field.get()) <= 0:
                 esfx()
                 self.cred_error_lbl.config(
                     text=self.screen_data[1]['strs']['errors']['addInformation']
                 )
                 return
 
-        elif self.screen_index == 2: # Configuration
+        elif self.screen_index == 2:  # Configuration
 
             if self.configuration['customQuizConfig']:
-                poa_df = "".join(i for i in re.findall("\d", self.config_poa_df_field.get().split('.')[0])) # \d = digits
+                poa_df = "".join(
+                    i for i in re.findall("\d", self.config_poa_df_field.get().split('.')[0]))  # \d = digits
                 qdf_df = "".join(i for i in re.findall("\d", self.config_qdf_field.get().split('.')[0]))
 
                 if len(poa_df) <= 0 and self.configuration['partOrAll'] == 'part' or poa_df == "0":
@@ -1363,7 +1385,7 @@ class LoginUI(threading.Thread):
                 self.configuration['poa_divF'] = int(poa_df if self.configuration['partOrAll'] == 'part' else '0')
                 self.configuration['deduc_amnt'] = int(qdf_df if bool(self.configuration['a_deduc']) else '0')
 
-        elif self.screen_index == 3: # Final
+        elif self.screen_index == 3:  # Final
             self.previous_button.config(
                 state=tk.DISABLED
             )
@@ -1397,9 +1419,10 @@ class LoginUI(threading.Thread):
     def __del__(self):
         self.thread.join(self, 0)
 
+
 class threaded_start_quiz_mf(threading.Thread):
     def __init__(self, Obj):
-        self.master= Obj
+        self.master = Obj
         self.thread = threading.Thread
         self.thread.__init__(self)
         self.start()
@@ -1464,7 +1487,8 @@ class threaded_start_quiz_mf(threading.Thread):
         )
 
         progBar = ttk.Progressbar(self.master.root)
-        progBar.pack(fill=tk.X, expand=False, padx=self.master.padX, pady=(self.master.padY / 4, self.master.padY), side=tk.BOTTOM)
+        progBar.pack(fill=tk.X, expand=False, padx=self.master.padX, pady=(self.master.padY / 4, self.master.padY),
+                     side=tk.BOTTOM)
 
         progBar_desc_base = "Progress: "
         progBar_desc = tk.Label(
@@ -1521,7 +1545,8 @@ class threaded_start_quiz_mf(threading.Thread):
 
             qas_qs = [i for i in qas.keys()]
             Len = int(
-                len(qas_qs) * 1 / (self.master.configuration['poa_divF'] if self.master.configuration['partOrAll'] == 'part' else 1))
+                len(qas_qs) * 1 / (
+                    self.master.configuration['poa_divF'] if self.master.configuration['partOrAll'] == 'part' else 1))
             Len = 1 if Len <= 0 else (len(qas_qs) if Len > len(qas_qs) else Len)
 
             debug(f"Selecting %x questions from qas database" % Len)
@@ -1533,9 +1558,10 @@ class threaded_start_quiz_mf(threading.Thread):
                 while index in inds:
                     index = random.randint(0, len(qas_qs) - 1)
 
-                self.spbar(progBar, int(50+((i/Len)*50)))
+                self.spbar(progBar, int(50 + ((i / Len) * 50)))
                 progBar_desc.config(
-                    text=progBar_desc_base + "%s; Randomizing Questions Database" % (("{}".format(50+((i/Len)*50)) + "000")[:4] + "%")
+                    text=progBar_desc_base + "%s; Randomizing Questions Database" % (
+                                ("{}".format(50 + ((i / Len) * 50)) + "000")[:4] + "%")
                 )
 
                 inds.append(index)
@@ -1610,7 +1636,8 @@ class threaded_start_quiz_mf(threading.Thread):
                     font=((self.master.theme.get("font"), arg) if not kwargs.get('useAsTuple') == True else arg)
                 )
 
-            else: raise NameError(f"Invalid __type argument \"{__type}\"")
+            else:
+                raise NameError(f"Invalid __type argument \"{__type}\"")
 
         except Exception as E:
             debug(f"Exception whilst theming quiz_prep item {__instance}: {E}")
@@ -1619,12 +1646,13 @@ class threaded_start_quiz_mf(threading.Thread):
     def __del__(self):
         self.thread.join(self, 0)
 
+
 class FormUI(threading.Thread):
 
     def __init__(self, master, qasDict):
         self.loginUI_master = master
         self.qas = qasDict
-        
+
         self.thread = threading.Thread
         self.thread.__init__(self)
 
@@ -1640,7 +1668,8 @@ class FormUI(threading.Thread):
         self.title_lbl = tk.Label(self.root)
         self.stu_information = tk.Label(self.root)
         self.questions_frame_container = tk.Frame(self.root)
-        self.questions_canvas = tk.Canvas(self.questions_frame_container, borderwidth=0, highlightcolor=self.theme['bg'])
+        self.questions_canvas = tk.Canvas(self.questions_frame_container, borderwidth=0,
+                                          highlightcolor=self.theme['bg'])
         self.questions_frame = tk.Frame(self.questions_canvas)
         self.questions_vsb = ttk.Scrollbar(self.questions_frame_container, orient=tk.VERTICAL)
         self.error_frame = tk.Frame(self.root)
@@ -1690,6 +1719,7 @@ class FormUI(threading.Thread):
 
         # Final Things
         self.start()
+        self.start_time = QATime.form("%H:%M:%S %b %d, %Y")
         self.root.mainloop()
 
     def _config_on_backendErr_(self):
@@ -1697,10 +1727,10 @@ class FormUI(threading.Thread):
         self.root.wm_attributes("-topmost", False)
         self.root.overrideredirect(False)
         self.root.geometry("%sx%s+%s+%s" % (
-                                self.loginUI_master.ws[0],
-                                self.loginUI_master.ws[1],
-                                self.loginUI_master.sp[0],
-                                self.loginUI_master.sp[1])
+            self.loginUI_master.ws[0],
+            self.loginUI_master.ws[1],
+            self.loginUI_master.sp[0],
+            self.loginUI_master.sp[1])
                            )
 
     def _close_app(self):
@@ -1710,8 +1740,10 @@ class FormUI(threading.Thread):
                 self.loginUI_master.root.after(0, self.loginUI_master.root.quit)
 
             except:
-                try: sys.exit(0)
-                except: pass
+                try:
+                    sys.exit(0)
+                except:
+                    pass
 
         else:
             esfx()
@@ -1720,8 +1752,9 @@ class FormUI(threading.Thread):
         global self_icon
 
         # Root Frame Configuration
-        self.root.title("Quizzing Application Quizzing Form; BTW, you're no supposed to see this so hi! - Geetansh G, own. and dev. of Coding Made Fun; did I just add this bit of code for no reason? yes, yes I did. This is what coding does to you; don't code kids.")
-        self.root.geometry("{}x{}+0+0".format(self.root.winfo_screenwidth(),self.root.winfo_screenheight()))
+        self.root.title(
+            "Quizzing Application Quizzing Form; BTW, you're no supposed to see this so hi! - Geetansh G, own. and dev. of Coding Made Fun; did I just add this bit of code for no reason? yes, yes I did. This is what coding does to you; don't code kids.")
+        self.root.geometry("{}x{}+0+0".format(self.root.winfo_screenwidth(), self.root.winfo_screenheight()))
         self.root.iconbitmap(self_icon)
         self.root.protocol("WM_DELETE_WINDOW", self._close_app)
         self.root.overrideredirect(True)
@@ -1786,8 +1819,12 @@ class FormUI(threading.Thread):
 
         self.global_err_label.pack(fill=tk.BOTH, expand=False, padx=self.padX, side=tk.BOTTOM)
 
-        self.user_last = self.loginUI_master.cred_last.get()[0].upper() + self.loginUI_master.cred_last.get().lower().replace(self.loginUI_master.cred_last.get()[0].lower(), '', 1).strip()
-        self.user_first = self.loginUI_master.cred_first.get()[0].upper() + self.loginUI_master.cred_first.get().lower().replace(self.loginUI_master.cred_first.get()[0].lower(), '', 1).strip()
+        self.user_last = self.loginUI_master.cred_last.get()[
+                             0].upper() + self.loginUI_master.cred_last.get().lower().replace(
+            self.loginUI_master.cred_last.get()[0].lower(), '', 1).strip()
+        self.user_first = self.loginUI_master.cred_first.get()[
+                              0].upper() + self.loginUI_master.cred_first.get().lower().replace(
+            self.loginUI_master.cred_first.get()[0].lower(), '', 1).strip()
         self.user_id = self.loginUI_master.cred_studentID_field.get().strip()
 
         self.stu_information.config(
@@ -1796,7 +1833,7 @@ class FormUI(threading.Thread):
                 self.user_first,
                 self.user_id
             ),
-            wraplength=self.root.winfo_screenwidth() - 2*self.padX,
+            wraplength=self.root.winfo_screenwidth() - 2 * self.padX,
             anchor=tk.W,
             justify=tk.LEFT
         )
@@ -1845,8 +1882,10 @@ class FormUI(threading.Thread):
 
         except Exception as E:
             esfx()
-            try: debug("Exception whilst creating form: ", E, traceback.format_exc())
-            except: pass
+            try:
+                debug("Exception whilst creating form: ", E, traceback.format_exc())
+            except:
+                pass
             self.loginUI_master.canClose = True
             self.canClose = True
 
@@ -1929,12 +1968,12 @@ class FormUI(threading.Thread):
             fg=self.theme.get('ac')
         )
 
-        for i in []: # Any btns
+        for i in []:  # Any btns
             i.config(
                 disabledforeground=self.theme.get('hg')
             )
 
-        for i in []: # Invis. LBLFs
+        for i in []:  # Invis. LBLFs
             i.config(bd='0', bg=self.theme.get('bg'))
 
         # --- end ---
@@ -1950,8 +1989,10 @@ class FormUI(threading.Thread):
 
         self.root.title("Quizzing Form - %s Error" % str(eCode))
 
-        try: debug("QF:__ES: E_I, __BE, EC, TBack", error_information, __backendErr, eCode, tBack)
-        except: pass
+        try:
+            debug("QF:__ES: E_I, __BE, EC, TBack", error_information, __backendErr, eCode, tBack)
+        except:
+            pass
 
         try:
             self.questions_frame_container.pack_forget()
@@ -1964,13 +2005,14 @@ class FormUI(threading.Thread):
             self.error_canvas.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
             self.error_vsb.pack(fill=tk.Y, expand=False, side=tk.RIGHT)
 
-        except: pass
+        except:
+            pass
 
         err_lbl = tk.Label(self.error_main_container)
 
         err_txt = error_information if type(error_information) is str else "An unknown error occurred"
         err_txt += "; more information:\n\n    - Logged: True,\n    - User Induced Error: %s\n    - Error Code: '%s'\n    - User can exit: %s%s" % (
-            str(not(__backendErr)),
+            str(not (__backendErr)),
             str(eCode),
             str(__backendErr),
             ("\n\n\nTechnical Information: {}".format(tBack)) if tBack is not None else ""
@@ -1978,7 +2020,7 @@ class FormUI(threading.Thread):
 
         err_lbl.config(
             text=err_txt,
-            wraplength=self.loginUI_master.ws[0]-self.padX*3,
+            wraplength=self.loginUI_master.ws[0] - self.padX * 3,
             anchor=tk.W,
             justify=tk.LEFT,
             bg=self.theme.get('bg'),
@@ -2016,20 +2058,24 @@ class FormUI(threading.Thread):
                 val = True
                 valCode = "000"
                 if QAInfo.QAS_MCCode in i and not QAInfo.QAS_MC_OPTION_CODE in i:
-                    val = False; valCode = "001 - No options in question"
+                    val = False;
+                    valCode = "001 - No options in question"
 
                 elif QAInfo.QAS_MC_OPTION_CODE in i and not QAInfo.QAS_MCCode in i:
-                    val = False; valCode = "002 - MC Option code available but not MC Question code"
+                    val = False;
+                    valCode = "002 - MC Option code available but not MC Question code"
 
                 elif QAInfo.QAS_TFCode in i:
                     if not (('t' in self.qas[i].lower()) ^ ('f' in self.qas[i].lower())):
-                        val = False; valCode = "003 - Invalid answer expected (True/False)"
+                        val = False;
+                        valCode = "003 - Invalid answer expected (True/False)"
 
                 # Step 1: Create (no longer) invis container
-                temp_q_container = tk.LabelFrame(self.questions_frame, text="Question %s" % str(list(self.qas.keys()).index(i) + 1))
+                temp_q_container = tk.LabelFrame(self.questions_frame,
+                                                 text="Question %s" % str(list(self.qas.keys()).index(i) + 1))
                 self.update_element['lbl'].append(temp_q_container)
                 self.update_element['acc_fg'].append(temp_q_container)
-                temp_q_container.pack(fill=tk.X, expand=False, padx=self.padX, pady=self.padY*2)
+                temp_q_container.pack(fill=tk.X, expand=False, padx=self.padX, pady=self.padY * 2)
 
                 # Step 2: Add Contents
                 # S2.1: Questions
@@ -2038,7 +2084,8 @@ class FormUI(threading.Thread):
                 if QAInfo.QAS_MC_OPTION_CODE in question_string:
                     for ii in question_string.split(QAInfo.QAS_MC_OPTION_CODE)[1::]:
                         question_string = question_string.replace(QAInfo.QAS_MC_OPTION_CODE, '')
-                        found_1 = None; found_2 = None
+                        found_1 = None;
+                        found_2 = None
 
                         for iii in range(len(ii)):
                             if ii[iii] == "[" and found_1 is None and found_2 is None:
@@ -2053,14 +2100,17 @@ class FormUI(threading.Thread):
                                 "[%s]" % ii[found_1:found_2].replace("[", '').replace("]", ""),
                                 "\u2022 %s: " % ii[found_1:found_2].replace("[", '').replace("]", "")
                             )
-                    question_string += "\n\nAccepted answers: %s" % ", ".join(j for j in options).strip().strip(",").strip()
+                    question_string += "\n\nAccepted answers: %s" % ", ".join(j for j in options).strip().strip(
+                        ",").strip()
 
                     if len(options) <= 0:
-                        debug(f"Question not asked because no options were found even though it was marked as a MC question; ")
+                        debug(
+                            f"Question not asked because no options were found even though it was marked as a MC question; ")
 
                         temp_q_container.config(text=temp_q_container.cget("text") + ": Invalid Question")
 
-                        val = False; valCode = "010 - No options extracted"
+                        val = False;
+                        valCode = "010 - No options extracted"
 
                 if not val:
                     self.question_data[i] = self.CORR_QUESTION
@@ -2084,7 +2134,8 @@ class FormUI(threading.Thread):
                 self.update_element['lbl'].append(temp_q_lbl)
                 self.update_element['font'].append([temp_q_lbl, (self.fontFam, self.inputF_size)])
                 temp_q_lbl.config(
-                    text="Question %s:\n%s" % (str(list(self.qas.keys()).index(i) + 1) + "/" + str(len(self.qas)), question_string.strip()),
+                    text="Question %s:\n%s" % (
+                    str(list(self.qas.keys()).index(i) + 1) + "/" + str(len(self.qas)), question_string.strip()),
                     wraplength=int((self.root.winfo_screenwidth() - self.padX * 6) / 2),
                     justify=tk.LEFT
                 )
@@ -2098,7 +2149,7 @@ class FormUI(threading.Thread):
 
                         for op in options:
                             temp_rb = tk.Radiobutton(container)
-                            self.setup_radio_button(i, op,  temp_rb)
+                            self.setup_radio_button(i, op, temp_rb)
                             temp_rb.pack(fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY)
 
                         container.pack(fill=tk.BOTH, expand=False, side=tk.RIGHT)
@@ -2148,7 +2199,7 @@ class FormUI(threading.Thread):
             )
 
             self.submit_answers_button.pack(
-                fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY, ipadx=self.padX/2, ipady=self.padY/2
+                fill=tk.BOTH, expand=False, padx=self.padX, pady=self.padY, ipadx=self.padX / 2, ipady=self.padY / 2
             )
 
             for i in toPop:
@@ -2164,14 +2215,15 @@ class FormUI(threading.Thread):
 
     def setup_radio_button(self, question, option, tkRadiobutton):
 
-        radio_button_refference_id = random.randint(100000000000, 999999999999) + random.random() # ID (float)
+        radio_button_refference_id = random.randint(100000000000, 999999999999) + random.random()  # ID (float)
 
         counter = 0
-        while radio_button_refference_id in self.mc_rb_id_ref: # A whole lotta possible numbers = a whole lotta capacity
+        while radio_button_refference_id in self.mc_rb_id_ref:  # A whole lotta possible numbers = a whole lotta capacity
             radio_button_refference_id = random.randint(0, 999999999999999999999999) + random.random()
 
-            if counter > 10000000: # 10mil tries granted
-                self.__errorScreen("Cannot assign MC_UID tag to element (QAS_QF:MC_RadButton)", True, "QAS:RecDepthError-MC_UID-011")
+            if counter > 10000000:  # 10mil tries granted
+                self.__errorScreen("Cannot assign MC_UID tag to element (QAS_QF:MC_RadButton)", True,
+                                   "QAS:RecDepthError-MC_UID-011")
 
             counter += 1
 
@@ -2180,7 +2232,7 @@ class FormUI(threading.Thread):
             self.question_data[question]['iVar_uid_map'] = {}
 
             iVar = tk.IntVar()
-            iVar.set(-1) # Invalid (non-whole number); no option selected yet
+            iVar.set(-1)  # Invalid (non-whole number); no option selected yet
 
             iVar_uid = (random.randint(0, 999999999999999999999999) + random.random()) * random.randint(1, 1000)
 
@@ -2223,7 +2275,8 @@ class FormUI(threading.Thread):
 
             self.question_data[question]['mc_id'].append(radio_button_refference_id)
 
-        debug("setup_radio_button: q, option, id, mrqr, mrir", question, option, radio_button_refference_id, self.mc_rb_qs_ref, self.mc_rb_id_ref)
+        debug("setup_radio_button: q, option, id, mrqr, mrir", question, option, radio_button_refference_id,
+              self.mc_rb_qs_ref, self.mc_rb_id_ref)
 
         tkRadiobutton.config(
             text=option,
@@ -2236,7 +2289,9 @@ class FormUI(threading.Thread):
 
         self.question_data[question]['iVar_uid_map'][len(self.question_data[question]['mc_id'])] = option
 
-        debug("SETUP_RADIO_BUTTON_FINAL_DEBUG: question, s.qd, rbrid, s.mcotfciV, s.mc_rb_id_ref, s.mc_rb_qs_ref", question, self.question_data, radio_button_refference_id, self.mc_o_tf_configured_iVars, self.mc_rb_id_ref, self.mc_rb_qs_ref)
+        debug("SETUP_RADIO_BUTTON_FINAL_DEBUG: question, s.qd, rbrid, s.mcotfciV, s.mc_rb_id_ref, s.mc_rb_qs_ref",
+              question, self.question_data, radio_button_refference_id, self.mc_o_tf_configured_iVars,
+              self.mc_rb_id_ref, self.mc_rb_qs_ref)
 
         self.format_rButton(tkRadiobutton, False)
 
@@ -2257,10 +2312,14 @@ class FormUI(threading.Thread):
             self.format_rButton(self.mc_rb_id_ref[id], True)
 
         except Exception as E:
-            try: debug(str(E))
-            except: pass
+            try:
+                debug(str(E))
+            except:
+                pass
 
-            self.__errorScreen("Cannot format mc_question options with MC Option ID (ibi) '{}'\n\n    - Error: {}".format(id, str(E.__class__) + ": " + str(E)), True, "QAS:2077:CFMC_ID_CORR", traceback.format_exc())
+            self.__errorScreen(
+                "Cannot format mc_question options with MC Option ID (ibi) '{}'\n\n    - Error: {}".format(id, str(
+                    E.__class__) + ": " + str(E)), True, "QAS:2077:CFMC_ID_CORR", traceback.format_exc())
 
         return
 
@@ -2306,9 +2365,9 @@ class FormUI(threading.Thread):
             err = False
 
             for i in self.qas:
-                
+
                 if i in self.error_questions:
-                    continue # Skip
+                    continue  # Skip
 
                 elif self.question_data[i]['type'] == self.NORMAL_QUESTION:
                     answer = self.norm_answer_fields_ref[self.question_data[i]['UID']].get("1.0", "end-1c").strip()
@@ -2331,7 +2390,8 @@ class FormUI(threading.Thread):
                             selectforeground=self.theme.get('hg')
                         )
 
-                elif self.question_data[i]['type'] == self.TF_QUESTION or self.question_data[i]['type'] == self.MC_QUESTION:
+                elif self.question_data[i]['type'] == self.TF_QUESTION or self.question_data[i][
+                    'type'] == self.MC_QUESTION:
                     # Non-iterative
                     rb_uid = self.question_data[i]['iVar_UID']
                     iVar = self.mc_o_tf_configured_iVars[rb_uid]
@@ -2356,7 +2416,9 @@ class FormUI(threading.Thread):
                                 self.format_rButton(tkRButton, True, False)
 
                 else:
-                    self.__errorScreen("Failed to match question to any NMQ, MCQ, or TFQ, and was not marked as an errenous question.", True, "QAS:EC-FMQ_[NMQ,MCQ,TFQ]")
+                    self.__errorScreen(
+                        "Failed to match question to any NMQ, MCQ, or TFQ, and was not marked as an errenous question.",
+                        True, "QAS:EC-FMQ_[NMQ,MCQ,TFQ]")
 
             if err:
                 esfx()
@@ -2368,6 +2430,7 @@ class FormUI(threading.Thread):
                 return
 
             else:
+                self.end_time = QATime.form("%H:%M:%S %b %d, %Y")
                 self.mark()
 
         except Exception as E:
@@ -2382,7 +2445,8 @@ class FormUI(threading.Thread):
         try:
             self.questions_frame_container.pack_forget()
             self.error_frame.pack_forget()
-        except: pass
+        except:
+            pass
 
         self.title_lbl.config(
             text=self.title_lbl.cget('text') + " - Evaluating Responses"
@@ -2397,7 +2461,7 @@ class FormUI(threading.Thread):
             bg=self.theme.get('bg'),
             fg=self.theme.get('fg'),
             font=(self.fontFam, self.inputF_size),
-            wraplength=self.loginUI_master.ws[0] - self.padX*2,
+            wraplength=self.loginUI_master.ws[0] - self.padX * 2,
             justify=tk.LEFT,
             anchor=tk.W
         )
@@ -2405,7 +2469,8 @@ class FormUI(threading.Thread):
         info_lbl.pack(fill=tk.BOTH, expand=True, padx=self.padX, pady=self.padY)
 
         self.root.title("Quzzing Form - Evaluating Responses")
-        self.root.geometry("%sx%s+%s+%s"% (self.loginUI_master.ws[0], self.loginUI_master.ws[0], self.loginUI_master.sp[0], self.loginUI_master.sp[1]))
+        self.root.geometry("%sx%s+%s+%s" % (
+        self.loginUI_master.ws[0], self.loginUI_master.ws[0], self.loginUI_master.sp[0], self.loginUI_master.sp[1]))
         self.root.overrideredirect(False)
         self.root.wm_attributes('-topmost', False)
 
@@ -2430,15 +2495,19 @@ class FormUI(threading.Thread):
 
             for question, answer in self.qas.items():
 
-                ILbl.config(text=ILbl_base + "\nProgress: %s/%s\n\nQuestion:\n%s\n\nAnswer Given:\n" % (str(list(self.qas.keys()).index(question)+1), str(len(self.qas)), question.strip()))
+                ILbl.config(text=ILbl_base + "\nProgress: %s/%s\n\nQuestion:\n%s\n\nAnswer Given:\n" % (
+                str(list(self.qas.keys()).index(question) + 1), str(len(self.qas)), question.strip()))
 
                 answer_expected = answer.lower().strip()
 
-                try: question_data = self.question_data[question]
-                except KeyError: question_data = self.question_data[question.strip()]
-                except: self.__errorScreen(
-                    "Could not fetch question data", True, "QAS:FORM_mark:2379-F2FQD", traceback.format_exc()
-                )
+                try:
+                    question_data = self.question_data[question]
+                except KeyError:
+                    question_data = self.question_data[question.strip()]
+                except:
+                    self.__errorScreen(
+                        "Could not fetch question data", True, "QAS:FORM_mark:2379-F2FQD", traceback.format_exc()
+                    )
 
                 if question_data['type'] == self.CORR_QUESTION or question in self.error_questions:
                     errors[question.strip()] = self.error_questions[question]
@@ -2450,7 +2519,8 @@ class FormUI(threading.Thread):
                     answer_r = self.question_data[question]['iVar_uid_map'][V]
 
                 elif question_data['type'] == self.NORMAL_QUESTION:
-                    answer_r = self.norm_answer_fields_ref[self.question_data[question]['UID']].get("1.0", "end-1c").strip()
+                    answer_r = self.norm_answer_fields_ref[self.question_data[question]['UID']].get("1.0",
+                                                                                                    "end-1c").strip()
 
                 else:
                     raise QAErrors.QACannotDetermineQuestionType
@@ -2474,17 +2544,21 @@ class FormUI(threading.Thread):
 
                     if ('t' in answer_k_for_check.lower()) ^ ('f' in answer_k_for_check.lower()):
 
-                        if ('t' in answer_k_for_check.lower() and 't' in answer_r_for_check.lower()) and not ('f' in answer_r_for_check.lower()):
+                        if ('t' in answer_k_for_check.lower() and 't' in answer_r_for_check.lower()) and not (
+                                'f' in answer_r_for_check.lower()):
                             correct[question.strip()] = answer_r.strip()
 
-                        elif ('f' in answer_k_for_check.lower() and 'f' in answer_r_for_check.lower()) and not ('t' in answer_r_for_check.lower()):
+                        elif ('f' in answer_k_for_check.lower() and 'f' in answer_r_for_check.lower()) and not (
+                                't' in answer_r_for_check.lower()):
                             correct[question.strip()] = answer_r.strip()
 
                         else:
                             incorrect[question.strip()] = [answer.strip(), answer_r.strip()]
 
                     else:
-                        errors[question.strip()] = "404: No appropriate answer provided by administrator (QType: True/False, expected answer: %s, received: %s" % (answer.strip(), answer_r.strip())
+                        errors[
+                            question.strip()] = "404: No appropriate answer provided by administrator (QType: True/False, expected answer: %s, received: %s" % (
+                        answer.strip(), answer_r.strip())
 
                 elif question_data['type'] == self.MC_QUESTION:
                     if answer_r_for_check.lower() == answer_k_for_check.lower():
@@ -2493,23 +2567,27 @@ class FormUI(threading.Thread):
                     else:
                         incorrect[question.strip()] = [answer.strip(), answer_r.strip()]
 
-            debug("QAS:MARKED: CORRECT (Q, A_given), INCORRECT (Q, A_expected, A_given), ERROR (Q, error)", correct, incorrect, errors)
+            debug("QAS:MARKED: CORRECT (Q, A_given), INCORRECT (Q, A_expected, A_given), ERROR (Q, error)", correct,
+                  incorrect, errors)
 
-            ILbl.config(text=ILbl_base + "\n\nProgress: Compiling Scores File\n\nPlease select a location to save the scores file.")
+            ILbl.config(
+                text=ILbl_base + "\n\nProgress: Compiling Scores File\n\nPlease select a location to save the scores file.")
             self.root.update()
 
             self.compile_sFile(correct, incorrect, errors)
-            
+
             tkmsb.showinfo(apptitle, "Finished evaluating your responses")
 
-            ILbl.config(text="Finished evaluating your responses; You may close this window now!\nTo ensure the privacy of the user, and to allow the admin to check all responses manually, the score cannot be viewed right now.\n\n\nThank you for using this application\n    - Geetansh G, Developer of QAS and Coding Made Fun")
+            ILbl.config(
+                text="Finished evaluating your responses; You may close this window now!\nTo ensure the privacy of the user, and to allow the admin to check all responses manually, the score cannot be viewed right now.\n\n\nThank you for using this application\n    - Geetansh G, Developer of QAS and Coding Made Fun")
 
             self.title_lbl.config(text="Quizzing Form - Done")
             self.root.title("Quizzing Form - Done")
             self.canClose = True
 
         except Exception as E:
-            self.__errorScreen("Error whilst evaluating question answers", True, str(E.__class__) + str(E), traceback.format_exc())
+            self.__errorScreen("Error whilst evaluating question answers", True, str(E.__class__) + str(E),
+                               traceback.format_exc())
 
     def compile_sFile(self, correct: dict, incorrect: dict, errors: dict):
         # First, create a file in the appdata folder
@@ -2520,10 +2598,11 @@ class FormUI(threading.Thread):
         # 3) Errors
         # 4) Incorrect
         # 5) Correct
-        
+        # 6) Time
+
         def create(filename, _score, instance):
             config = {
-               'acqc': instance.loginUI_master.configuration['customQuizConfig'],
+                'acqc': instance.loginUI_master.configuration['customQuizConfig'],
                 'qpoa': instance.loginUI_master.configuration['partOrAll'],
                 'qsdf': instance.loginUI_master.configuration['poa_divF'],
                 'dma': instance.loginUI_master.configuration['a_deduc'],
@@ -2554,7 +2633,12 @@ class FormUI(threading.Thread):
 
             __jInst.setFlag(filename, "score", _score)
 
-            IO(filename, encrypt=True).encrypt() # Encrypt the file
+            __jInst.setFlag(filename, "time", {
+                "start": self.start_time,
+                "end": self.end_time
+            })
+
+            IO(filename, encrypt=True).encrypt()  # Encrypt the file
 
         fn = "%s - %s %s - %s, %s %s - %s-%s.%s" % (
             self.user_id,
@@ -2570,7 +2654,8 @@ class FormUI(threading.Thread):
 
         apFile = QAInfo.appdataLoc + "\\" + QAInfo.scoresFolderName + "\\" + fn
 
-        score = len(correct) - len(incorrect) * (int(self.loginUI_master.configuration['deduc_amnt']) if bool(self.loginUI_master.configuration['a_deduc']) else 0)
+        score = len(correct) - len(incorrect) * (int(self.loginUI_master.configuration['deduc_amnt']) if bool(
+            self.loginUI_master.configuration['a_deduc']) else 0)
 
         try:
             debug("apFile name ", apFile)
@@ -2603,29 +2688,38 @@ class FormUI(threading.Thread):
             while os.path.exists(apFile): os.remove(apFile)
             raise e.__class__(str(e))
 
-    def onFrameConfig(self, event=None): # for scbar
+    def onFrameConfig(self, event=None):  # for scbar
 
-        try: self.questions_canvas.configure(scrollregion=self.questions_canvas.bbox("all"))
-        except: pass
+        try:
+            self.questions_canvas.configure(scrollregion=self.questions_canvas.bbox("all"))
+        except:
+            pass
 
-        try: self.error_canvas.configure(scrollregion=self.error_canvas.bbox("all"))
-        except: pass
+        try:
+            self.error_canvas.configure(scrollregion=self.error_canvas.bbox("all"))
+        except:
+            pass
 
     def __del__(self):
         self.thread.join(self, 0)
 
-class esfx(threading.Thread): # Threaded to let the sound effect run in the background whilst application function resumes
+
+class esfx(
+    threading.Thread):  # Threaded to let the sound effect run in the background whilst application function resumes
     def __init__(self):
         self.thread = threading.Thread
         self.thread.__init__(self)
         self.start()
 
     def run(self):
-        try: playsound.playsound(".res/error_sound.mp3")
-        except Exception as e: debug(f"Failed to play error sound: ", e.__class__, e, traceback.format_exc())
+        try:
+            playsound.playsound(".res/error_sound.mp3")
+        except Exception as e:
+            debug(f"Failed to play error sound: ", e.__class__, e, traceback.format_exc())
 
     def __del__(self):
         self.thread.join(self, 0)
+
 
 class JSON:
     def __init__(self):
@@ -2789,8 +2883,10 @@ class JSON:
         # True = Test passed
         return True
 
+
 # Adjust Splash
 set_boot_progress(3)
+
 
 # Functions go here
 
@@ -2815,17 +2911,21 @@ def debug(debugData: str, *args):
     # Log
     Log.log(data=debugData, from_=scname)
 
-def replace_string_index(string: str, index: list, new: str) -> str:
-    if len(index) != 2: return string
-    elif index[0] > index[1]: return string
-    elif index[0] < 0 or index[1] > len(string): return string
 
-    new = string[0:index[0]] + new + ( string[index[1]::] if index[1] <= len(string) else "")
+def replace_string_index(string: str, index: list, new: str) -> str:
+    if len(index) != 2:
+        return string
+    elif index[0] > index[1]:
+        return string
+    elif index[0] < 0 or index[1] > len(string):
+        return string
+
+    new = string[0:index[0]] + new + (string[index[1]::] if index[1] <= len(string) else "")
 
     return new
 
-def loadConfiguration(configruationFilename: str) -> dict:
 
+def loadConfiguration(configruationFilename: str) -> dict:
     if not os.path.exists(configruationFilename):
         code = JSON().getFlag('codes.json', QAInfo.codes_keys.get('configuration_file_error').get('conf_file_missing'))
 
@@ -2870,6 +2970,7 @@ def loadConfiguration(configruationFilename: str) -> dict:
 
     return _dict
 
+
 def get_error_code(key) -> tuple:
     key = key.strip()
 
@@ -2878,16 +2979,20 @@ def get_error_code(key) -> tuple:
     __raw = JSON().getFlag("codes.json", key, return_boolean=False)
     __info = JSON().getFlag("codes.json", "info", return_boolean=False)
 
-    if key in __info: __info.get(key)
-    else: __info = "No Information Found"
+    if key in __info:
+        __info.get(key)
+    else:
+        __info = "No Information Found"
 
     return (__raw, __info)
+
 
 def loadQuestions(path) -> dict:
     __raw = IO(path).autoLoad()
 
     __out = QAQuestionStandard.convRawToDict(__raw)
     return __out
+
 
 def flags_handler(reference: dict, kwargs: dict, __raiseERR=True, __rePlain=False) -> dict:
     debug(f"Refference ::: {reference}")
@@ -2968,11 +3073,12 @@ def __logError(errorCode: str, **kwargs):
     if flags['exit']:
         application_exit(flags['exitCode'])
 
+
 def loadData_extern(filepath, errorCode) -> list:
     try:
         connector = sqlite3.connect(filepath)
         cursor = connector.cursor()
-    
+
         with connector:
             cursor.execute(
                 "SELECT * FROM config"
@@ -3013,6 +3119,7 @@ def loadData_extern(filepath, errorCode) -> list:
         debug(f"Error whilst reading DB: ", e)
         return errorCode
 
+
 def loadData_intern(errorCode) -> list:
     try:
 
@@ -3044,6 +3151,7 @@ def loadData_intern(errorCode) -> list:
         debug("Error whilst loading data from internal files: ", E)
         return errorCode
 
+
 def ld_q_fr(raw_questions: str, errorCode) -> dict:
     try:
         return QAQuestionStandard.convRawToDict(raw_questions.strip())
@@ -3052,9 +3160,11 @@ def ld_q_fr(raw_questions: str, errorCode) -> dict:
         debug("Error whilst loading questions: ", e)
         return errorCode
 
+
 def application_exit(code: str = "0") -> None:
     debug(f"Exiting with code '{code}'")
     sys.exit(code)
+
 
 # ===============
 # End of function declarations
@@ -3074,7 +3184,8 @@ set_boot_progress(5)
 try:
     if not QA_OVC.check():
         QASplash.hide(splObj)
-        tkmsb.showwarning(apptitle, f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
+        tkmsb.showwarning(apptitle,
+                          f"You are running an older version of the application; the database suggests that version '{QA_OVC.latest()}' is the latest (the current installed version is {QAInfo.versionData.get(QAInfo.VFKeys.get('v'))})")
         QASplash.show(splObj)
 
 except:
@@ -3082,7 +3193,7 @@ except:
 
 # Final Splash Settings
 if not QAInfo.doNotUseSplash:
-    show_splash_completion() # Show completion
-    QASplash.destroy(splObj) # Close the splash screen
+    show_splash_completion()  # Show completion
+    QASplash.destroy(splObj)  # Close the splash screen
 
 LoginUI()

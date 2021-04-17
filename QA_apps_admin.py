@@ -9,18 +9,6 @@ from tkinter import ttk
 from tkinter import messagebox as tkmsb
 from tkinter import filedialog as tkfldl
 
-# TODO: Read the following comment for description
-"""
-    * Add "Export as Test File" option to IO screen - to be used by question entry form
-        * use sqlite3 database;
-        * encrypt the file and save with custom extension
-        * should include a config tbl, and a question tbl
-        * export as a sqlite db too, add convertor to this app to convert the db to a pdf for the teacher
-            - db should have a config tbl and a scores tbl, which includes the correct and incorrect responses.
-            
-    * Read the last bullet point for the next implementation required.
-"""
-
 apptitle = f"Administrator Tools v{QAInfo.versionData[QAInfo.VFKeys['v']]}"
 
 boot_steps = {
@@ -2743,6 +2731,7 @@ def qaScoreToPDF(fl, output=None):
         inc = __rawJSON['incorrect']
         c = __rawJSON['correct']
         score = __rawJSON['score']
+        time = __rawJSON['time']
 
         error_questions_string = ""
         for i in errors:
@@ -2769,6 +2758,9 @@ The following is the layout that this document will follow:
     4. The correct answers
 
 GENERAL INFORMATION:
+
+Quiz started at: %s
+Quiz submitted at: %s
 
 Time of conversion: %s
 Score Evaluated: {score}/{len(c)+len(inc)} (%s)
@@ -2800,8 +2792,12 @@ The user answered %s questions correctly%s
 
         """ % (
             str(QATime.form("%Y")),
+
+            str(time['start']),
+            str(time['end']),
+
             str(QATime.form("%b %d, %Y %H:%M:%S")),
-            str((score / (len(c) + len(inc)))*100)[:4] + "%",
+            ((str((score / (len(c) + len(inc)))*100)[:4]) if (len(c) + len(inc)) != 0 else "0") + "%",
             str(len(c) + len(inc)),
 
             str(len(c)),
