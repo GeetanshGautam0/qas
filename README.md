@@ -14,17 +14,17 @@ The Quizzing Application Suite is a collection of python modules that come toget
 <strong><p>File extensions included with the application:</p></strong>
 
 <p float="center">
-<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaQuiz.png?raw=true", alt".qaQuiz"/>
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaQuiz.png?raw=true", alt".qaQuiz", title=".qaQuiz"/>
 
-<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaEnc.png?raw=true", alt=".qaEnc"/>
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaEnc.png?raw=true", alt=".qaEnc", title=".qaEnc"/>
 
-<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaFile_64.png?raw=true", alt=".qaFile"/>
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaFile_64.png?raw=true", alt=".qaFile", title=".qaFile"/>
 
-<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaLog.png?raw=true", alt=".qaLog"/>
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaLog.png?raw=true", alt=".qaLog", title=".qaLog"/>
 
-<img src="", alt=""/>
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaScore.png?raw=true", alt=".qaScore", title=".qaScore"/>
 
-<img src="", alt=""/>
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qa_export.png?raw=true", alt=".qa_export", title=".qa_export"/>
 
 </p>
 <b><h3>These include a few apps</h3></b>
