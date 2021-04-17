@@ -8,6 +8,8 @@ if __name__ == "__main__": sys.exit("Cannot run as main file")
 
 # General
 global scriptName; k = b'FJf5hmYl7OiaUkOpiU-7xrrGtRaN_11mSRjiG6xf_ps='; global themegetter
+qaEnck = b"j2nrg0rAJX_nW9b7TArrThApadsAs5T5WdGn4lprewQ="
+
 scriptName = __file__.replace("/","\\").split("\\")[-1].strip()
 themegetter = Theme.Get()
 
@@ -118,7 +120,7 @@ icons_ico = {
 }
 
 help_files = {
-    'ftsra': f".ftsraAid\\FTSRA_AID.pdf"
+    'ftsra': f".ftsraAid\\fa.pdf"
 }
 theme_presets_foldername = '.defaultThemes'
 

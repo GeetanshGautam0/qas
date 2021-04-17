@@ -1,330 +1,919 @@
-"""
-
-FTSRA Version 2
-Complete Re-write (3)
-
-Developed By Geetansh Gautam, Coding Made Fun
-(C) Coding Made Fun
-
-Intended for Quizzing Application Suite Version 2.bb.aa
-
-"""
-
-# Custom modules
 import qa_time as QATime
 import qa_logging as QaLog
 import qa_appinfo as QAInfo
 import qa_diagnostics as QADiagnostics
 import qa_theme as QATheme
 import qa_globalFlags as QAJSONHandler
+import qa_fileIOHandler as QAFileIOHandler
+import qa_quizConfig as QAConfigStandard
 
 # Python default modules
 import sys, os, threading, shutil, traceback, math
 import tkinter as tk
 from tkinter import messagebox as tkmsb
 from tkinter import filedialog as tkfile
+from tkinter import ttk
 
-# Global Variables
-boot_time_start = QATime.now()
-apptitle = "QA FTS+RA Utility"
 
 # Class Declarations
 
 class UI(threading.Thread):
     def __init__(self, **flags):
-        # Thread
         self.thread = threading.Thread
         self.thread.__init__(self)
 
-        # Flags defaults
-        def_title = 'FTS + RA Utility'
-        icon = QAInfo.icons_ico['ftsra']
+        self.root = tk.Toplevel()
+        self.root.withdraw()
+        self.main_frame = tk.Frame(self.root)
+        self.progress_frame = tk.Frame(self.root)
 
-        # Flags
-        self.flags = {
-            'frame_title': [def_title, (def_title, str)],
-            'title_lbl_txt': [def_title, (def_title, str)],
-            'padX': [20, (20, int)],
-            'padY': [20, (20, int)],
-            'icon': [icon, (icon, str)]
+        self.theme = QATheme.Get().get('theme')
+
+        self.titleLbl = tk.Label(self.root)
+        self.main_container = tk.LabelFrame(self.main_frame)
+        self.misc_container = tk.LabelFrame(self.main_frame)
+        self.owr_all_btn = tk.Button(self.main_container)
+        self.owr_config_btn = tk.Button(self.main_container)
+        self.cpy_missing_btn = tk.Button(self.main_container)
+        self.instructions_button = tk.Button(self.misc_container)
+        self.check_button = tk.Button(self.misc_container)
+
+        self.progress_ttl_lbl = tk.Label(self.progress_frame)
+        self.progress_lb = tk.Listbox(self.progress_frame)
+        self.progress_vsb = ttk.Scrollbar(self.progress_frame)
+        self.progress_xsb = ttk.Scrollbar(self.progress_frame, orient=tk.HORIZONTAL)
+
+        self.ws = (
+            700 if 700 <= self.root.winfo_screenwidth() else self.root.winfo_screenwidth(),
+            650 if 650 <= self.root.winfo_screenheight() else self.root.winfo_screenheight()
+        )
+        self.sp = (
+            int(self.root.winfo_screenwidth() / 2 - self.ws[0] / 2),
+            int(self.root.winfo_screenheight() / 2 - self.ws[1] / 2)
+        )
+
+        self.rootTitle = "QA Recovery Utilities"
+        self.rootIcon = QAInfo.icons_ico['ftsra']
+
+        self.listbox_counter = 0
+        self.listbox_items = []
+
+        self.up_elements = {
+            'btns': [],
+            'lbls': [],
+            'frames': [],
+            'ac_fg': [],
+            'fonts': []
         }
 
-        self.flags = flags_handler(ref=self.flags, flags=flags, __rePlain=True)
+        self.padX = 20
+        self.padY = 10
 
-        # Basic UI
-        self.root = tk.Tk() # Main UI Frame
+        self.start()
+        self.root.mainloop()
 
-        # Size
-        self.ss = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()) # Screen Size
-        self.ds = (700, 650) # Default Size
-        self.ws = (self.ss[0] if self.ds[0] >= self.ss[0] else self.ds[0],
-                   self.ss[1] if self.ds[1] >= self.ss[1] else self.ds[1]) # Window Size
-        self.wp = (int(self.ss[0]/2 - self.ws[0]/2),
-                   int(self.ss[1]/2 - self.ws[1]/2)) # Window Position
+    def close_window(self):
+        self.root.after(0, self.root.quit)
 
-        # Class (Instance-Based) Vars
-        self.script_key = 'ftsra'
+    def run(self):
+        self.root.title(self.rootTitle)
+        self.root.iconbitmap(self.rootIcon)
+        self.root.protocol("WM_DELETE_WINDOW", self.close_window)
+        self.root.geometry("%sx%s+%s+%s" % (
+            str(self.ws[0]),
+            str(self.ws[1]),
+            str(self.sp[0]),
+            str(self.sp[1])
+        ))
 
-        self.Theme: dict = QATheme.load_theme() # Theme dictionary
-        debug(f"Loaded the following theme: {self.Theme}")
+        self.up_elements['btns'].extend([
+            self.cpy_missing_btn,
+            self.owr_all_btn,
+            self.owr_config_btn,
+            self.check_button,
+            self.instructions_button
+        ])
 
-        # UI
-        self.title = tk.Label(self.root) # Title (Label)
-        self.sbttl = tk.Label(self.root) # Subtitle (Label) [not used?]
+        self.up_elements['lbls'].extend([
+            self.titleLbl,
+            self.main_container,
+            self.misc_container,
+            self.progress_ttl_lbl
+        ])
 
-        self.btn_grp = tk.LabelFrame(self.root) # Button Container (Label Frame)
-        self.btns_owr = tk.Button(self.btn_grp) # Button (Overwrite)
-        self.btns_cpy = tk.Button(self.btn_grp) # Button (Copy Files)
-        self.btns_owr_conf = tk.Button(self.btn_grp) # Button (OWR Configuration)
+        self.up_elements['frames'].extend([
+            self.root,
+            self.main_frame,
+            self.progress_frame
+        ])
 
-        self.misc_btns_grp = tk.LabelFrame(self.root)
-        self.btns_help = tk.Button(self.misc_btns_grp)
-        self.btns_checkFiles = tk.Button(self.misc_btns_grp)
+        self.up_elements['ac_fg'].extend([
+            self.titleLbl,
+            self.misc_container,
+            self.main_container,
+            self.progress_ttl_lbl
+        ])
 
-        self.btns = [] # BTNs will be added automatically later
-        self.lbls = [] # LBLs will be added automatically later
+        self.up_elements['fonts'].extend([
+            [self.titleLbl, (self.theme.get('font'), 24)],
+            [self.main_container, (self.theme.get('font'), self.theme.get('fsize_para'))],
+            [self.misc_container, (self.theme.get('font'), self.theme.get('fsize_para'))],
+            [self.cpy_missing_btn, (self.theme.get('font'), self.theme.get('btn_fsize'))],
+            [self.owr_config_btn, (self.theme.get('font'), self.theme.get('btn_fsize'))],
+            [self.owr_all_btn, (self.theme.get('font'), self.theme.get('btn_fsize'))],
+            [self.instructions_button, (self.theme.get('font'), self.theme.get('btn_fsize'))],
+            [self.check_button, (self.theme.get('font'), self.theme.get('btn_fsize'))],
+            [self.progress_ttl_lbl, (self.theme.get('font'), self.theme.get('fsize_para'))]
+        ])
 
-        # Instances
-        self.io_instance = IO() # IO Instance
-        self.ch_instance = CrashHandler() # Crash Handler Instance
-        self.eh_instance = ErrorHandler() # Error Handler Instance
+        # Final
+        self.layout()
+        self.update_ui()
+        self.root.deiconify()
 
-        # Last things
-        self.start() # Starts thread and calls self.run
+    def update_ui(self, refresh_layout=False):
 
-        global boot_time_start # Boot start time
-        boot_time_calc(start=boot_time_start, end=QATime.now()) # Calculate boot time
+        if refresh_layout:
+            self.clear_all_frames()
+            self.layout()
 
-        self.root.mainloop() # Run UI (Last statement in UI.__init__)
+        for element in self.up_elements['frames']:
+            element.config(bg=self.theme.get('bg'))
 
-    def enable_all_btns(self) -> None:
-        for i in self.btns:
-            debug(f"Set button state 'ENABLED' (NORMAL) for button {i.cget('text')}")
-            i.config(state=tk.NORMAL)
-
-    def disable_all_btns(self) -> None:
-        for i in self.btns:
-            debug(f"Set button state 'DISABLED' for button {i.cget('text')}")
-            i.config(state=tk.DISABLED)
-
-    def update_ui(self) -> None:
-        debug(f"Updating theme for label types {self.lbls} an button types {self.btns} and {self.root}")
-
-        self.root.iconbitmap(QAInfo.icons_ico.get('ftsra'))
-        
-        # Buttons   
-        def set_btn_theme(btn_handler, Theme):
-            btn_handler.config(
-                bg=Theme['bg'],  # BG Color
-                fg=Theme['fg'],  # FG Color
-                activebackground=Theme['ac'],  # Active BG color (Accent color set)
-                activeforeground=Theme['hg'],  # Active FG color (Highlight color set)
-                highlightbackground=Theme['border_color'], # Border color
-                bd=Theme['border'],  # Border Width
-                font=(Theme['font'], Theme['btn_fsize']),  # Font
-            )  # Set theme
-
-        # Labels
-        def set_lbl_theme(lbl_handler, Theme):
-            fsize = lbl_handler.cget('font').split(" ")[-1]
-
-            lbl_handler.config(
-                bg=Theme['bg'], # Background Color
-                fg=Theme['fg'], # Foreground Color'))
+        for element in self.up_elements['lbls']:
+            element.config(
+                bg=self.theme.get('bg'),
+                fg=self.theme.get('fg')
             )
 
-            # Font
+        for element in self.up_elements['btns']:
+            element.config(
+                bg=self.theme.get('bg'),
+                fg=self.theme.get('fg'),
+                activebackground=self.theme.get('ac'),
+                activeforeground=self.theme.get('hg'),
+                bd='0'
+            )
+
+        for element in self.up_elements['fonts']:
+            element[0].config(
+                font=element[1]
+            )
+
+        for element in self.up_elements['ac_fg']:
+            element.config(fg=self.theme.get('ac'))
+
+        self.progress_lb.config(
+            bg=self.theme.get('bg'),
+            fg=self.theme.get('fg'),
+            font=(self.theme.get('font'), self.theme.get('fsize_para')),
+            selectmode=tk.EXTENDED,
+            selectbackground=self.theme.get('ac'),
+            selectforeground=self.theme.get('hg')
+        )
+
+    def root_elements(self):
+        elements = self.root.winfo_children()
+
+        for i in elements:
+            if i.winfo_children(): elements.extend(i.winfo_children())
+
+        _all = [*elements]
+
+        return _all, elements
+
+    def clear_all_frames(self):
+        for i in self.root_elements():
             try:
-                int(fsize)
-                debug(
-                    f"Using font {(Theme['font'], fsize)} for {lbl_handler} ({lbl_handler.cget('text')})")
-                lbl_handler.config(font=(Theme['font'], fsize))
+                i.pack_forget()
+            except:
+                pass
+
+    def layout(self):
+        self.titleLbl.config(text=self.rootTitle)
+        self.titleLbl.pack(fill=tk.BOTH, padx=self.padX, pady=self.padY)
+
+        self.main_container.config(text="Recovery Utilities")
+        self.main_container.pack(fill=tk.BOTH, expand=True, padx=self.padX, pady=(self.padY, self.padY / 2))
+
+        self.misc_container.config(text="Other Utilities")
+        self.misc_container.pack(fill=tk.BOTH, expand=True, padx=self.padX, pady=(self.padY / 2, self.padY))
+
+        self.owr_all_btn.config(
+            text="Overwrite All Files",
+            command=self.overwrite_all
+        )
+
+        self.owr_all_btn.pack(
+            fill=tk.BOTH, expand=True, padx=(self.padX, self.padX / 2), pady=self.padY, side=tk.LEFT
+        )
+
+        self.owr_config_btn.config(
+            text="Reset Configuration File",
+            command=self.overwrite_config
+        )
+
+        self.owr_config_btn.pack(
+            fill=tk.BOTH, expand=True, padx=self.padX / 2, pady=self.padY, side=tk.RIGHT
+        )
+
+        self.cpy_missing_btn.config(
+            text="Patch Missing Files",
+            command=self.cpy_missing
+        )
+
+        self.cpy_missing_btn.pack(
+            fill=tk.BOTH, expand=True, padx=(self.padX / 2, self.padX), pady=self.padY, side=tk.RIGHT
+        )
+
+        self.instructions_button.config(
+            text="Instructions",
+            command=self.open_help_file
+        )
+
+        self.instructions_button.pack(
+            fill=tk.BOTH, expand=True, padx=self.padX / 2, pady=self.padY, side=tk.RIGHT
+        )
+
+        self.check_button.config(
+            text="Check Files",
+            command=self.diagnostics
+        )
+
+        self.check_button.pack(
+            fill=tk.BOTH, expand=True, padx=(self.padX / 2, self.padX), pady=self.padY, side=tk.RIGHT
+        )
+
+        self.progress_ttl_lbl.config(
+            text="Activity",
+            anchor=tk.W,
+            justify=tk.LEFT
+        )
+        self.progress_ttl_lbl.pack(fill=tk.BOTH, padx=self.padX)
+
+        self.progress_xsb.pack(fill=tk.X, side=tk.BOTTOM, padx=self.padX, pady=(0, self.padY))
+        self.progress_lb.pack(fill=tk.BOTH, expand=True, side=tk.LEFT, padx=(self.padX, 0))
+        self.progress_vsb.pack(fill=tk.Y, side=tk.RIGHT, padx=(0, self.padX))
+
+        self.progress_lb.config(yscrollcommand=self.progress_vsb.set, xscrollcommand=self.progress_xsb.set)
+        self.progress_vsb.config(command=self.progress_lb.yview)
+        self.progress_xsb.config(command=self.progress_lb.xview)
+
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+        self.progress_frame.pack(fill=tk.BOTH, expand=True)
+
+    def clear_lb(self):
+        self.listbox_counter = 0
+        self.listbox_items = []
+
+        self.progress_lb.delete(0, tk.END)
+
+    def insert_into_lb(self, string, index: int = tk.END) -> int:
+        string = str(string)
+        self.listbox_counter += 1
+        self.listbox_items.append(string)
+
+        self.progress_lb.insert(index, string)
+        self.progress_lb.yview(tk.END)
+        self.root.update()
+
+        return self.listbox_counter - 1
+
+    def lb_show_ok(self, index: int):
+        if index < 0 or index > len(self.listbox_items) - 1: return
+
+        self.progress_lb.itemconfig(
+            index,
+            background="#ffffff", foreground="#00802b",
+            selectbackground="#00802b",
+            selectforeground="#ffffff"
+        )
+
+    def lb_show_error(self, index: int):
+        if index < 0 or index > len(self.listbox_items) - 1: return
+
+        self.progress_lb.itemconfig(
+            index,
+            background="#ffffff", foreground="#800000",
+            selectbackground="#800000",
+            selectforeground="#ffffff"
+        )
+
+    def overwrite_all(self):
+        self.clear_lb()
+
+        conf = tkmsb.askyesno(self.rootTitle, "Are you sure you want to delete all files (excluding scores and logs?)")
+        if not conf:
+            self.lb_show_error(self.insert_into_lb("User refused to overwrite all files; aborting"))
+            return
+
+        self.lb_show_ok(self.insert_into_lb("Re-writing basic application files..."))
+
+        # Backup
+        try:
+            conf = tkmsb.askyesno(self.rootTitle,
+                                  "Would you like to export the current application data prior to re-writing all application files?")
+            if not conf:
+                self.insert_into_lb("User does not want to create backup file")
+                raise Exception
+
+            if not os.path.exists(os.path.join(QAInfo.appdataLoc, ".ra_backups")):
+                os.makedirs(os.path.join(QAInfo.appdataLoc, ".ra_backups"))
+
+            filename = "{}\\{}\\{} {}.qaEnc".format(
+                QAInfo.appdataLoc,
+                ".ra_backups",
+                "qaGFileBackup",
+                QATime.form("%H-%M-%S %b %d, %Y")
+            )
+
+            self.insert_into_lb("Creating backup file\n{}".format(filename.split("\\")[-1]))
+            self.insert_into_lb("Read data from files")
+
+            try:
+                config_raw = QAFileIOHandler.read(
+                    QAFileIOHandler.create_fileIO_object(
+                        os.path.join(QAInfo.appdataLoc, QAInfo.confFilename)
+                    )
+                )
 
             except:
-                debug(f"Using font {(Theme['font'], Theme['min_fsize'])} for {lbl_handler} ({lbl_handler.cget('text')})")
-                lbl_handler.config(font=(Theme['font'], Theme['min_fsize']))
+                config_raw = "QAS :: FileNotFound"
 
-        th_inst = QATheme.Get()
-        th_inst.refresh_theme()
+            try:
+                qas_raw = QAFileIOHandler.read(
+                    QAFileIOHandler.create_fileIO_object(
+                        os.path.join(QAInfo.appdataLoc, QAInfo.qasFilename)
+                    )
+                )
+            except:
+                qas_raw = "QAS :: FileNotFound"
 
-        self.Theme = th_inst.get('theme')
+            try:
+                theme_raw = QAFileIOHandler.read(
+                    QAFileIOHandler.create_fileIO_object(
+                        os.path.join(QAInfo.appdataLoc, QAInfo.themeFilename)
+                    )
+                )
 
-        # Buttons
-        for i in self.btns: set_btn_theme(i, self.Theme)
+            except:
+                theme_raw = "QAS :: FileNotFound"
 
-        # Labels + LabelFrames
-        for i in self.lbls: set_lbl_theme(i, self.Theme)
+            self.insert_into_lb("Creating backup file")
 
-        # Root
-        self.root.config(bg=self.Theme['bg'])
+            QAJSONHandler.QAFlags().io(
+                QAJSONHandler.QAFlags().SET,
+                filename=filename,
+                appendData=False,
+                data={
+                    'c': config_raw,
+                    'q': qas_raw,
+                    't': theme_raw
+                }
+            )
 
-    def run(self) -> None:
-        # UI configuration
-        title = self.flags['frame_title']
-        geometry = f"{self.ws[0]}x{self.ws[1]}+{self.wp[0]}+{self.wp[1]}"
-        icon = self.flags['icon']
+            # Encrypt the file
+            self.insert_into_lb("Encrypting backup file")
+            file_inst = QAFileIOHandler.InstanceGenerator(filename, QAInfo.qaEnck)
+            QAFileIOHandler.encrypt(file_inst)
 
-        self.root.title(title)
-        self.root.geometry(geometry)
-        self.root.iconbitmap(icon)
-        self.root.config(background=self.Theme['bg'])
-        self.root.protocol("WM_DELETE_WINDOW", Exit)
+            self.insert_into_lb("")
+            self.lb_show_ok(
+                self.insert_into_lb("Created backup file successfully")
+            )
 
-        debug(f"Set frame title to '{title}'")
-        debug(f"Set frame geometry to {geometry}")
-        debug(f"Using icon {icon} for frame.")
-        debug(f"Set frame background to {self.Theme['bg']}")
+        except Exception as E:
 
-        # Element Configuration
-        def set_btn_data(btn_handler, text, command, Theme):
-            if not btn_handler in self.btns: self.btns.append(btn_handler)
+            debug(f"Error whilst creating backup file (ftsra:ovw_all) [E] [tb]", E, " ", traceback.format_exc())
 
-            btn_handler.config(text=text, command=command)  # Set text + command
-            btn_handler.config(
-                bg=Theme['bg'],  # BG Color
-                fg=Theme['fg'],  # FG Color
-                activebackground=Theme['ac'],  # Active BG color (Accent color set)
-                activeforeground=Theme['hg'],  # Active FG color (Highlight color set)
-                bd=Theme['border'],  # Border Width
-                font=(Theme['font'], Theme['btn_fsize']) # Font
-            )  # Set theme
+            self.insert_into_lb("")
+            self.lb_show_error(
+                self.insert_into_lb("Failed to create backup")
+            )
 
-        def set_lbl_data(instance, Theme, fsize):
-            if instance not in self.lbls: self.lbls.append(instance)
+        self.insert_into_lb("")
 
-            instance.config(
-                bg=Theme['bg'],  # BG Color
-                fg=Theme['fg'], # FG Color
-                font=(Theme['font'], fsize) # Font
-            )  # Set theme
+        # Copy + Delete
 
-        # Title label
-        self.title.config(text=self.flags['title_lbl_txt']) # Set text
-        ttl_fsize = int(
-            self.ws[0] / len(self.title.cget('text'))
-        ) # Calculate title font size
-        set_lbl_data(self.title, self.Theme, ttl_fsize) # Set theme and add to self.lbls
+        errors = {}
+        success = []
+        skipped = []
 
-        # Subtitle (not used)
+        location = QAInfo.appdataLoc
+        for i in os.listdir(location):
+            file = os.path.join(location, i).replace('/', '\\')
 
-        # Btns Lbl Frame
-        self.btn_grp.config(text='IO Control') # Set text
-        set_lbl_data(self.btn_grp, self.Theme, self.Theme.get('min_fsize')) # Set theme and add to self.lbls
+            try:
+                if os.path.isfile(file) and file.split('\\')[-1] in QAInfo.QaFTSRAFiles:
 
-        # Misc. btns lbl frame
-        self.misc_btns_grp.config(text='Miscellaneous') # Set text
-        set_lbl_data(self.misc_btns_grp, self.Theme, self.Theme.get('min_fsize')) # Set theme and add to self.lbls
+                    if os.path.isfile(QAInfo.ftsFolder + "\\" + file.split('\\')[-1]):
 
-        # Buttons
+                        os.remove(file)
+                        success.append(file)
+                        self.insert_into_lb(f"Removed file {i} successfully")
 
-        # OWR (Overwrite) button
-        set_btn_data(self.btns_owr, "Reset All Files", self.owr_handler, self.Theme)
+                    else:
+                        self.insert_into_lb("")
+                        ind = self.insert_into_lb(
+                            f"Error: Cannot reset file {i} because its default version is not available (QA-NDF)")
+                        self.lb_show_error(ind)
+                        self.insert_into_lb("")
 
-        # OWR (Overwrite) config button
-        set_btn_data(self.btns_owr_conf, "Reset Configuration File", self.owr_config_handler, self.Theme)
+                        raise FileNotFoundError(
+                            "A file that was to be copied into the application data folder was not found; filename: {}".format(
+                                file.split('\\')[-1]
+                            )
+                        )
 
-        # Copy files button
-        set_btn_data(self.btns_cpy, "Copy Missing Files", self.cpy_handler, self.Theme)
+                else:
+                    skipped.append([file, os.path.isfile(file)])
+                    self.insert_into_lb(f"Skipped {i}")
 
-        # Information Button
-        set_btn_data(self.btns_help, "Help Me", self.aid, self.Theme)
+            except Exception as E:
 
-        # Check Files Button
-        set_btn_data(self.btns_checkFiles, "Check File Integrity", self.check_files, self.Theme)
+                errors[file] = [E, traceback.format_exc()]
 
-        # Element Placement
-        px = self.flags['padX']; py = self.flags['padY']; pxh = int(px/2); pyh = int(py/2)
+        self.insert_into_lb("")
 
-        # Top -> Bottom (IGNR L->R)
-        self.title.pack(fill=tk.BOTH, expand=True)
-        self.btn_grp.pack(fill=tk.BOTH, expand=True, padx=px, pady=(py, pyh))
-        self.misc_btns_grp.pack(fill=tk.BOTH, expand=True, padx=px, pady=(pyh, py))
+        loc2 = QAInfo.ftsFolder
+        for i in os.listdir(loc2):
+            file = os.path.join(loc2, i).replace('/', '\\')
 
-        def place_btn(btn_name, padx, pady):
-            btn_name.pack(fill=tk.BOTH, expand=True, padx=padx, pady=pady, side=tk.LEFT)
+            try:
+                if os.path.isfile(file):
+                    with open(file, 'rb') as src, open(location + "\\" + i, 'wb') as dst:
+                        dst.write(src.read())
+                        dst.close();
+                        src.close()
 
-        place_btn(self.btns_owr, (px, pxh), py)
-        place_btn(self.btns_owr_conf, pxh, py)
-        place_btn(self.btns_cpy, (pxh, px), py)
+                    ind = self.insert_into_lb(f"Successfully reset {i}")
+                    self.lb_show_ok(ind)
 
-        self.btns_help.pack(fill=tk.BOTH, expand=True, side=tk.LEFT, padx=(px, pxh), pady=py)
-        self.btns_checkFiles.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT, padx=(pxh, px), pady=py)
+            except Exception as E:
+                ind = self.insert_into_lb(f"Failed to copy file {i} (damage could have been inflicted)")
+                self.lb_show_error(ind)
+                debug(f"Failed to copy file {i}; {E} {traceback.format_exc()}")
 
-    # Button Handlers
-    def owr_handler(self) -> None:
-        global apptitle
+        if not os.path.exists(os.path.join(QAInfo.appdataLoc, QAInfo.scoresFolderName)):
+            self.insert_into_lb("Scores folder not found; creating folder")
 
-        self.disable_all_btns() # Disable all inputs
+            try:
+                os.makedirs(os.path.join(QAInfo.appdataLoc, QAInfo.scoresFolderName))
 
-        debug(f"Running UI.owr_handler")
-        # Confirm overwrite
-        confirm = tkmsb.askyesno(apptitle,
-                                 f"This process will overwrite all data relevant to the application and cannot be undone; this data contains all scores, themes, configuration, questions, question backups, etc.\n\nAre you sure you want to continue?")
+                self.lb_show_ok(self.insert_into_lb("Created Scores folder"))
 
-        if not confirm:
-            debug(f"User wishes to NOT continue; aborting")
-            self.enable_all_btns()  # Enable all inputs
+            except Exception as E:
+                debug(f"Failed to create scores folder; [e] [tb]", E, " ", traceback.format_exc())
+
+        debug("overwrite_all: {errors}, {success}, {skipped}", errors, " ", success, " ", skipped)
+        tkmsb.showinfo(
+            self.rootTitle,
+            f"Successfully reset {len(errors)} files, and skipped {len(skipped)} (+{len(errors)} errors)"
+        )
+
+    def overwrite_config(self):
+        self.clear_lb()
+        self.lb_show_ok(
+            self.insert_into_lb("Reset Configuration File? (User-Input required)")
+        )
+
+        conf = tkmsb.askyesno(self.rootTitle, "Are you sure you want to reset the configuration file?")
+
+        if not conf:
+            self.lb_show_error(
+                self.insert_into_lb("User aborted the utility.")
+            )
             return
 
-        debug(f"User wishes to continue with overwrite")
+        # Backup
+        try:
+            bConf = tkmsb.askyesno(self.rootTitle, "Do you want to generate a backup file before resetting the file?")
 
-        self.io_instance.owr_files(preConf=True) # Call IO.owr (Last thing)
+            if not bConf:
+                self.lb_show_error(
+                    self.insert_into_lb("User aborted the creation of the backup file.")
+                )
 
-        self.update_ui()
+                raise Exception("Null-01")
 
-        self.enable_all_btns() # Enable all inputs
+            filename = "{}\\{}\\{} {}.qaEnc".format(
+                QAInfo.appdataLoc,
+                ".ra_backups",
+                "qaCFileBackup",
+                QATime.form("%H-%M-%S %b %d, %Y")
+            )
 
-    def owr_config_handler(self) -> None:
-        global apptitle
+            self.insert_into_lb("Creating backup file\n{}".format(filename.split("\\")[-1]))
+            self.insert_into_lb("Read data from old configuration")
 
-        self.disable_all_btns()
+            config_raw = QAFileIOHandler.read(
+                QAFileIOHandler.create_fileIO_object(
+                    os.path.join(QAInfo.appdataLoc, QAInfo.confFilename)
+                )
+            )
 
-        debug(f"Running UI.owr_config_handler")
+            self.insert_into_lb("Creating backup file")
 
-        # Confirm overwrite
-        confirm = tkmsb.askyesno(apptitle,
-                                 f"This process will overwrite all configuration data relevant to the application and cannot be undone.\nAre you sure you want to continue?")
+            QAJSONHandler.QAFlags().io(
+                QAJSONHandler.QAFlags().SET,
+                filename=filename,
+                appendData=False,
+                data={'c': config_raw}
+            )
 
-        if not confirm:
-            debug(f"User wishes to NOT continue; aborting")
-            self.enable_all_btns()
-            return
+            # Encrypt the file
+            self.insert_into_lb("Encrypting backup file")
+            file_inst = QAFileIOHandler.InstanceGenerator(filename, QAInfo.qaEnck)
+            QAFileIOHandler.encrypt(file_inst)
 
-        debug(f"User wishes to continue with overwrite")
+            self.insert_into_lb("")
+            self.lb_show_ok(
+                self.insert_into_lb("Created backup file successfully")
+            )
 
-        self.io_instance.owr_config(preConf=True)  # Call IO.owr (Last thing)
-        self.enable_all_btns()
+        except Exception as E:
+            debug(f"Failed to create backup [e] [tb] ", E, ' ', traceback.format_exc())
 
-    def cpy_handler(self) -> None:
-        self.disable_all_btns()
-        debug(f"Running UI.cpy_handler")
-        self.io_instance.copy_files()
-        self.update_ui()
-        self.enable_all_btns()
+        self.insert_into_lb("")
 
-    def aid(self) -> None:
-        debug(f"Running UI.aid")
-        os.system(f"{QAInfo.help_files[self.script_key]}")
+        self.insert_into_lb("Resetting configuration file")
 
-    def check_files(self) -> None:
+        with open(
+                os.path.join(QAInfo.appdataLoc, QAInfo.confFilename), 'wb'
+        ) as dstFile, open(
+            os.path.join(QAInfo.ftsFolder, QAInfo.confFilename), 'rb'
+        ) as srcFile:
+            dstFile.write(srcFile.read())
+            srcFile.close()
+            dstFile.close()
 
-        diagnostics_inst = QADiagnostics.Diagnostics()
-        diagnostics_data = QADiagnostics.Data()
-        result = diagnostics_inst.run_diagnostics(diagnostics_data.FTSRA_appdata_checks)
+        self.lb_show_ok(
+            self.insert_into_lb("Reset configuration file successfully!")
+        )
 
-        if result:
-            tkmsb.showinfo(apptitle, f"All files inspected are valid.")
+        tkmsb.showinfo(self.rootTitle, "Reset configuration file successfully!")
+
+    def cpy_missing(self):
+
+        added = [];
+        total = []
+
+        self.clear_lb()
+        self.insert_into_lb("Patching missing files")
+        self.insert_into_lb("")
+
+        for i in os.listdir(QAInfo.ftsFolder):
+            try:
+
+                if os.path.isfile(
+                        os.path.join(QAInfo.ftsFolder, i)
+                ) and not os.path.exists(os.path.join(QAInfo.appdataLoc, i)):
+                    total.append(i)
+
+                    with open(os.path.join(QAInfo.ftsFolder, i), 'rb') as src, open(os.path.join(QAInfo.appdataLoc, i),
+                                                                                    'wb') as dst:
+                        dst.write(src.read())
+                        dst.close()
+                        src.close()
+
+                    self.lb_show_ok(
+                        self.insert_into_lb(f"Patched file {i}")
+                    )
+
+                    added.append(i)
+
+                else:
+                    if os.path.exists(os.path.join(QAInfo.appdataLoc, i)):
+                        self.insert_into_lb(f"File {i} did not need to be patched (it already exists)")
+
+                    else:
+                        self.insert_into_lb(f"Skipped {i}")
+
+            except Exception as E:
+                self.lb_show_error(
+                    self.insert_into_lb(f"Failed to patch file {i}")
+                )
+
+                debug(f"Failed to patch file ", i, " [e] [tb] ", E, " ", traceback)
+
+        if not os.path.exists(
+                os.path.join(QAInfo.appdataLoc, QAInfo.scoresFolderName)
+        ):
+            self.insert_into_lb("Patching Scores folder")
+            os.makedirs(os.path.join(QAInfo.appdataLoc, QAInfo.scoresFolderName))
+            self.lb_show_ok(self.insert_into_lb("Patched Scores folder"))
+
+        self.lb_show_ok(self.insert_into_lb("Patched {}/{} missing files".format(len(added), len(total))))
+        tkmsb.showinfo(self.rootTitle, "Patched {}/{} missing files".format(len(added), len(total)))
+
+    def open_help_file(self):
+        openFile(QAInfo.help_files['ftsra'])
+
+    def diagnostics(self):
+        self.clear_lb()
+        self.lb_show_ok(self.insert_into_lb("Running diagnostic checks"))
+        self.insert_into_lb("")
+
+        logs = [];
+        fails = 0
+        log_ext = ".qaLog";
+        log_folder = ".ra_logs"
+
+        # Basic checks
+        self.insert_into_lb("Running basic checks")
+        self.insert_into_lb("")
+
+        # .fts
+        for i in QAInfo.QaFTSRAFiles:
+            if not os.path.exists(os.path.join(QAInfo.ftsFolder, i)):
+                fails += 1
+                logs.append("L_FTS_D_FE: {i} - FAILED")
+                self.lb_show_error(self.insert_into_lb(f"L_FTS_D_FE: {i} - FAILED"))
+
+            else:
+                logs.append("L_FTS_D_FE: {i} - PASSED")
+                self.lb_show_ok(self.insert_into_lb(f"L_FTS_D_FE: {i} - PASSED"))
+
+        self.insert_into_lb("")
+
+        # AppData
+        for i in QAInfo.QaFTSRAFiles:
+            if not os.path.exists(os.path.join(QAInfo.appdataLoc, i)):
+                logs.append("L_ApD_D_FE: {i} - FAILED")
+                fails += 1
+                self.lb_show_error(self.insert_into_lb(f"L_ApD_D_FE: {i} - FAILED"))
+
+            else:
+                logs.append("L_ApD_D_FE: {i} - PASSED")
+                self.lb_show_ok(self.insert_into_lb(f"L_ApD_D_FE: {i} - PASSED"))
+
+        # In-D checks
+        self.insert_into_lb("")
+        self.insert_into_lb("Running in-depth checks")
+        self.insert_into_lb("")
+
+        # Configuration File
+        self.insert_into_lb(f"Checking configuration file")
+
+        if os.path.exists(
+                os.path.join(QAInfo.ftsFolder, QAInfo.confFilename)
+        ):
+            confErr = False
+
+            _json = QAJSONHandler.load_json(os.path.join(QAInfo.ftsFolder, QAInfo.confFilename))
+
+            counter = 0
+            for i in QAConfigStandard.default_configuration:
+                counter += 1
+
+                if not i in _json or type(_json.get(i)) is not type(QAConfigStandard.default_configuration.get(i)):
+                    logs.append(f"L_FTS_InD-C::CONFIG - FAILED (Key {i} not found or found corrupted data for key)")
+                    self.lb_show_error(
+                        self.insert_into_lb(
+                            f"L_FTS_InD-C::CONFIG - FAILED (Key {i} not found or found corrupted data for key)")
+                    )
+                    fails += 1
+                    confErr = True
+
+                else:
+                    logs.append(
+                        f"L_FTS_InD-C::CONFIG - Key test {counter}/{len(QAConfigStandard.default_configuration)} PASSED")
+                    self.lb_show_ok(
+                        self.insert_into_lb(
+                            f"L_FTS_InD-C::CONFIG - Key test {counter}/{len(QAConfigStandard.default_configuration)} PASSED")
+                    )
+
+            self.insert_into_lb("")
+
+            if not confErr:
+                logs.append(f"L_FTS_InD-C::CONFIG - PASSED")
+                self.lb_show_ok(
+                    self.insert_into_lb(f"L_FTS_InD-C::CONFIG - Summary: PASSED")
+                )
+
+            else:
+                logs.append(f"L_FTS_InD-C::CONFIG - FAILED")
+                self.lb_show_error(
+                    self.insert_into_lb(f"L_FTS_InD-C::CONFIG - Summary: FAILED")
+                )
+
+            self.insert_into_lb("")
 
         else:
-            corrections = QADiagnostics.Corrections()
-            corrections.run_correction(diagnostics_data.FTSRA_appdata_checks)
+            fails += 1
+            logs.append("L_FTS_InD-C::CONFIG - FAILED (File not found)")
+            self.lb_show_error(
+                self.insert_into_lb("L_FTS_InD-C::CONFIG - FAILED (File not found)")
+            )
 
-            tkmsb.showinfo(apptitle, f"Failed internal tests; the errors were patched logged.")
+        if os.path.exists(
+                os.path.join(QAInfo.appdataLoc, QAInfo.confFilename)
+        ):
+            confErr = False
 
-        pass
+            _json = QAJSONHandler.load_json(os.path.join(QAInfo.appdataLoc, QAInfo.confFilename))
+
+            counter = 0
+            for i in QAConfigStandard.default_configuration:
+                counter += 1
+
+                if not i in _json or type(_json.get(i)) is not type(QAConfigStandard.default_configuration.get(i)):
+                    logs.append(f"L_ApD_InD-C::CONFIG - FAILED (Key {i} not found or found corrupted data for key)")
+                    self.lb_show_error(
+                        self.insert_into_lb(
+                            f"L_ApD_InD-C::CONFIG - FAILED (Key {i} not found or found corrupted data for key)")
+                    )
+                    fails += 1
+                    confErr = True
+
+                else:
+                    logs.append(f"L_ApD_InD-C::CONFIG - Key test {counter}/{len(QAConfigStandard.default_configuration)} PASSED")
+                    self.lb_show_ok(
+                        self.insert_into_lb(
+                            f"L_ApD_InD-C::CONFIG - Key test {counter}/{len(QAConfigStandard.default_configuration)} PASSED")
+                    )
+
+            self.insert_into_lb("")
+
+            if not confErr:
+                logs.append(f"L_ApD_InD-C::CONFIG - PASSED")
+                self.lb_show_ok(
+                    self.insert_into_lb(f"L_ApD_InD-C::CONFIG - Summary: PASSED")
+                )
+
+            else:
+                logs.append(f"L_ApD_InD-C::CONFIG - FAILED")
+                self.lb_show_error(
+                    self.insert_into_lb(f"L_ApD_InD-C::CONFIG - Summary: FAILED")
+                )
+
+            self.insert_into_lb("")
+
+        else:
+            fails += 1
+            logs.append("L_ApD_InD-C::CONFIG - FAILED (File not found)")
+            self.lb_show_error(
+                self.insert_into_lb("L_ApD_InD-C::CONFIG - FAILED (File not found)")
+            )
+
+        # Checking Theme File
+        self.insert_into_lb("Checking Theme File")
+
+        def load_theme_file(filename) -> dict:
+            data_raw = QAFileIOHandler.read(
+                QAFileIOHandler.create_fileIO_object(filename)
+            )
+
+            output = {}
+
+            for line in data_raw.split("\n"):
+                line = line.strip()
+
+                if len(line.strip()) > 0:
+
+                    if line[0] != "#":
+
+                        k = line.split(' ')[0].strip()
+                        v = line.replace(k, '', 1).strip()
+
+                        if k in QATheme.default:
+                            v = type(QATheme.default[k])(v)  # Set the right type
+
+                        output[k] = v
+
+            return output
+
+        if os.path.exists(
+                os.path.join(QAInfo.ftsFolder, QAInfo.themeFilename)
+        ):
+
+            themeErr = False
+            theme_ex = QATheme.default
+            theme_fts = load_theme_file(os.path.join(QAInfo.ftsFolder, QAInfo.themeFilename))
+
+            counter = 0
+            for i in theme_ex:
+                counter += 1
+
+                if not i in theme_fts or type(theme_ex.get(i)) is not type(theme_fts.get(i)):
+                    logs.append(f"L_FTS_InD-C::THEME - FAILED (Key {i} not found or found corrupted data for key)")
+                    self.lb_show_error(
+                        self.insert_into_lb(
+                            f"L_FTS_InD-C::THEME - FAILED (Key {i} not found or found corrupted data for key)")
+                    )
+                    fails += 1
+                    themeErr = True
+
+                else:
+                    logs.append(f"L_FTS_InD-C::THEME - Key Check {counter}/{len(theme_ex)} - PASSED")
+                    self.lb_show_ok(
+                        self.insert_into_lb(
+                            f"L_FTS_InD-C::THEME - Key Check {counter}/{len(theme_ex)} - PASSED")
+                    )
+
+            if not themeErr:
+                logs.append(f"L_FTS_InD-C::THEME - PASSED")
+                self.lb_show_ok(
+                    self.insert_into_lb(f"L_FTS_InD-C::THEME - Summary: PASSED")
+                )
+
+            else:
+                logs.append(f"L_FTS_InD-C::THEME - FAILED")
+                self.lb_show_error(
+                    self.insert_into_lb(f"L_FTS_InD-C::THEME - Summary: FAILED")
+                )
+
+        else:
+            fails += 1
+            logs.append("L_FTS_InD-C::THEME - FAILED (File not found)")
+            self.lb_show_error(
+                self.insert_into_lb("L_FTS_InD-C::THEME - FAILED (File not found)")
+            )
+
+        self.insert_into_lb("")
+
+        if os.path.exists(
+                os.path.join(QAInfo.appdataLoc, QAInfo.themeFilename)
+        ):
+            themeErr = False
+            theme_ex = QATheme.default
+            theme_fts = load_theme_file(os.path.join(QAInfo.appdataLoc, QAInfo.themeFilename))
+
+            counter = 0
+            for i in theme_ex:
+                counter += 1
+
+                if not i in theme_fts or type(theme_ex.get(i)) is not type(theme_fts.get(i)):
+                    logs.append(f"L_ApD_InD-C::THEME - FAILED (Key {i} not found or found corrupted data for key)")
+                    self.lb_show_error(
+                        self.insert_into_lb(
+                            f"L_ApD_InD-C::THEME - FAILED (Key {i} not found or found corrupted data for key)")
+                    )
+                    fails += 1
+                    themeErr = True
+
+                else:
+                    logs.append(f"L_ApD_InD-C::THEME - Key Check {counter}/{len(theme_ex)} - PASSED")
+                    self.lb_show_ok(
+                        self.insert_into_lb(
+                            f"L_ApD_InD-C::THEME - Key Check {counter}/{len(theme_ex)} - PASSED")
+                    )
+
+            if not themeErr:
+                logs.append(f"L_ApD_InD-C::THEME - PASSED")
+                self.lb_show_ok(
+                    self.insert_into_lb(f"L_ApD_InD-C::THEME - Summary: PASSED")
+                )
+
+            else:
+                logs.append(f"L_ApD_InD-C::THEME - FAILED")
+                self.lb_show_error(
+                    self.insert_into_lb(f"L_ApD_InD-C::THEME - Summary: FAILED")
+                )
+
+        else:
+            fails += 1
+            logs.append("L_ApD_InD-C::THEME - THEME (File not found)")
+            self.lb_show_error(
+                self.insert_into_lb("L_ApD_InD-C::THEME - FAILED (File not found)")
+            )
+
+        # -------------
+        # Final Summary
+        # -------------
+
+        try:
+            os.makedirs(
+                os.path.join(QAInfo.appdataLoc, log_folder)
+            )
+
+        except: pass
+
+        filename = "{}\\{} {}.{}".format(
+            os.path.join(QAInfo.appdataLoc, log_folder),
+            "RA_CHECK_LOG",
+            QATime.form("%H-%M-%S %b %d, %Y"),
+            log_ext
+        )
+
+        with open(filename, 'w') as logFile:
+            logFile.writelines(logs)
+            logFile.close()
+
+        self.insert_into_lb("")
+        self.insert_into_lb("FINAL SUMMARY:")
+        ind = self.insert_into_lb(f"Finished Tests; {fails}/{len(logs)} failures recorded.")
+        self.insert_into_lb("The results of this test were logged.")
+
+        if fails != 0:
+            self.lb_show_error(ind)
+
+        else:
+            self.lb_show_ok(ind)
 
     def __del__(self):
-        pass
+        self.thread.join(self, 0)
+
 
 class CrashHandler(threading.Thread):
     def __init__(self):
@@ -340,7 +929,7 @@ class CrashHandler(threading.Thread):
 
         # Variables
         global apptitle
-        time = f"{time}" # "Convert" to string
+        time = f"{time}"  # "Convert" to string
         ID = self.jsonHandler_instance.ftsra_crash_id
 
         # Log
@@ -358,16 +947,17 @@ class CrashHandler(threading.Thread):
         json_setFlag(ID, info)
 
     def boot_check(self) -> bool:
-        result = True # True = passed, False = failed, ran scripts
+        result = True  # True = passed, False = failed, ran scripts
         global apptitle
 
-        if json_getFlag(self.jsonHandler_instance.ftsra_crash_id): # If the thing exists
+        if json_getFlag(self.jsonHandler_instance.ftsra_crash_id):  # If the thing exists
             debug(f"An error log exists in the global_nv_flags file")
 
             check2 = json_getFlag(self.jsonHandler_instance.ftsra_crash_id, mode=any)
 
-            if check2[self.jsonHandler_instance.log_unr_id]: # If unresolved
-                tkmsb.showerror(apptitle, f"Found unresolved boot error flags; running diagnostics.\n\nPress OK to continue.")
+            if check2[self.jsonHandler_instance.log_unr_id]:  # If unresolved
+                tkmsb.showerror(apptitle,
+                                f"Found unresolved boot error flags; running diagnostics.\n\nPress OK to continue.")
 
                 debug(f"The error was marked as unresolved; running diagnostics.")
                 result = False
@@ -387,7 +977,8 @@ class CrashHandler(threading.Thread):
 
                 if not diagnostics_results:
                     debug(f"Diagnostics failed; running correction scripts")
-                    tkmsb.showerror(apptitle, f"Failed requested tests; running correction scripts.\n\nPress OK to continue.")
+                    tkmsb.showerror(apptitle,
+                                    f"Failed requested tests; running correction scripts.\n\nPress OK to continue.")
 
                     # Corrections
                     corrections = QADiagnostics.Corrections()
@@ -415,12 +1006,14 @@ class CrashHandler(threading.Thread):
                 })
 
             else:
-                debug(f"Error was marked as resolved before correction or diagnostics scripts were ran; starting app normally.")
+                debug(
+                    f"Error was marked as resolved before correction or diagnostics scripts were ran; starting app normally.")
 
         return result
 
     def __del__(self):
-        pass
+        self.thread.join(self, 0)
+
 
 class ErrorHandler(threading.Thread):
     def __init__(self):
@@ -531,14 +1124,15 @@ class ErrorHandler(threading.Thread):
             'high': ' and the application needs to be terminated due to the severity of the error.\n\nMore Diagnostic Information:\n'
         }
 
-        if Flags['show_ui'] or Flags['log_error']: # If needed; else don't waste time
-            if Flags['customUIMsg'] is None: # Use base.join(err_info)
+        if Flags['show_ui'] or Flags['log_error']:  # If needed; else don't waste time
+            if Flags['customUIMsg'] is None:  # Use base.join(err_info)
                 err_string = base_str.join([
                     severity_str['low'] if not Flags['exit'] else severity_str['high'],
                     err_info
-                    ])
+                ])
 
-            else: err_string = Flags['customUIMsg'] # Use custom str
+            else:
+                err_string = Flags['customUIMsg']  # Use custom str
 
         debug(f"Loaded the following error string: {err_string}")
 
@@ -546,7 +1140,7 @@ class ErrorHandler(threading.Thread):
         temp = tkmsb.showerror(apptitle, err_string) if Flags['show_ui'] else None
 
         # Step 3: Log (If needed)
-        debug(f"The following error occurred: {err_string}") # time is shown in debug logs automatically.
+        debug(f"The following error occurred: {err_string}")  # time is shown in debug logs automatically.
 
         # Stp 4: CrashHandler (If needed)
         if Flags['log_crash']:
@@ -562,26 +1156,37 @@ class ErrorHandler(threading.Thread):
         debug(f"Finished error handling")
 
     def __del__(self):
-        pass
+        self.thread.join(self, 0)
 
 
 # Functions
-
-def Exit(_code: any=0):
+def Exit(_code: any = 0):
     sys.exit(_code)
 
-def debug(debug_data) -> None:
-    Log = QaLog.Log(); LogVar = QaLog.Variables()
-    sc_name = sys.argv[0].replace("/","\\").split("\\")[-1].strip().split('.')[0].strip() # Script name
+
+def check_fl_input(FL, PE=True) -> bool:
+    if type(FL) is not str:
+        return False
+    elif len(FL.strip()) <= 0:
+        return False
+    elif PE:
+        if not os.path.exists(FL): return False
+
+    return True
+
+
+def debug(debug_data, *args) -> None:
+    debug_data += "".join(str(i) for i in args)
+
+    Log = QaLog.Log();
+    LogVar = QaLog.Variables()
+    sc_name = sys.argv[0].replace("/", "\\").split("\\")[-1].strip().split('.')[0].strip()  # Script name
 
     if not LogVar.genDebugFile(): Log.logFile_create(sc_name)
     Log.log(data=debug_data, from_=sc_name)
 
     return
 
-def boot_time_calc(start, end) -> None:
-    btime = QATime.calcDelta(start=start, end=end)
-    debug(f'FTSRA booted in "{btime}"')
 
 def json_setFlag(flagID: str, data: any, **flags) -> None:
     """
@@ -647,6 +1252,7 @@ def json_setFlag(flagID: str, data: any, **flags) -> None:
         filename=Flags['filename']
     )
 
+
 def json_getFlag(flagID: str, **flags) -> any:
     """
     **QA_APPS_FTSRA.json_getFlag**
@@ -695,10 +1301,11 @@ def json_getFlag(flagID: str, **flags) -> any:
 
     # Flags
     Flags = {
-        'filename': [def_fn, (def_fn, str)], # JSON File
-        'mode': [bool, (bool, type)], # any = return the data; bool = return existence boolean
-        'reloadJSON': [True, (True, bool)] # reload JSON before getting flag data
-    }; Flags = flags_handler(Flags, flags, __rePlain=True)
+        'filename': [def_fn, (def_fn, str)],  # JSON File
+        'mode': [bool, (bool, type)],  # any = return the data; bool = return existence boolean
+        'reloadJSON': [True, (True, bool)]  # reload JSON before getting flag data
+    };
+    Flags = flags_handler(Flags, flags, __rePlain=True)
 
     # Vars
     Key = JSONHandlerInstance.GET
@@ -709,14 +1316,16 @@ def json_getFlag(flagID: str, **flags) -> any:
                                         key=flagID,
                                         reloadJSON=Flags['reloadJSON'],
                                         filename=Flags['filename'],
-                                        re_bool = False if Flags['mode'] is any else True)
+                                        re_bool=False if Flags['mode'] is any else True)
     except Exception as e:
-        debug(f"An error was raised whilst querying for the flag; more information: {e.__class__.__name__}; {e}; {traceback.format_exc()}")
+        debug(
+            f"An error was raised whilst querying for the flag; more information: {e.__class__.__name__}; {e}; {traceback.format_exc()}")
         output = None if Flags['mode'] is any else False
 
     debug(f"Query result for ID {flagID} in {Flags['filename']}: {output}")
 
     return output
+
 
 def json_removeFlag(flagID: str, **flags) -> None:
     # Defaults
@@ -727,7 +1336,8 @@ def json_removeFlag(flagID: str, **flags) -> None:
     Flags = {
         'filename': [def_fn, (def_fn, str)],
         'reloadJSON': [True, (True, bool)]
-    }; Flags = flags_handler(Flags, flags, __rePlain=True)
+    };
+    Flags = flags_handler(Flags, flags, __rePlain=True)
 
     # Vars
     Key = JSONHandlerInstance.REMOVE
@@ -740,7 +1350,9 @@ def json_removeFlag(flagID: str, **flags) -> None:
                            reloadJSON=Flags['reloadJSON'],
                            filename=Flags['filename'])
 
+
 def openFile(path): os.startfile(os.path.realpath(path))
+
 
 def flags_handler(ref: dict, flags: dict, __raiseErr: bool = True, __rePlain: bool = False) -> dict:
     """
@@ -761,27 +1373,28 @@ def flags_handler(ref: dict, flags: dict, __raiseErr: bool = True, __rePlain: bo
 
     for i in flags:
 
-        if i in ref: # If flag is valid
+        if i in ref:  # If flag is valid
 
-            if type(flags[i] in ref[i][1][1::]): # If type is valid
-                output[i] = [flags[i], ref[i][1]] # Reset
+            if type(flags[i] in ref[i][1][1::]):  # If type is valid
+                output[i] = [flags[i], ref[i][1]]  # Reset
                 debug(f"Set flag '{i}' to {output[i]}")
 
-            elif __raiseErr: # Raise Error
-                debug(f"Invalid type for flag '{i}' (expected {ref[i][1][1::]}, got {type(flags[i])}); raising error for __raiseErr is set to True")
+            elif __raiseErr:  # Raise Error
+                debug(
+                    f"Invalid type for flag '{i}' (expected {ref[i][1][1::]}, got {type(flags[i])}); raising error for __raiseErr is set to True")
                 raise TypeError(f"Invalid type for flag '{i}' (expected {ref[i][1][1::]}, got {type(flags[i])})")
 
-            else: # Pass
+            else:  # Pass
                 debug(
                     f"Invalid type for flag '{i}' (expected {ref[i][1][1::]}, got {type(flags[i])}); suppressing error for __raiseErr is set to False")
                 pass
 
-        elif __raiseErr: # Raise Error
+        elif __raiseErr:  # Raise Error
             debug(
                 f"Invalid flag '{i}'; raising error for __raiseErr is set to True")
             raise TypeError(f"Invalid flag '{i}'")
 
-        else: # Pass
+        else:  # Pass
             debug(
                 f"Invalid flag '{i}'; suppressing error for __raiseErr is set to False")
             pass
@@ -793,8 +1406,10 @@ def flags_handler(ref: dict, flags: dict, __raiseErr: bool = True, __rePlain: bo
     debug(f"Outputting the following flags dictionary: {output}")
     return output
 
+
 def confirm() -> bool:
     return tkmsb.askyesno(apptitle, f"Do you want to continue with the requested routine?")
+
 
 def setBootError(time, info, function=None) -> None:
     QAJSONHandlerData = QAJSONHandler.QAFlags()
@@ -807,214 +1422,6 @@ def setBootError(time, info, function=None) -> None:
         function=function
     )
 
-# IO Functions (Class)
-
-class IO:
-
-    def __init__(self):
-        self.files = QAInfo.QaFTSRAFiles
-        self.folder = QAInfo.ftsFolder
-        self.appdata = QAInfo.appdataLoc
-
-    def owr_files(self, **flags):
-        global apptitle
-
-        debug(f"Running IO.owr_files")
-
-        # Flags
-        Flags = {
-            'preConf': [False, (False, bool)]
-        }
-
-        Flags = flags_handler(Flags, flags, __rePlain=True)
-
-        # Confirmation
-        if not Flags['preConf']:
-            if not confirm():
-                debug(f"User cancelled routine")
-                return
-            debug(f"User wished to continue with routine")
-
-        # Ask if the user wants to copy the old data...
-        copy_old = tkmsb.askyesno(apptitle,
-                                  f"Would you like to copy your old data to an external location prior to resetting it?")
-
-        logvar = QaLog.Variables()
-
-        if copy_old:
-            # Get save as location
-            new_location = tkfile.askdirectory()
-            g = True
-            if new_location is None: g = False
-            else:
-                new_location.replace("/", "\\")
-
-            try:
-                if os.path.exists(new_location) and g:
-                    new_location += "\\QA FTSRA Export {}".format(QATime.forLog())
-
-                    os.mkdir(new_location) # Make the folder
-                    # Copy everything except logs
-                    for i in os.listdir(self.appdata):
-                        if not i.lower().strip() == logvar.folderName().split("\\")[-1].lower().strip():
-                            i_path = f"{self.appdata}\\{i}"
-                            nl_i_path = f"{new_location}\\{i}"
-
-                            if os.path.isdir(i_path): # dir
-                                debug(f"Copying {i_path} to {nl_i_path} using DIR method")
-                                shutil.copytree(i_path, nl_i_path)
-
-                            elif os.path.isfile(i_path): # file
-                                debug(f"Copying {i_path} to {nl_i_path} using FILE method")
-                                shutil.copy(i_path, nl_i_path)
-
-                            else: # no conditions met; error
-                                debug(
-                                    f"No delete condition met, raising {IOError}: No delete condition met for entry {self.appdata}\\{i}; setting boot error flag.")
-                                setBootError(QATime.now(), f"No delete condition met for entry {self.appdata}\\{i}")
-                                raise IOError(f"No delete condition met for entry {self.appdata}\\{i}") # Will not terminate but will end the file copying routine
-
-                    if tkmsb.askyesno(apptitle, f"Copied old data to {new_location}; open folder?"):
-                        openFile(new_location)
-
-            except Exception as e:
-                if g:
-                    tkmsb.showerror(apptitle, f"Failed to export files; continuing.")
-                    debug(f"Failed to export files; info: {e.__class__.__name__}; {e}; {traceback.format_exc()}")
-                else: pass
-
-
-        # Reset
-        # Delete
-        debug(f"Deleting files")
-
-        for i in os.listdir(self.appdata):
-
-            if os.path.exists(f"{self.appdata}\\{i}"): # Only if it already exists
-
-                if i.lower() == logvar.folderName().lower().split("\\")[-1]: # If it's the logs folder
-                    debug(f"Passing logs folder")
-                    pass
-
-                elif os.path.isdir(f"{self.appdata}\\{i}"): # If it is a directory
-                    debug(f"Deleting directory {self.appdata}\\{i}")
-                    os.rmdir(f"{self.appdata}\\{i}")
-
-                elif os.path.isfile(f"{self.appdata}\\{i}"): # If it's a file
-                    debug(f"Deleting file {self.appdata}\\{i}")
-                    os.remove(f"{self.appdata}\\{i}")
-
-                else: # No conditions met (error)
-                    debug(f"No delete condition met, raising {IOError}: No delete condition met for entry {self.appdata}\\{i}; setting boot error flag.")
-                    setBootError(QATime.now(), f"No delete condition met for entry {self.appdata}\\{i}")
-                    raise IOError(f"No delete condition met for entry {self.appdata}\\{i}")
-
-        # Copy
-        for i in self.files:
-            fpath = f"{self.folder}\\{i}"; apath = f"{self.appdata}\\{i}"
-
-            if not os.path.exists(fpath):
-                debug(f"FTSRA file '{fpath}' does not exist; raising error.")
-                tkmsb.showerror(apptitle, f"Critical error: file '{fpath}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-                setBootError(QATime.now(),
-                             f"Critical error: file '{fpath}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-                raise IOError(f"Critical error: file '{fpath}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-
-            if os.path.isdir(fpath): # If the file is a directory
-                debug(f"Copying directory {fpath} to {apath}")
-                shutil.copytree(fpath, apath)
-
-            elif os.path.isfile(fpath): # If the file is a file
-                debug(f"Copying file {fpath} to {apath}")
-                shutil.copy(fpath, apath)
-
-            else: # No conditions met (error)
-                debug(f"{IOError(f'No copy condition met for file {fpath} -> {apath}')}; setting boot error flag")
-                setBootError(QATime.now(), f"No copy condition met for file {fpath} -> {apath}")
-                raise IOError(f"No copy condition met for file {fpath} -> {apath}")
-
-        tkmsb.showinfo(apptitle, f'Successfully removed and replaced all files.')
-
-    def copy_files(self, **flags):
-        global apptitle
-
-        Flags = {
-
-        }
-
-        Flags = flags_handler(Flags, flags, __rePlain=True)
-
-        counter = 0
-        for i in self.files:
-            fpath = f"{self.folder}\\{i}"; apath = f"{self.appdata}\\{i}"
-
-            if not os.path.exists(fpath):
-                debug(f"FTSRA file '{fpath}' does not exist; raising error.")
-                tkmsb.showerror(apptitle,
-                    f"Critical error: file '{fpath}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-                setBootError(QATime.now(),
-                             f"Critical error: file '{fpath}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-                raise IOError(
-                    f"Critical error: file '{fpath}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-
-            if not os.path.exists(apath): # If it doesn't exist already
-
-                counter += 1
-
-                if os.path.isdir(fpath): # Directory
-                    debug(f"Copying directory {fpath} to {apath}")
-                    shutil.copytree(fpath, apath)
-
-                elif os.path.isfile(fpath): # File
-                    debug(f"Copying file {fpath} to {apath}")
-                    shutil.copy(fpath, apath)
-
-                else: # Other (unsupported; error)
-                    debug(f"{IOError(f'No copy condition met for file {fpath} -> {apath}')}; setting boot error flag")
-                    setBootError(QATime.now(), f"No copy condition met for file {self.appdata}\\{i}")
-                    raise IOError(f"No copy condition met for file {fpath} -> {apath}")
-
-            else: debug(f"File {apath} already exists; skipping")
-
-        tkmsb.showinfo(apptitle, f"Successfully found and fixed {counter} missing files.")
-
-    def owr_config(self, **flags):
-        global apptitle
-
-        # Flags
-        Flags = {
-            'preConf': [False, (False, bool)]
-        }
-
-        Flags = flags_handler(Flags, flags, __rePlain=True)
-
-        # Confirmation
-        if not Flags['preConf']:
-            if not confirm():
-                debug(f"User wishes to not continue; aborting")
-                return
-            debug(f"User wishes to continue")
-
-        # Logic
-        fname = f"{self.folder}\\{QAInfo.confFilename}"; aname = f"{self.appdata}\\{QAInfo.confFilename}"
-        if not os.path.exists(fname): # If the base doesn't exist
-            debug(f"FTSRA file '{fname}' does not exist; raising error.")
-            tkmsb.showerror(apptitle,
-                f"Critical error: file '{fname}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-            setBootError(QATime.now(), f"Critical error: file '{fname}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-            raise IOError(
-                f"Critical error: file '{fname}' required for this routine does not exist; a complete reinstall may be required if the error persists.")
-
-        if os.path.exists(aname):
-            debug(f"{aname} exists; deleting said file.")
-            os.remove(aname)
-
-        debug(f"Copying new file")
-        shutil.copy(fname, aname)
-        debug(f"Successfully copied file") # Would not get here if an error was raised.
-
-        tkmsb.showinfo(apptitle,
-                       f"Successfully reset configuration file; you may now use it.")
 
 # Boot check
 ch = CrashHandler()
@@ -1026,4 +1433,4 @@ if not ch.boot_check():
     Exit('boot_check_fail;;ran_scritps')
 
 # Boot check passed
-ui = UI() # Call the UI
+ui = UI()  # Call the UI

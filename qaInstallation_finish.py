@@ -187,7 +187,7 @@ class UI(tk.Toplevel):
         # self.start_button.config(
         #     image=img,
         #     width=100
-        # ); self.start_button.update()
+        # ); self.start_button.update_ui()
 
         # self.start_button.pack_forget()
 
@@ -205,7 +205,7 @@ class UI(tk.Toplevel):
                 f"Deleting {i}"
             )
 
-            self.root.update()
+            self.root.update_ui()
 
             if os.path.exists(f"{QAInfo.appdataLoc}\\{i}"):  # Only if it already exists
 
@@ -245,7 +245,7 @@ class UI(tk.Toplevel):
                 f"Copying {i}"
             )
 
-            self.root.update()
+            self.root.update_ui()
 
             if not os.path.exists(fpath):
                 dump_debug(f"FTSRA file '{fpath}' does not exist; raising error.")
@@ -300,7 +300,7 @@ class UI(tk.Toplevel):
         for i in range(self.pr1*res, int(prog1)*res):
             self.progBar['value'] = i/res
             self.procProgbar['value'] = prog2Add + ((i / res) / prog2Div)
-            self.root.update()
+            self.root.update_ui()
             try:
                 self.info_lbl.config(
                     text=f"{info} ({int((i/res / int((int(prog1)))) * 100) + 1}%; Current task: {int(i/res)}% done; Total: {int(prog2Add + ((i / res) / prog2Div)) + 1}% done)"

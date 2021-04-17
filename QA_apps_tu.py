@@ -1426,9 +1426,9 @@ class UI(threading.Thread):
 
     def get_theme(self): return self.theme
 
-    def update(self):
-        jsr_debug(f"UI.update: Updating the theme with the following theme: {self.theme}.")
-        jsr_debug(f"Labels (or similar) to update: {self.theme_lbl}; button-like: {self.theme_btn} and previews {self.previews}")
+    def update_ui(self):
+        jsr_debug(f"UI.update_ui: Updating the theme with the following theme: {self.theme}.")
+        jsr_debug(f"Labels (or similar) to update_ui: {self.theme_lbl}; button-like: {self.theme_btn} and previews {self.previews}")
 
         # Update root
         self.root.config(background=self.theme['bg'])
@@ -1441,12 +1441,12 @@ class UI(threading.Thread):
             qaai.icons_ico.get('tu')
         )
 
-        jsr_debug(f"UI.update: Updated root theme")
+        jsr_debug(f"UI.update_ui: Updated root theme")
 
         # Theme the labels
         for i in self.theme_lbl:
             try:
-                jsr_debug(f"UI.update: Setting theme for label {i}: {i.cget('text')}")
+                jsr_debug(f"UI.update_ui: Setting theme for label {i}: {i.cget('text')}")
                 i.config(bg=self.theme['bg'], fg=self.theme['fg'])
             except Exception as e:
                 error_handler(useCustomText=True,
@@ -1455,7 +1455,7 @@ class UI(threading.Thread):
         # Theme the buttons
         for i in self.theme_btn:
             try:
-                jsr_debug(f"UI.update: Setting theme for button {i}: {i.cget('text')}")
+                jsr_debug(f"UI.update_ui: Setting theme for button {i}: {i.cget('text')}")
                 i.config(bg=self.theme['bg'],
                          fg=self.theme['fg'],
                          activebackground=self.theme['ac'],
@@ -1691,12 +1691,12 @@ self.theme_set_canvas_new.width = {self.theme_set_canvas_new.cget('width')}
 
         # Update the theme of the elements
         self.root.deiconify()
-        self.update()
+        self.update_ui()
 
     def reload(self):
         Theme.Get().refresh_theme()
         self.theme = Theme.Get().get('theme')
-        self.update()
+        self.update_ui()
 
     def onFrameConfig(self, event): # for scbar
         self.theme_set_canvas_new.configure(
@@ -1798,7 +1798,7 @@ self.theme_set_canvas_new.width = {self.theme_set_canvas_new.cget('width')}
         th = Theme.Get()
         th.refresh_theme()
         self.theme = th.get('theme')
-        self.update()
+        self.update_ui()
 
         jsr_debug(f"Refreshed UI theme")
         tkmsb.showinfo(apptitle, "Successfully imported and refreshed theme.")
@@ -1849,7 +1849,7 @@ self.theme_set_canvas_new.width = {self.theme_set_canvas_new.cget('width')}
         self.theme: dict = g.get('theme')
         jsr_debug(f"Restore routine: reset theme to {self.theme}")
 
-        # Then call the save function that will overwrite and update the UI
+        # Then call the save function that will overwrite and update_ui the UI
         # Step 4: Call self.save
         self.save() # Reads from self.theme, overwrites and refreshes UI
 
@@ -1857,7 +1857,7 @@ self.theme_set_canvas_new.width = {self.theme_set_canvas_new.cget('width')}
         jsr_debug(f"Saving theme")
 
         self.save_theme() # Save the theme
-        self.update() # Update the theme
+        self.update_ui() # Update the theme
 
     def save_theme(self):
         """

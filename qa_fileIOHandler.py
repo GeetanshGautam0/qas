@@ -18,10 +18,14 @@ import numpy as np
 import datetime as dt
 
 # Global Variables
-global key; global log; global log_var
-log = llog.Log(); log_var = llog.Variables(); key = qaai.k
+global log;
+global log_var
+log = llog.Log();
+log_var = llog.Variables();
+key = qaai.k
 CRError = cryptography.fernet.InvalidToken
-IDs = [] # Object IDs
+IDs = []  # Object IDs
+
 
 # if __name__ == "__main__": sys.exit('cannot run module standalone') # TODO: REMOVE THE COMMENT
 
@@ -41,12 +45,13 @@ class GlobalData:
         'utf-16be'
     ]
 
+
 class ENC:
     def __init__(self, Object: object):
-        global key
+        self.key = Object.encKey
 
         self.object = Object
-        self.fer = Fernet(key)
+        self.fer = Fernet(self.key)
         self.fio = FILEIO(self.object)
 
         self.encoding = 'utf-8'
@@ -75,8 +80,9 @@ class ENC:
         debug(f"ENC.encrypt <<1.1>> for ID <<{self.object.id}>> - Created bytes operations instance <<{__bytes}>>")
 
         # Step 2: Load the raw data (Moved Up)
-        __raw = __2 # Set from the new BAK var
-        debug(f"ENC.encrypt <<2.1>> for ID <<{self.object.id}>> - Loaded raw bytes information <<{__raw}>> from file <<{self.object.filename}>>")
+        __raw = __2  # Set from the new BAK var
+        debug(
+            f"ENC.encrypt <<2.1>> for ID <<{self.object.id}>> - Loaded raw bytes information <<{__raw}>> from file <<{self.object.filename}>>")
 
         # Step 3: Set encoding
         __data = __bytes.reencode(__raw, self.encoding).strip()
@@ -93,10 +99,12 @@ class ENC:
         # Step 6: Validate
         __val = VALIDATORS(self.object).val_enc(__data, self)
         if not __val:
-            open(self.object.filename, 'wb').write(BAK) # Restore to backup
+            open(self.object.filename, 'wb').write(BAK)  # Restore to backup
 
-            debug(f"ENC.encrypt <<6.1>> for ID <<{self.object.id}>> - Failed Encryption Validation; raising error <<Restored to BAK>>")
-            raise IOError(f"Unable to validate the encryption for file id <<{self.object.id}>> Actions taken: <<Restore to BAK>>")
+            debug(
+                f"ENC.encrypt <<6.1>> for ID <<{self.object.id}>> - Failed Encryption Validation; raising error <<Restored to BAK>>")
+            raise IOError(
+                f"Unable to validate the encryption for file id <<{self.object.id}>> Actions taken: <<Restore to BAK>>")
         else:
             debug(f"ENC.encrypt <<6.1>> for ID <<{self.object.id}>> - Passed Encryption Validation")
 
@@ -180,10 +188,11 @@ class ENC:
         debug(f"ENC.__preEnc <<6.1>> for ID <<{self.object.id}>> - Saved data with quick_save <<{__save}>>")
 
     def __enc(self, _data) -> bytes:
-        return self.fer.encrypt(_data) # Simple
+        return self.fer.encrypt(_data)  # Simple
 
     def __dec(self, _data) -> bytes:
-        return self.fer.decrypt(_data).strip() # Simple, again
+        return self.fer.decrypt(_data).strip()  # Simple, again
+
 
 class FILEIO:
     def __init__(self, Object: object):
@@ -193,24 +202,28 @@ class FILEIO:
         flags = {
             'append': [False, (bool,)],
             'append_seperator': ['\n', (str, bytes)],
-            'encoding': ['utf-8', (str, )]
-        }; flags = flags_handler(flags, kwargs)
+            'encoding': ['utf-8', (str,)]
+        };
+        flags = flags_handler(flags, kwargs)
 
         # Step 0: IO Integ checks
-        if not VALIDATORS(self.object).IO_integrity('-securesave'): raise IOError(f"Unable to validate the file before saving new data.")
+        if not VALIDATORS(self.object).IO_integrity('-securesave'): raise IOError(
+            f"Unable to validate the file before saving new data.")
 
         # Step 1: Create a backup
         try:
             BAK = open(self.object.filename, 'rb').read()
 
         except Exception as E:
-            raise QAErrors.FileIO_NoBackup(self.object.filename, E) # Custom error in qa_errors
+            raise QAErrors.FileIO_NoBackup(self.object.filename, E)  # Custom error in qa_errors
 
         # Step 2: Data handling
         # <<2.1>> Variables
-        __raw = BAK # Utilize the already read information; save time by not calling open() again
-        __dt = type(__data) # Store data type
-        __encoding = flags['encoding'][0]; __append = flags['append'][0]; __appendSep = flags['append_seperator'][0]
+        __raw = BAK  # Utilize the already read information; save time by not calling open() again
+        __dt = type(__data)  # Store data type
+        __encoding = flags['encoding'][0];
+        __append = flags['append'][0];
+        __appendSep = flags['append_seperator'][0]
 
         __appendSep = BYTES_OPS().reencode(__appendSep, 'utf-8').decode('utf-8')
 
@@ -227,7 +240,7 @@ class FILEIO:
 
         if __append:
             debug(f"Secure Save: __append = True")
-            
+
             # any >> bytes
             if __dt in multiples:
                 # Multi >> bytes
@@ -237,24 +250,25 @@ class FILEIO:
                 __newBytes = __str.encode(__encoding)
 
                 debug(f"Secure Save: Converted {__data} to {__newBytes}")
-                
+
             elif __dt in singles:
                 # Single >> bytes
                 __newBytes = BYTES_OPS().reencode(__data, __encoding)
-                
+
                 debug(f"Secure Save: Converted {__data} to {__newBytes}")
 
-            else: raise QAErrors.UnsupportedType(__dt, *singles, *multiples)
+            else:
+                raise QAErrors.UnsupportedType(__dt, *singles, *multiples)
 
             toWrite = BYTES_OPS().reencode(__raw, __encoding) + __appendSep.encode(__encoding) + __newBytes
-            
+
         elif __dt in singles:
             debug(f"Secure Save; __append = False; Single >> bytes conversion")
             # Single (any) >>> Bytes
-            if __dt is str: # Convert
+            if __dt is str:  # Convert
                 toWrite = __data.encode(__encoding)
 
-            elif __dt is bytes: # Re-encode
+            elif __dt is bytes:  # Re-encode
                 toWrite = BYTES_OPS().reencode(__data, __encoding)
 
         elif __dt in multiples:
@@ -267,10 +281,10 @@ class FILEIO:
 
         else:
             raise QAErrors.UnsupportedType(__dt, *singles, *multiples)
-        
+
         # Step 3: Write the data
         debug(f"Secure Save: Going to write {toWrite}")
-        
+
         try:
             # <<3.1>> Clear
             open(self.object.filename, 'w').close()
@@ -278,21 +292,25 @@ class FILEIO:
             # <<3.2>> Write
             open(self.object.filename, 'wb').write(toWrite)
 
-        except Exception as E: # <<3.Exceptions.1>>
+        except Exception as E:  # <<3.Exceptions.1>>
             try:
                 open(self.object.filename, 'wb').write(BAK)
-                debug(f"FILEIO.secure_save for ID <<{self.object.id}>> - Failed to save information (see end); restored to backup - Inforamtion attempted to store: {toWrite}; BAK = {BAK}")
+                debug(
+                    f"FILEIO.secure_save for ID <<{self.object.id}>> - Failed to save information (see end); restored to backup - Inforamtion attempted to store: {toWrite}; BAK = {BAK}")
 
-            except Exception as E2: # <<3.Exceptions.2>>
-                debug(f"FILEIO.secure_save for ID <<{self.object.id}>> - Failed to save data (see end) and backup (see end) -- data = {toWrite}, BAK = {BAK}")
+            except Exception as E2:  # <<3.Exceptions.2>>
+                debug(
+                    f"FILEIO.secure_save for ID <<{self.object.id}>> - Failed to save data (see end) and backup (see end) -- data = {toWrite}, BAK = {BAK}")
                 raise QAErrors.RestorationFailed
 
-    def quick_save(self, __data) -> None: open(self.object.filename, 'wb').write(__data)
+    def quick_save(self, __data) -> None:
+        open(self.object.filename, 'wb').write(__data)
 
     def load_file(self) -> bytes:
         _raw = open(self.object.filename, 'rb').read().strip()
 
-        debug(f"FILEIO.load_file <<1>> - Loaded raw bytes [see end] for file with FIO-ID::{self.object.id} >> data = {_raw}")
+        debug(
+            f"FILEIO.load_file <<1>> - Loaded raw bytes [see end] for file with FIO-ID::{self.object.id} >> data = {_raw}")
 
         return _raw
 
@@ -302,19 +320,22 @@ class FILEIO:
         except:
             _raw = self.load_file()
 
-        debug(f"FILEIO.read_file <<1>> - Loaded raw bytes [see end] for file with FIO-ID::{self.object.id} >> data = {_raw}")
-            
+        debug(
+            f"FILEIO.read_file <<1>> - Loaded raw bytes [see end] for file with FIO-ID::{self.object.id} >> data = {_raw}")
+
         Str: str = post_decrypt_cleaner(_raw)
-        
-        debug(f"FILEIO.read_file <<2>> - Loaded string [see end] for file with FIO-ID::{self.object.id} >> data = {Str}")
+
+        debug(
+            f"FILEIO.read_file <<2>> - Loaded string [see end] for file with FIO-ID::{self.object.id} >> data = {Str}")
 
         return Str
+
 
 class VALIDATORS:
     def __init__(self, Object: object) -> None:
         self.object = Object
 
-    def IO_integrity(self, *args) -> bool: # For *easy* expansion
+    def IO_integrity(self, *args) -> bool:  # For *easy* expansion
         """
         :param args: specifier (optional)
         :return: boolean
@@ -332,41 +353,44 @@ class VALIDATORS:
         if "-securesave" in args:
 
             if not os.path.exists(self.object.filename):
-                open(self.object.filename, 'w').close() # Create the file
+                open(self.object.filename, 'w').close()  # Create the file
 
         return True
 
     def val_enc(self, refference: bytes, instance: object) -> bool:
         debug(f"Verifying encryption for object {self.object.id}")
-        
+
         # Load the current data (easy)
         __curr = instance.fio.read_file()
-        
+
         # Convert refference data
         __og = refference
         __og = __og.decode(
             BYTES_OPS().get_bytes_encoding(__og, instance.encoding)
         )
-        
+
         # Get to state for comparison
         compare_c = __curr.lower().strip()
         compare_o = __og.lower().strip()
-        
+
         for i in GlobalData.stripSeqs:
-            compare_o = compare_o.replace(i, ''); compare_c = compare_c.replace(i, '')
-        
+            compare_o = compare_o.replace(i, '');
+            compare_c = compare_c.replace(i, '')
+
         debug(f"Verifying encryption for object {self.object.id} :: Comparing (c::o) {compare_c} to {compare_o}")
-        
+
         # Compare
         if not compare_c == compare_o: return False
         return True
-        
+
+
 class BYTES_OPS:
     def __init__(self):
         self.possible_encodings = GlobalData.bytes_encodings
 
     def reencode(self, Data: bytes, encoding: str) -> bytes:
-        _str = Data.decode(self.get_bytes_encoding(Data)) if type(Data) is bytes else Data if type(Data) is str else None
+        _str = Data.decode(self.get_bytes_encoding(Data)) if type(Data) is bytes else Data if type(
+            Data) is str else None
 
         _bytes = _str.encode(encoding)
 
@@ -374,11 +398,11 @@ class BYTES_OPS:
 
     def str_housekeeping(self, data: str) -> str:
         out: str = data
-        
+
         for i in GlobalData.stripSeqs: out = out.replace(i, '')
-        
+
         return out
-    
+
     def get_bytes_encoding(self, Data: bytes, expected: str = 'utf-8') -> str:
         encoding_found: str = ''
 
@@ -391,27 +415,33 @@ class BYTES_OPS:
                 try:
                     Data.decode(i)
                     encoding_found = i
-                except: pass
+                except:
+                    pass
 
-        if encoding_found.strip() == '' or encoding_found is None: raise UnicodeError(f"Unable to find encoding for bytes [[see end]]; searched through: {self.possible_encodings} >>> bytes = {Data}")
+        if encoding_found.strip() == '' or encoding_found is None: raise UnicodeError(
+            f"Unable to find encoding for bytes [[see end]]; searched through: {self.possible_encodings} >>> bytes = {Data}")
 
         if encoding_found in GlobalData.banned_encodings: raise Exception(f"Unsupported encoding '{encoding_found}'")
-        
+
         return encoding_found
 
+
 class InstanceGenerator:
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, key: bytes = qaai.k):
         global IDs
 
         self.filename = filename
-        mult = random.randint(1, 9)*(10**20) # Some random int * a large number
-        self.id = int(random.random()*mult) # Even more random to make a unique id
+        mult = random.randint(1, 9) * (10 ** 20)  # Some random int * a large number
+        self.id = int(random.random() * mult)  # Even more random to make a unique id
+        self.encKey = key
 
-        while self.id in IDs: self.id = int(random.random()*mult)
+        debug(f"Typical key: {qaai.k}; using {self.encKey}")
 
-        IDs.append(self.id) # TO keep track of debugging
+        while self.id in IDs: self.id = int(random.random() * mult)
 
-        self.get() # Load the information
+        IDs.append(self.id)  # TO keep track of debugging
+
+        self.get()  # Load the information
 
     def get(self, k=None):
         info = {
@@ -422,21 +452,23 @@ class InstanceGenerator:
 
         return info[k.lower().strip() if type(k) is str else None]
 
+
 # Internal Methods
 
 def post_decrypt_cleaner(__raw: bytes) -> str:
     _a = BYTES_OPS()
-    
+
     # To str
     Str = __raw.decode(
         _a.get_bytes_encoding(__raw)
     )
-    
+
     # Clean
     Str = _a.str_housekeeping(Str)
 
     return Str
-    
+
+
 def flags_handler(__ref: dict, __kwargs: dict) -> dict:
     out: dict = __ref
 
@@ -450,17 +482,23 @@ def flags_handler(__ref: dict, __kwargs: dict) -> dict:
                     __ref[i][-1]
                 ]
 
-            else: raise TypeError(f"Invalid type {type(i)} for flag '{i}' expected {__ref[i][-1]}")
+            else:
+                raise TypeError(f"Invalid type {type(i)} for flag '{i}' expected {__ref[i][-1]}")
 
-        else: raise NameError(f"Invalid flag name '{i}'")
+        else:
+            raise NameError(f"Invalid flag name '{i}'")
 
     return out
 
-def debug(debugData: str) -> None:
-    global log; global log_var
 
-    try: sc_name = __file__.replace("/","\\").split("\\")[-1].split('.')[0].strip()
-    except: sc_name = sys.argv[0].replace("/","\\").split("\\")[-1].split('.')[0].strip()
+def debug(debugData: str) -> None:
+    global log;
+    global log_var
+
+    try:
+        sc_name = __file__.replace("/", "\\").split("\\")[-1].split('.')[0].strip()
+    except:
+        sc_name = sys.argv[0].replace("/", "\\").split("\\")[-1].split('.')[0].strip()
 
     if not log_var.genDebugFile(): log.logFile_create(from_=sc_name)
 
@@ -473,94 +511,111 @@ def debug(debugData: str) -> None:
             log.log(data=f"Failed to log data <<{e}>>", from_=sc_name)
         except:
             log.log(data='ERRx2 :: Failed to log data', from_=sc_name)
+
+
 # Callers
 
 def encrypt(Object: object, **kwargs) -> None:
     debug(f"Enorypting file (Obj ID = {Object.id})")
-    flags ={
-        
-    }; flags = flags_handler(flags, kwargs)
-    
+    flags = {
+
+    };
+    flags = flags_handler(flags, kwargs)
+
     __inst = ENC(Object)
     __inst.encrypt()
 
+
 def decrypt(Object: object, **kwargs) -> bytes:
-    flags ={
-        
-    }; flags = flags_handler(flags, kwargs)
-    
+    flags = {
+
+    };
+    flags = flags_handler(flags, kwargs)
+
     debug(f"Decrypting data from file (Obj ID = {Object.id})")
-    
+
     __inst = ENC(Object)
     _res = __inst.decrypt()
-    
+
     debug(f"Decrypted data from file (Obj ID = {Object.id}); result = {_res}")
-    
+
     return _res
+
 
 def save(Object: object, data: any, **kwargs):
     debug(f"Saving data (see end) to file (Obj ID = {Object.id}); Data = {data}")
-    
+
     flags = {
-        'encryptData': [False, (bool, )],
-        'append': [False, (bool, )],
+        'encryptData': [False, (bool,)],
+        'append': [False, (bool,)],
         'appendSeperator': ['\n', (str, bytes)],
-        'encoding': ['utf-8', (str, )]
-    }; flags = flags_handler(flags, kwargs)
+        'encoding': ['utf-8', (str,)]
+    };
+    flags = flags_handler(flags, kwargs)
 
     # Save
     __FIOinst = FILEIO(Object)
     _as = QATypeConv.convert(flags['appendSeperator'][0], str, returnDataOnly=True)
-    
-    __FIOinst.secure_save(data, 
-                          append=flags['append'][0], 
+
+    __FIOinst.secure_save(data,
+                          append=flags['append'][0],
                           append_seperator=flags['appendSeperator'][0],
                           encoding=flags['encoding'][0]
-                        )
-    
+                          )
+
     # Encrypt (Optional)    
     if flags['encryptData'][0]:
         __ENCinst = ENC(Object)
         __ENCinst.encrypt()
-    
-    
+
+
 def load(Object: object, **kwargs) -> bytes:
-    
     debug(f'Loading data from file (Obj ID = {Object.id})')
-    
-    flags ={
-        
-    }; flags = flags_handler(flags, kwargs)
-    
+
+    flags = {
+
+    };
+    flags = flags_handler(flags, kwargs)
+
     __inst = FILEIO(Object)
     __res = __inst.load_file()
-    
+
     debug(f'Loaded data (see end) from file (Obj ID = {Object.id}); result = {__res}')
-    
+
     return __res
-    
+
+
 def read(Object: object, **kwargs) -> str:
-    
     debug(f"Reading data from file (Obj ID = {Object.id})")
-    
-    flags ={
-        
-    }; flags = flags_handler(flags, kwargs)
+
+    flags = {
+
+    };
+    flags = flags_handler(flags, kwargs)
 
     __inst = FILEIO(Object)
     __res = __inst.read_file()
-    
+
     debug(f"Read data (see end) from file (Obj ID = {Object.id}); data = {__res}")
-    
+
     return __res
-    
-    
-def create_fileIO_object(filename: str, **kwargs) -> object:
+
+
+def create_fileIO_object(filename: str) -> object:
+    """
+    ** WARNING: Creating an object with this function will NOT allow you to change the ENC KEY; **
+    ** Use InstanceGenerator to use custom key **
+
+    :param filename: filename
+    :return: fileIOHandler object
+    """
+
     __object = InstanceGenerator(filename)
     debug(f"Created IO object {__object} (ID {__object.get('id')})")
     return __object
 
-def test_timing(path, data: str = "Hello, World!", enco = None, tms = None):
+
+def test_timing(path, data: str = "Hello, World!", enco=None, tms=None):
     open(path, 'w').close()
 
     a = create_fileIO_object(path)
@@ -569,12 +624,14 @@ def test_timing(path, data: str = "Hello, World!", enco = None, tms = None):
     b.secure_save(data)
 
     e = ENC(a)
-    if enco is None: encoding = input(f"Enter the encoding format (%%exit%% to exit) >> ")
-    else: encoding = enco
+    if enco is None:
+        encoding = input(f"Enter the encoding format (%%exit%% to exit) >> ")
+    else:
+        encoding = enco
     e.encoding = encoding
 
     if encoding == "%%exit%%": return -1
-    
+
     x = [];
     y = [];
     lens = [];
@@ -582,13 +639,14 @@ def test_timing(path, data: str = "Hello, World!", enco = None, tms = None):
     y2 = [];
     dec = []
 
-    if tms is None: times = int(input("Please enter the number of encryptions to test >> "))
-    else: times = tms
+    if tms is None:
+        times = int(input("Please enter the number of encryptions to test >> "))
+    else:
+        times = tms
 
     for i in range(times):
-
         start = dt.datetime.now()
-        debug(f"\n\n------------------------ {i+1} ------------------------\n\n")
+        debug(f"\n\n------------------------ {i + 1} ------------------------\n\n")
 
         e.encrypt()
         ll = e.decrypt()
@@ -599,7 +657,7 @@ def test_timing(path, data: str = "Hello, World!", enco = None, tms = None):
         time_delta = (end - start)
         x.append(i + 1)
         y.append(time_delta.total_seconds())
-        lens.append(((time_delta.total_seconds()/l)/1000))
+        lens.append(((time_delta.total_seconds() / l) / 1000))
         rawLens.append(l)
         dec.append(len(ll.decode(
             encoding
@@ -611,7 +669,12 @@ def test_timing(path, data: str = "Hello, World!", enco = None, tms = None):
     print(QATypeConv.convert(de, str)[-1].strip())
     print(BYTES_OPS().get_bytes_encoding(de))
 
-    xs = np.array(x); ys = np.array(y); lens = np.array(lens); rawLens = np.array(rawLens); y2 = np.array(y2); dec = np.array(dec)
+    xs = np.array(x);
+    ys = np.array(y);
+    lens = np.array(lens);
+    rawLens = np.array(rawLens);
+    y2 = np.array(y2);
+    dec = np.array(dec)
 
     plt.figure()
 

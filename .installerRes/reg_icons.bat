@@ -25,4 +25,8 @@ reg add "HKCR\.qaFile\DefaultIcon" /t REG_SZ /ve /d "%cd%\qaFile.ico" /f /reg:64
 echo Configuring icon for *.qaLog files; please wait...
 reg add "HKCR\.qaLog\DefaultIcon" /t REG_SZ /ve /d "%cd%\qaLog.ico" /f /reg:64
 
+
+echo Configuring icon for *.qaEnc files; please wait...
+reg add "HKCR\.qaEnc\DefaultIcon" /t REG_SZ /ve /d "%cd%\qaEnc.ico" /f /reg:64
+
 exit

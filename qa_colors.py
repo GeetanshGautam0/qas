@@ -139,7 +139,7 @@ def IntToHex(Int, vb=True):
 #         if not infi and (((start >= end) and stOg < end) or ((start <= end) and stOg > end)): break
 #
 #         if interval is not None: sleep(interval)
-#         disp.update()
+#         disp.update_ui()
 
 
 def monoFade(start, end, rF, gF, bF, inHex=True):

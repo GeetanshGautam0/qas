@@ -108,6 +108,8 @@ class Splash(Toplevel):
         self.titleLbl.pack(fill=BOTH, expand=True, padx=5)
         self.pbar.pack(fill=X, expand=1)
         self.infoLbl.pack(fill=X, expand=True, padx=5)
+
+        self.root.update()
     
     def completeColor(self) -> None:
         import qa_theme as QATheme
@@ -131,10 +133,6 @@ class Splash(Toplevel):
             bg=compTheme.get('bg'),
             fg=compTheme.get('fg')
         )
-        # self.imgLbl.config(
-        #     bg=compTheme.get('bg'),
-        #     image=None
-        # )
         
         self.imgLbl.pack_forget()
         
@@ -193,14 +191,14 @@ def hide(__inst: object):
     __inst.root.wm_attributes("-topmost", 0)
     __inst.root.iconify()
     __inst.root.withdraw()
-    __inst.root.update()
+    __inst.root.update_ui()
     return
 
 def show(__inst: object):
     __inst.root.overrideredirect(True)
     __inst.root.deiconify()
     __inst.root.wm_attributes("-topmost", 1)
-    __inst.root.update()
+    __inst.root.update_ui()
     return
 
 def destroy(__inst: object):
