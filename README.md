@@ -11,6 +11,22 @@ The Quizzing Application Suite is a collection of python modules that come toget
   <img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/themer.png?raw=true">
 </p>
 
+<strong><p>File extensions included with the application:</p></strong>
+
+<p float="center">
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaQuiz.png?raw=true", alt".qaQuiz"/>
+
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaEnc.png?raw=true", alt=".qaEnc"/>
+
+<img src="https://github.com/GeetanshGautam-CodingMadeFun/qas/blob/master/.icons/qaFile_64.png?raw=true", alt=".qaFile"/>
+
+<img src="", alt=""/>
+
+<img src="", alt=""/>
+
+<img src="", alt=""/>
+
+</p>
 <b><h3>These include a few apps</h3></b>
 <ul>
   <li>Quizzing Application Administrator Tools</li>
